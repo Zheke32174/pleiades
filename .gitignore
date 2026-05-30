@@ -1,0 +1,37 @@
+# SofiaX Purple Team Polyglot Suite — .gitignore
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Build artifacts from self-compiling modules
+*.go
+*.rs
+*.bun
+/tmp/*
+
+# Deployment / runtime state (never commit runtime-generated paths)
+/var/lib/.sophia/
+/run/sophia.sock
+
+# Compiled binaries
+*.o
+*.so
+*.a
+*.exe
+
+# Editor / IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Secrets and tokens (placeholder values are for dev only)
+*.env
+*.token
+secrets/
+
+# Logs
+*.log
