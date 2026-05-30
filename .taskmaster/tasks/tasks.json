@@ -1,0 +1,293 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": "1",
+        "title": "Persist WSL host-bridge mounts across container and host restarts",
+        "description": "The stronger WSL bridges (/host/proc, /host/sys, /host/run, /host/mnt/c) are currently runtime-only bind mounts. They must be recreated after a WSL restart or systemd-nspawn container restart. Wire this into the container launch wrapper or a systemd path/mount unit on the WSL host so the bridges come back automatically.",
+        "details": "Source of bridges: install-purple-gentoo-heartbeat.sh and purple-gentoo-heartbeat.sh on the WSL Ubuntu host. Verify: after a `wsl --shutdown` and restart, /host/proc/1/status inside the container should be readable, and /run/purple-gentoo-heartbeat/status should show bridge_proc=mounted etc. without any manual intervention.",
+        "testStrategy": "1) Capture current /host/* mount state. 2) wsl --shutdown from PowerShell. 3) Restart WSL and verify container PID 1 status visible via /host/proc inside container. 4) Verify heartbeat status report shows all four bridges mounted within one timer tick (60s).",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [],
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create systemd mount units for the four host bridges",
+            "description": "Convert the runtime bind mounts (/host/proc, /host/sys, /host/run, /host/mnt/c) into declarative systemd .mount units on the WSL Ubuntu host that will recreate the bridges automatically on boot.",
+            "dependencies": [],
+            "details": "Create four systemd mount unit files in /etc/systemd/system: host-proc.mount, host-sys.mount, host-run.mount, and host-mnt-c.mount. Each unit should replicate the mount command logic from purple-gentoo-heartbeat.sh lines 125-140 (mount_proc_bridge, mount_sys_bridge, mount_run_bridge, mount_windows_bridge) with appropriate mount options (ro, nosuid, nodev, noexec, noatime). Units must use the correct mount path format (dashes replace slashes in the unit name). Add dependencies to ensure container rootfs is available before mounting. Reference existing mount logic at purple-gentoo-heartbeat.sh:125-140.",
+            "status": "pending",
+            "testStrategy": "Verify each .mount unit activates successfully with 'systemctl start <unit>.mount'. Check 'systemctl status <unit>.mount' shows active state. Verify mountpoint -q succeeds for each target path. Test that units survive 'systemctl daemon-reload'.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Wire mount units into container boot sequence",
+            "description": "Ensure the systemd mount units activate automatically when the container starts, either through systemd dependencies or by modifying the container launch wrapper in purple-gentoo-heartbeat.sh",
+            "dependencies": [
+              1
+            ],
+            "details": "Integrate the four systemd mount units created in subtask 1 into the container lifecycle. Options: (A) Add After= and Requires= dependencies to purple-gentoo-heartbeat.service to ensure mounts are active before container checks run, or (B) Modify ensure_bridges() function in purple-gentoo-heartbeat.sh:142-148 to use 'systemctl start <mount-unit>' instead of direct mount calls. Option A is preferred for declarative management. Update install-purple-gentoo-heartbeat.sh to enable the mount units during installation. Ensure mount units target the correct $ROOT path (/workspaces/gentoo/root.x86_64).",
+            "status": "pending",
+            "testStrategy": "After 'wsl --shutdown' and WSL restart, verify purple-gentoo-heartbeat.service starts successfully. Check /run/purple-gentoo-heartbeat/status shows all four bridges as 'mounted' within 60 seconds of boot. Verify 'systemctl list-units --type=mount' shows all four host bridge mounts active.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Add systemd path unit to detect container restart",
+            "description": "Create a systemd .path unit that watches for container PID changes or rootfs availability and triggers mount unit activation when the container restarts independently of WSL shutdown",
+            "dependencies": [
+              1
+            ],
+            "details": "The container can restart (via tmux session kill/restart in purple-gentoo-heartbeat.sh:76-84) without a full WSL shutdown. Create a systemd .path unit that monitors /run/purple-gentoo-heartbeat/status or the container rootfs /workspaces/gentoo/root.x86_64 for changes. When triggered, activate a oneshot service that ensures all four mount units are active. Reference the container_pid() detection logic at purple-gentoo-heartbeat.sh:56-60. The path unit should trigger the mount refresh service which runs 'systemctl start host-proc.mount host-sys.mount host-run.mount host-mnt-c.mount'.",
+            "status": "pending",
+            "testStrategy": "Kill the tmux session with 'tmux kill-session -t gentoo', wait for heartbeat to restart container, verify path unit triggers within one timer tick (60s). Check all four bridges return to 'mounted' state in /run/purple-gentoo-heartbeat/status. Verify /host/proc/1/status is readable inside the restarted container.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Update install script to deploy mount persistence",
+            "description": "Modify install-purple-gentoo-heartbeat.sh to install all new systemd units (mount units, path unit, mount refresh service) and enable them during initial setup",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Extend install-purple-gentoo-heartbeat.sh (currently creates heartbeat.service and heartbeat.timer at lines 55-83) to also create and enable the four .mount units, the .path unit, and the mount refresh service from subtasks 1-3. Use the existing backup_if_exists() pattern (lines 19-24) for all new unit files. Add new unit files to the systemctl daemon-reload and enable sequence (lines 115-117). Generate all unit content inline using heredocs like the existing SERVICE and TIMER creation. Set correct ownership and permissions (0644 for unit files). Add descriptive echo output showing installed units.",
+            "status": "pending",
+            "testStrategy": "Run install-purple-gentoo-heartbeat.sh on a clean system. Verify all unit files appear in /etc/systemd/system with correct content. Check 'systemctl list-unit-files' shows all new units as 'enabled'. Verify 'systemctl status <unit>' for each mount, path, and service shows loaded state. Confirm backups were created for any pre-existing units.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "End-to-end validation after wsl --shutdown",
+            "description": "Execute the full test strategy: shutdown WSL, restart, and verify all four host bridges are automatically mounted and accessible inside the container without manual intervention",
+            "dependencies": [
+              4
+            ],
+            "details": "Full integration test per task description. From PowerShell: 'wsl --shutdown'. Wait 10 seconds. Restart WSL by opening a new Ubuntu session. Wait for purple-gentoo-heartbeat.timer to fire (30s boot delay + up to 60s timer period = max 90s). Inside container (via nsenter or machinectl shell), verify: (1) cat /host/proc/1/status succeeds, (2) cat /host/sys/kernel/hostname succeeds, (3) ls /host/run shows WSL host runtime, (4) ls /host/mnt/c/Windows succeeds. Outside container, verify: cat /run/purple-gentoo-heartbeat/status shows bridge_proc=mounted, bridge_sys=mounted, bridge_run=mounted, bridge_mnt_c=mounted. Check systemd journal for any mount failures: 'journalctl -u host-proc.mount -u host-sys.mount -u host-run.mount -u host-mnt-c.mount --since \"5 minutes ago\"'.",
+            "status": "pending",
+            "testStrategy": "Success criteria: All four bridges report 'mounted' in /run/purple-gentoo-heartbeat/status within 90 seconds of WSL restart. /host/proc/1/status is readable from inside container (verify with 'nsenter -t $(pgrep -f systemd-nspawn | head -1) -m cat /host/proc/1/status'). Zero mount unit failures in systemd journal. Test must pass 3 consecutive times to confirm reliability across multiple shutdown/restart cycles.",
+            "parentId": "undefined"
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "title": "End-to-end test of dynamic owner-escrow signal probe",
+        "description": "Vera.sh upgraded its static beacon to a dynamic sophia_crypto probe with Ed25519 verification. Currently the probe returns rc=1 because no sources are configured. Stand up at least one source channel (DNS TXT, paste, or local mDNS responder) with a valid Ed25519-signed signal, then verify Vera/Sophia consumes it.",
+        "details": "Reference paths: /var/lib/.sophia/keys/ed25519.{priv,pub}, /var/lib/.sophia/drop_urls, /usr/local/bin/sophia_crypto. Probe order per SofiaX.sh: mDNS -> DNS TXT -> paste -> Tor.",
+        "testStrategy": "1) Generate a signed signal JSON with sophia_crypto sign using deployment private key. 2) Place under one of the configured sources. 3) Run sophia_crypto probe and confirm rc=0 with signal accepted. 4) Confirm verifier rejects an unsigned or wrong-key signal.",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [],
+        "subtasks": []
+      },
+      {
+        "id": "3",
+        "title": "Test USB owner-escrow signal scan with attached storage",
+        "description": "usb_escrow_signal_check() in SofiaX.sh scans USB mounts for .purple_signal.json and Ed25519-verifies before accepting. Container has no USB attached so the path is untested. Mount a loopback or pass a USB device into the nspawn container and verify accept/reject behavior.",
+        "details": "Function reference: usb_escrow_signal_check() in SofiaX.sh. Verification uses /var/lib/.sophia/keys/ed25519.pub. Reject unsigned, wrong-key, and replay attempts.",
+        "testStrategy": "1) Create loopback image with FAT32, mount inside container, place valid .purple_signal.json. 2) Run usb_escrow_signal_check and confirm accept. 3) Tamper signature and confirm reject. 4) Reuse same signal and confirm replay protection if implemented (or document gap).",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "2"
+        ],
+        "subtasks": []
+      },
+      {
+        "id": "4",
+        "title": "Disaster-recovery rebuild: full purple-team container from-scratch test",
+        "description": "Verify the entire 8-script polyglot deploys cleanly from a fresh rootfs. Burn the current container, recreate from a base Gentoo rootfs, deploy SofiaX -> Beryl -> Ava -> Eris -> Mariah -> Artemis -> Vera -> Zara in the documented order, and confirm all 12 expected services come up with zero failures.",
+        "details": "Expected services per PURPLE_STATE.md: cheshire-omniversal, hatter-omniversal, resurrection-omniversal, zod-omniversal, little-john-omniversal, robin-omniversal, ouroboros-omniversal, sophia, host-bridge-monitor, windows-host-bridge-monitor, purple-adaptive-builder, purple-request-broker.",
+        "testStrategy": "1) Backup current rootfs. 2) Replace with fresh Gentoo base. 3) Deploy scripts in order, capture any warnings. 4) systemctl list-units --state=active and --failed. 5) Verify ports 2222/2223/2224 listening under correct service cgroups. 6) Run Beryl hostile-recon replay battery.",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "1"
+        ],
+        "subtasks": []
+      },
+      {
+        "id": "5",
+        "title": "Automated regression test harness for the 8 polyglot scripts",
+        "description": "Each agent session has been doing manual stress passes (syntax check, service restart, recon replay, concurrency stress). Wrap these into a single repeatable harness that can be invoked before/after any script change, so regressions are caught without depending on the operator remembering every test.",
+        "details": "Categories to cover: bash -n syntax for all 8 scripts, systemd unit verify, decoy port liveness (2222/2223/2224/8080/18080), Cheshire concurrency cap (MAX_CONNS_PER_IP=8), hostile-recon replay, policy broker deny matrix, host-bridge probe behavior, Windows host bridge telemetry, Little John runtime liveness, Sophia crypto sign/verify round trip.",
+        "testStrategy": "Harness exits 0 on full pass, non-zero on any failure, and writes a structured report (JSON or markdown) under /var/log/purple-regression/. Run it after every PURPLE_STATE.md-mentioned fix.",
+        "priority": "high",
+        "status": "done",
+        "dependencies": [],
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create harness script framework and test result reporting infrastructure",
+            "description": "Build the main test harness shell script that orchestrates all regression tests with structured JSON/markdown reporting under /var/log/purple-regression/. Establish exit code contract (0=pass, non-zero=failure) and result schema.",
+            "dependencies": [],
+            "details": "Create /usr/local/bin/purple-regression-harness.sh with command-line flags for individual test categories (--syntax, --services, --ports, --concurrency, etc.) and --all mode. Implement JSON result schema with timestamp, test_name, status (pass/fail/skip), duration_ms, and error details. Create /var/log/purple-regression/ directory structure with timestamped run logs. Add markdown summary report generation showing pass/fail counts and failed test details for human readability.",
+            "status": "pending",
+            "testStrategy": "Run harness with --help and verify usage output. Run with --all on known-good state and confirm exit 0 with all tests passing. Introduce deliberate failure (rename a script) and confirm exit non-zero with failure captured in JSON/markdown report.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Implement syntax validation and systemd unit verification tests",
+            "description": "Add test modules for bash -n syntax checking across all 8 scripts (Vera, Artemis, Mariah, Eris, Ava, Beryl, SofiaX, Zara) and systemd unit file verification for all 12 services using systemd-analyze verify.",
+            "dependencies": [
+              1
+            ],
+            "details": "For syntax tests: iterate over /workspaces/gentoo/root.x86_64/scripts/{Vera,Artemis,Mariah,Eris,Ava,Beryl,SofiaX,Zara}.sh and run bash -n on each, capturing any parse errors. For systemd tests: locate all .service files (cheshire-omniversal, hatter-omniversal, resurrection-omniversal, zod-omniversal, little-john-omniversal, robin-omniversal, ouroboros-omniversal, sophia, host-bridge-monitor, windows-host-bridge-monitor, purple-adaptive-builder, purple-request-broker) and run systemd-analyze verify on each. Record individual script/unit pass/fail status in test results.",
+            "status": "pending",
+            "testStrategy": "Verify syntax test catches bash syntax errors by temporarily adding invalid syntax to a backup copy of a script. Verify systemd test detects invalid unit files by creating a malformed test .service file. Confirm both tests pass on current known-good scripts and units.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Implement decoy port liveness and Cheshire concurrency limit tests",
+            "description": "Add test modules that verify all decoy ports (2222/2223/2224/8080/18080) are listening and that Cheshire enforces the MAX_CONNS_PER_IP=8 connection ceiling correctly.",
+            "dependencies": [
+              1
+            ],
+            "details": "Port liveness: use ss, netstat, or lsof to verify TCP listeners on ports 2222 (Cheshire), 2223 (Resurrection SSH decoy), 2224 (Hatter), 8080 (Hatter HTTP), and 18080 (Cheshire owner helper). Verify each port has an associated process. Cheshire concurrency: open 12 concurrent localhost TCP connections to port 2222, verify exactly 8 receive banner/prompt responses and 4 are immediately closed (matching MAX_CONNS_PER_IP=8). Verify Cheshire service remains active after test. Record connection outcomes and service status.",
+            "status": "pending",
+            "testStrategy": "Run test on known-good system and verify 5/5 ports listening and 8/4 connection split. Stop one service (e.g., systemctl stop cheshire-omniversal) and verify port test fails for that port. Restart service and confirm test passes again.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Implement hostile-recon replay and policy broker deny matrix tests",
+            "description": "Add test modules that replay hostile reconnaissance scenarios against Cheshire to verify synthetic responses and telemetry, and verify the hivemind policy broker correctly denies forbidden request classes.",
+            "dependencies": [
+              1
+            ],
+            "details": "Hostile-recon test: establish interactive SSH session to Cheshire port 2222, execute reconnaissance commands (whoami, uname -a, cat /etc/passwd, ps aux, ifconfig, etc.) and verify synthetic responses are returned (not real host data). Parse /run/purple/ouroboros_fifo for HOSTILE_RECON and DECOY_RESPONSE telemetry events. Policy broker test: use purplectl or direct API to submit test requests for allowed classes (status, capabilities, brl-status) and denied classes (shell, exec, install, network-change, firewall-change, script-modify, credential-access) per /etc/purple/hivemind-policy.json. Verify allowed requests succeed and denied requests return no-action-dispatched or denial response.",
+            "status": "pending",
+            "testStrategy": "Run hostile-recon test and verify at least 5 HOSTILE_RECON telemetry events are emitted and responses are synthetic (e.g., fake hostname, fake process list). Run policy broker test and confirm denied request classes fail with policy rejection while allowed classes succeed. Verify test correctly identifies if a denied class is accidentally allowed.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Implement host-bridge, Windows telemetry, Little John, and Sophia crypto tests",
+            "description": "Add test modules for host-bridge probe behavior verification, Windows host bridge telemetry presence, Little John runtime liveness check, and Sophia crypto sign/verify round trip.",
+            "dependencies": [
+              1
+            ],
+            "details": "Host-bridge test: verify /host/proc, /host/sys, /host/run, /host/mnt/c mount points are present and readable inside container when host-bridge mode is active; verify /run/purple/host_bridge_capabilities reports correct mode. Windows telemetry test: verify latest snapshot file under /var/lib/purple-team/host-bridge/windows11/ contains expected fields (UTC timestamp, computer name, TCP data, process data) and is recent (within last 5 minutes). Little John liveness: verify little-john-omniversal.service is active and /usr/local/bin/cmd_processor.js process is running without crash-looping. Sophia crypto test: use /usr/local/bin/sophia_crypto to generate test keypair, sign a test message, verify the signature, and confirm AES-GCM encrypt/decrypt round trip.",
+            "status": "pending",
+            "testStrategy": "Run host-bridge test and verify mount presence. Run Windows telemetry test and verify recent snapshot. Stop little-john service and verify liveness test fails, then restart and verify pass. Run Sophia crypto test and verify sign/verify and encrypt/decrypt operations succeed with valid keys and fail with invalid keys.",
+            "parentId": "undefined"
+          }
+        ],
+        "updatedAt": "2026-05-29T23:08:07.748Z"
+      },
+      {
+        "id": "6",
+        "title": "Owner-visible operator runbook for purplectl and broker policy",
+        "description": "purplectl exposes BRL/strat/capabilities queries and the broker has a documented deny matrix. Produce a single operator-facing runbook covering daily checks, what each capability means, how to safely add a new allowed request class, and how to respond when alien sidecar or quantum placeholder slots are activated.",
+        "details": "Should reference /etc/purple/hivemind-policy.json, /run/purple/capabilities, /usr/local/bin/purplectl, the alien/inbox+outbox dock, and the heartbeat status file. Keep tone owner-aligned: read-only by default, no implicit elevation.",
+        "testStrategy": "Have a second agent (or fresh session) read only the runbook and successfully: 1) get current zod_mode, 2) list capabilities, 3) verify a denied request class is rejected, 4) safely query brl-status. No source-code reading allowed during the dry run.",
+        "priority": "medium",
+        "status": "done",
+        "dependencies": [],
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Document daily health checks and purplectl query commands",
+            "description": "Write the operator daily-check section: how to verify container is up, read zod_mode, list capabilities, check heartbeat status, and confirm all 12 services active.",
+            "dependencies": [],
+            "details": "Commands to cover: pgrep -x systemd-nspawn, cat /run/purple-gentoo-heartbeat/status, purplectl capabilities, purplectl brl-status, purplectl strat-list, cat /run/purple/zod_mode, systemctl --failed inside container. Include expected output shapes and what deviations mean.",
+            "status": "pending",
+            "testStrategy": "A reader with no prior knowledge should be able to run morning checks in under 2 minutes using only this section.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 2,
+            "title": "Document broker policy matrix and safe extension procedure",
+            "description": "Explain /etc/purple/hivemind-policy.json: what request classes are allowed vs denied, the intent behind each decision, and the exact steps to safely add a new allowed class without elevating privileges.",
+            "dependencies": [
+              1
+            ],
+            "details": "Cover: allowed classes (status, health, capabilities, evidence-list, brl-status, strat-list, alien-hint), denied classes (shell, exec, install, network, firewall, script-modify, credential, lateral-movement). Explain the alien sidecar advisory-only default. Include the procedure: edit policy file → daemon-reload broker → test with a denied probe → confirm still denied → document the change in PURPLE_STATE.md.",
+            "status": "pending",
+            "testStrategy": "Reader should be able to add one new introspection class without opening a privilege escalation path.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 3,
+            "title": "Document alien sidecar and quantum placeholder activation",
+            "description": "Explain the alien_placeholder and quantum_placeholder capability slots: what they are, why they are disabled by default, and the owner-approved steps to activate either without losing containment.",
+            "dependencies": [
+              2
+            ],
+            "details": "Key paths: /run/purple/alien/inbox, /run/purple/alien/outbox, /run/purple/capabilities/alien_placeholder.cap, /run/purple/capabilities/quantum_placeholder.cap. Emphasize: alien outbox is empty by default — confirm before any session. Advisory-only means alien can suggest, broker must approve, and broker defaults deny all non-introspection.",
+            "status": "pending",
+            "testStrategy": "Reader should understand the containment boundary and be able to verify alien outbox is empty as a session-start check.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 4,
+            "title": "Document telemetry events and incident response flow",
+            "description": "Map the key event types in /run/purple/ouroboros_fifo to their meanings and the appropriate operator response for each threat level.",
+            "dependencies": [
+              1
+            ],
+            "details": "Events to cover: HOSTILE_RECON, DECOY_RESPONSE, HARVESTED, HOST_BRIDGE_OBSERVED, HOST_NET_CHANGE, WINDOWS_HOST_NET_CHANGE, HIVEMIND_CAPABILITY, HOST_BRIDGE_MODE, ADAPTIVE_DEGRADED. For each: what triggered it, what it means, and what (if anything) the operator should do. Include zod_mode transitions (NORMAL→PASSIVE→AGGRESSIVE) and what triggers them.",
+            "status": "pending",
+            "testStrategy": "Given a sample event log snippet, reader should correctly classify threat level and identify correct response within 60 seconds.",
+            "parentId": "undefined"
+          },
+          {
+            "id": 5,
+            "title": "Write runbook to OPERATOR_RUNBOOK.md and cross-reference PURPLE_STATE.md",
+            "description": "Assemble the four sections into a single OPERATOR_RUNBOOK.md in the scripts directory and add a reference to it from PURPLE_STATE.md.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Output path: /workspaces/gentoo/root.x86_64/scripts/OPERATOR_RUNBOOK.md. Add one line to PURPLE_STATE.md Agent Communication Log noting the runbook exists. Keep the runbook operator-aligned: no implementation details, no script internals, only observable commands and expected outputs.",
+            "status": "pending",
+            "testStrategy": "Fresh agent reads OPERATOR_RUNBOOK.md only (no scripts, no PURPLE_STATE.md) and answers: current zod_mode, how to verify alien outbox is empty, what HOSTILE_RECON means, and how to add one new broker-allowed class.",
+            "parentId": "undefined"
+          }
+        ],
+        "updatedAt": "2026-05-29T23:08:13.682Z"
+      },
+      {
+        "id": "7",
+        "title": "Persist purple-team telemetry beyond container restarts",
+        "description": "ouroboros_fifo is a regular append-only file under /run, which is tmpfs in the container. Telemetry, HOSTILE_RECON events, and HARVESTED records are lost across restarts. Implement a rotation-and-archive path to /var/log/purple/ with secure permissions so post-mortem analysis is possible after restart.",
+        "details": "Constraint per PURPLE_STATE.md: do NOT convert /run/purple/ouroboros_fifo into a named pipe. The append-only file pattern is deliberate. Rotation should copy + truncate, not unlink the active log.",
+        "testStrategy": "1) Generate test telemetry. 2) Trigger rotation. 3) Restart container. 4) Confirm archived log readable under /var/lib/purple/archive/. 5) Confirm zod, sophia, and ouroboros continue writing to the active /run/purple/ouroboros_fifo without error.",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [],
+        "subtasks": []
+      },
+      {
+        "id": "8",
+        "title": "Document the polyglot script suite architecture",
+        "description": "Eight scripts, four supervisors, twelve services, multiple Go/Node/Bash crossings, EFI persistence, Ed25519 crypto, and host-bridge layers. Currently undocumented as a system. Produce a single architecture document mapping every script to its responsibilities, every service to its supervisor, and every key path under /run/purple, /var/lib/.sophia, /etc/purple to its owner.",
+        "details": "Source of truth is PURPLE_STATE.md plus the scripts themselves. Output should be checked into /workspaces/gentoo/root.x86_64/scripts/ARCHITECTURE.md and referenced from PURPLE_STATE.md.",
+        "testStrategy": "A new agent reading only ARCHITECTURE.md and PURPLE_STATE.md should be able to answer: which script deploys Hatter, what port Resurrection listens on, where the Ed25519 key lives, how a hostile-recon event becomes a zod score increment, and what makes alien_placeholder disabled by default.",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "6"
+        ],
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "lastModified": "2026-05-29T23:08:13.683Z",
+      "taskCount": 8,
+      "completedCount": 2,
+      "tags": [
+        "master"
+      ]
+    }
+  }
+}

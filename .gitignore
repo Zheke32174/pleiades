@@ -1,0 +1,53 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dev-debug.log
+
+# Backups and agent manifests
+*.bak
+*.bak.*
+.purple-backups/
+*.lck
+
+# Dependency directories
+node_modules/
+
+# Environment variables
+.env
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS specific
+.DS_Store
+
+# Large build artifacts and base images
+*.raw
+*.img
+*.qcow2
+*.iso
+*.tar
+*.tar.*
+stage3-*.tar.*
+stage3-*.DIGESTS
+
+# Live Gentoo rootfs: track only the project script suite.
+root.x86_64/*
+!root.x86_64/scripts/
+!root.x86_64/scripts/**
+root.x86_64/scripts/*.bak
+root.x86_64/scripts/*.bak.*
+root.x86_64/scripts/*_20[0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z/
+
+# Generated/runtime state
+root.x86_64/scripts/.pytest_cache/
+root.x86_64/scripts/node_modules/
