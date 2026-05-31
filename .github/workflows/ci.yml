@@ -17,7 +17,7 @@ jobs:
       - name: Shell syntax check (bash -n)
         run: find . -name '*.sh' -exec bash -n {} \;
       - name: ShellCheck lint
-        run: shellcheck $(find . -name '*.sh') 2>&1 || true
+        run: find . -name '*.sh' -exec shellcheck {} + 2>&1 || true
       - name: Check for shell scripts
         run: |
           count=$(find . -name '*.sh' | wc -l)
