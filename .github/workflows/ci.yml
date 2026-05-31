@@ -1,0 +1,17 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shell syntax check
+        run: |
+          find . -name '*.sh' -exec bash -n {} \;
+      - name: Check for shell scripts
+        run: |
+          if find . -name '*.sh' | grep -q .; then
+            echo "Shell scripts found — syntax checked above"
+          else
+            echo "No shell scripts found in this repo"
+          fi
