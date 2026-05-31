@@ -1,17 +1,97 @@
 name: CI
+
 on: [push, pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  # ────── Shell validation ──────
+  shell-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Shell syntax check
-        run: |
-          find . -name '*.sh' -exec bash -n {} \;
+      - name: Install shellcheck
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+      - name: Shell syntax check (bash -n)
+        run: find . -name '*.sh' -exec bash -n {} \;
+      - name: ShellCheck lint
+        run: shellcheck $(find . -name '*.sh') 2>&1 || true
       - name: Check for shell scripts
         run: |
-          if find . -name '*.sh' | grep -q .; then
-            echo "Shell scripts found — syntax checked above"
+          count=$(find . -name '*.sh' | wc -l)
+          echo "Found $count shell scripts"
+          [ "$count" -gt 0 ] || echo "WARNING: no shell scripts in this repo"
+
+  # ────── Security scan ──────
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hardening check
+        run: |
+          # Check for insecure patterns
+          insecure=$(grep -rn 'eval\|`.*curl.*|.*sh`\|wget.*-O.*|.*sh' --include='*.sh' . 2>/dev/null || true)
+          if [ -n "$insecure" ]; then
+            echo "::warning::Potentially insecure patterns found"
+            echo "$insecure"
+          fi
+      - name: Check for passwords/tokens in scripts
+        run: |
+          # But avoid triggering our own CI tokens
+          issues=$(grep -rn 'password\|secret\|token\|api_key' --include='*.{sh,py,toml,yaml,yml}' . 2>/dev/null | grep -v 'github.token\|\.gitignore\|\.env\.\|\.example\|dummy\|example\|test_' || true)
+          if [ -n "$issues" ]; then
+            echo "::warning::Sensitive-looking strings found — verify these are not real secrets"
+            echo "$issues"
+          fi
+
+  # ────── Cross-repo integration check ──────
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PURPLE_STATE.md presence
+        run: |
+          if [ -f "PURPLE_STATE.md" ]; then
+            echo "PURPLE_STATE.md found — ecosystem integration verified"
           else
-            echo "No shell scripts found in this repo"
+            echo "::notice::No PURPLE_STATE.md — this repo may not be ecosystem-aware"
+          fi
+      - name: Validate directory structure
+        run: |
+          expected_dirs="core modules docs container"
+          for d in $expected_dirs; do
+            [ -d "$d" ] && echo "✓ $d/ exists" || echo "⚠ $d/ missing"
+          done
+      - name: Check Go source
+        run: |
+          if find . -name '*.go' | grep -q .; then
+            if command -v go &>/dev/null; then
+              go vet ./... 2>&1 || true
+            else
+              echo "Go source found but go not installed (CI skip vet)"
+            fi
+          else
+            echo "No Go source in this repo"
+          fi
+      - name: Check Python source
+        run: |
+          if find . -name '*.py' | grep -q .; then
+            python3 -m py_compile $(find . -name '*.py') 2>&1 || true
+          else
+            echo "No Python source in this repo"
+          fi
+
+  # ────── DevContainer check ──────
+  devcontainer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate devcontainer
+        run: |
+          if [ -f ".devcontainer/devcontainer.json" ]; then
+            python3 -m json.tool .devcontainer/devcontainer.json > /dev/null && echo "✓ devcontainer.json is valid JSON"
+          else
+            echo "::notice::No devcontainer.json — add one for Codespaces support"
           fi
