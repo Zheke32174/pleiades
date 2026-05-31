@@ -1,28 +1,50 @@
-# PURPLE_STATE.md — Pleiades Purple Team Suite
+# PURPLE STATE — Defense Stack Status
 
-## Project Purpose
-Pleiades is the SofiaX Purple Team Polyglot Suite — an Ouroboros mutual-persistence security framework. It provides container-resident defense and host protection for the Gentoo/Bedrock WSL environment.
+## Last Updated
+2026-05-31T05:05:00Z — Sweep Rounds Complete
 
-## Current Known-Good State
-- Repository structure: core/, modules/, docs/, container/
-- CI: active with shell syntax check
-- DevContainer: NEW — codespaces compatible setup
+## Scanner Architecture
+- **purple-forensic-scanner.sh** (60s cycle) — Deep heuristic scanner with adaptive thresholds
+- **purple-quick-check.sh** (15s cycle) — Transient attack detector (fork bombs, memory spikes, new listeners)
+- **purple-forensic-extensions.sh** — Wraps chkrootkit + unhide + auditd + pspy
+- **purple-attack-simulator.sh** — 10 attack type simulator
+- **purple-coordinated-round.sh** — Integrated smoke test: all attacks in one shot
+- **mem-hog.py** — Python memory pressure utility (for testing)
 
-## Deliberate Design Decisions
-- Go-based core for performance-critical components
-- Bash scripts for orchestration and glue logic
-- Ouroboros event bus (/run/purple/ouroboros_fifo) as the central integration point
+## Detection Coverage (Round 1 Verified)
+| Attack Type | Quick-Check | Forensic Scanner |
+|---|---|---|
+| Fork Bomb (proc spawn) | RAPID_PROC_SPAWN ✅ | PROC_SPIKE ✅ |
+| Memory Pressure | RAPID_MEM_ALLOC ✅ | MEMORY_SPIKE ✅ |
+| Auth Brute Force (signals) | — | AUTH_FAIL_SPIKE ✅ |
+| Rogue Listener | NEW_LISTENER_QUICK ✅ | UNKNOWN_LISTENER ✅ |
+| FD Exhaustion | — | FD_SPIKE ✅ |
+| Promiscuous Mode | — | PROMISCUOUS_MODE ✅ |
+| /tmp File Burst | — | TMP_FILE_BURST ✅ |
 
-## Recently Changed
-- Added .devcontainer/devcontainer.json (2026-05-31)
-- Added .devcontainer/setup.sh (2026-05-31)
-- Upgraded .github/workflows/ci.yml (2026-05-31)
+## Three-Tier Tool Strategy
+- **T1 (installed)**: pspy, chkrootkit, unhide, auditd
+- **T2 (deferred — too heavy)**: osquery, suricata, samhain, aide, sysdig
+- **T3 (future — host bridge)**: snort4, bettercap, falco
 
-## Known Issues
-- DevContainer config not yet tested end-to-end
-- No integration tests in CI
+## Known Gaps
+- Auth detection uses signal files (/run/purple/decisions/*.auth_alert) not journald
+- ARP poisoning requires NET_ADMIN (unavailable in nspawn)
+- Kernel module detection requires insmod (unavailable in nspawn)
+- Container has no /var/log/auth.log (systemd journal only, timestamp skew)
+- Memory pressure <100MB is below noise floor against 5.9GB RAM
 
-## Related Ecosystem Repos
-- Zheke32174/underhall — container infrastructure (has devcontainer + CI)
-- Zheke32174/undercity — backup/archive
-- Zheke32174/underforge — skill engine
+## Thresholds (Tuned)
+- Proc delta: >20 (quick-check), >30 + abs 500 (scanner)
+- Mem delta: >8% (quick-check), >15% (scanner), abs >70%
+- FD delta: >80 (scanner), abs >80%
+- Auth new fails: >2 (scanner)
+- /tmp new files: >15 (scanner)
+
+## Services
+- purple-quick-check.service: active (CPUQuota=20%, MemoryMax=30M)
+- purple-forensic-scanner.service: active
+
+## Repos
+- Zheke32174/pleiades — Suite repo with devcontainer, CI/CD
+- Zheke32174/underhall — Infra repo with installation scripts
