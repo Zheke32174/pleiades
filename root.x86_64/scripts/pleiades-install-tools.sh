@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# install-zheke32174.sh — clone and integrate Zheke32174 repos
+# pleiades-install-tools.sh — clone and integrate operator repos
 # Task #12
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/pleiades-operator.sh" || exit 1
 LOG_TAG="zheke32174"; log() { printf '[%s] %s\n' "$LOG_TAG" "$*" >&2; }
-BASE="https://github.com/Zheke32174"
+BASE="https://github.com/${PLEIADES_REPO_OWNER}"
 EXT="/workspaces/gentoo/external/zheke32174"
 TOOLS="/workspaces/gentoo/tools"
 CAP_DIR="/run/pleiades/capabilities"
@@ -46,4 +49,4 @@ for repo in scandroid Tracendroid underlode; do
     } > "$CAP_DIR/${repo,,}.cap"
 done
 
-log "Zheke32174 integration complete. Review $EXT/MERGE_LOG.md for alien merge."
+log "Operator (${PLEIADES_REPO_OWNER}) integration complete. Review $EXT/MERGE_LOG.md for alien merge."

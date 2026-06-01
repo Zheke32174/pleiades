@@ -14,6 +14,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=pleiades-operator.sh
+source "${SCRIPT_DIR}/pleiades-operator.sh" 2>/dev/null || true
+
 # ------------------------------------------------------------
 # Config
 # ------------------------------------------------------------
@@ -191,7 +195,7 @@ install_systemd() {
         cat > "$SERVICE_FILE" << SERVICE
 [Unit]
 Description=Machine Runtime Monitor
-Documentation=https://github.com/Zheke32174/pleiades
+Documentation=https://github.com/${PLEIADES_MAIN_REPO}
 After=network.target local-fs.target
 Wants=network.target
 

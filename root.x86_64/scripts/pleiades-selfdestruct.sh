@@ -3,26 +3,31 @@
 #
 # Sequence:
 #   1. Collect evidence bundle (logs, keys, telemetry, captures)
-#   2. Push bundle to private GitHub evidence repo (Zheke32174/pleiades-evidence)
+#   2. Push bundle to private GitHub evidence repo (${PLEIADES_REPO_OWNER}/pleiades-evidence)
 #   3. Store auth credentials in ESP (FAT32 filesystem, not firmware vars)
-#   4. Write redeploy signal to GitHub dead drop (Zheke32174/pleiades dead_drop/signal.json)
+#   4. Write redeploy signal to GitHub dead drop (${PLEIADES_REPO_OWNER}/pleiades dead_drop/signal.json)
 #   5. Wipe local traces (logs, state dirs, keys, temp files)
 #   6. Optionally trigger nspawn container shutdown
 #
 # Redeploy path (used by rehydrate.sh after boot):
-#   gh repo clone Zheke32174/pleiades → re-run bootstrap → container comes back up
+#   gh repo clone ${PLEIADES_REPO_OWNER}/pleiades → re-run bootstrap → container comes back up
 #
 # Usage:
 #   pleiades-selfdestruct.sh [--wipe-only] [--no-push] [--redeploy] [--dry-run]
 
 set -euo pipefail
 
+# Resolve operator identity (gh auth → /etc/pleiades/operator.conf → env)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=pleiades-operator.sh
+source "${SCRIPT_DIR}/pleiades-operator.sh" || exit 1
+
 # ------------------------------------------------------------
 # Config
 # ------------------------------------------------------------
-EVIDENCE_REPO="Zheke32174/pleiades-evidence"
-PLEIADES_REPO="Zheke32174/pleiades"
-DEAD_DROP_FILE="dead_drop/signal.json"
+EVIDENCE_REPO="$PLEIADES_EVIDENCE_REPO"
+PLEIADES_REPO="$PLEIADES_MAIN_REPO"
+DEAD_DROP_FILE="$PLEIADES_DEAD_DROP_FILE"
 MAIA_DIR="/var/lib/.maia"
 WORK_DIR="/tmp/_pleiades_sd_$$"
 BUNDLE_DIR="$WORK_DIR/evidence"
@@ -346,4 +351,4 @@ fi
 
 log "=== Self-destruct complete ==="
 log "Evidence archive: $BUNDLE_ARCHIVE (will be cleaned up on EXIT)"
-log "To redeploy manually: gh repo clone Zheke32174/pleiades && bash pleiades/bootstrap.sh"
+log "To redeploy manually: gh repo clone ${PLEIADES_REPO_OWNER}/pleiades && bash pleiades/bootstrap.sh"

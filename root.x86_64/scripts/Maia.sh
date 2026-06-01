@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Resolve operator identity (gh auth -> /etc/pleiades/operator.conf -> env)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=pleiades-operator.sh
+source "${SCRIPT_DIR}/pleiades-operator.sh" 2>/dev/null || true  # non-fatal: TOKEN from ESP is the primary auth on rehydration
+
 
 register_pleiades-swarm_capability() {
     local component="$1" domain="$2" capabilities="$3"
@@ -494,7 +499,7 @@ func probeTor() (string, string, bool) {
 }
 
 func probeGitHub() (string, string, bool) {
-	url := "https://raw.githubusercontent.com/Zheke32174/pleiades/main/dead_drop/signal.json"
+	url := "https://raw.githubusercontent.com/${PLEIADES_REPO_OWNER}/pleiades/main/dead_drop/signal.json"
 	if data, err := os.ReadFile("/var/lib/.maia/github_drop_url"); err == nil {
 		if u := strings.TrimSpace(string(data)); u != "" {
 			url = u
@@ -580,7 +585,7 @@ GOEOF
     rm -rf /tmp/_sc_src
     mkdir -p /var/lib/.maia
     [[ -f /var/lib/.maia/github_drop_url ]] || \
-        echo 'https://raw.githubusercontent.com/Zheke32174/pleiades/main/dead_drop/signal.json' > /var/lib/.maia/github_drop_url
+        echo "https://raw.githubusercontent.com/${PLEIADES_REPO_OWNER}/pleiades/main/dead_drop/signal.json" > /var/lib/.maia/github_drop_url
 }
 
 generate_keypair() {
@@ -861,7 +866,7 @@ detect_system_type() {
 }
 
 # ------------------------------------------------------------
-# 3c. EFI capsule persistence — efivarfs first, ESP fallback, WSL host bridge
+# 3c. EFI capsule persistence — ESP FAT32 only (NO firmware writes, NO efivarfs)
 # ------------------------------------------------------------
 MAIA_EFI_GUID="a8b4c2d6-e3f1-4a5b-9c7d-2e8f0a1b3c5d"
 
@@ -1018,7 +1023,7 @@ log "Safety check passed — proceeding"
 # === DECRYPT CREDENTIALS FROM ESP ===
 TOKEN=""
 MACHINE_KEY=""
-MAIA_REPO="Zheke32174/pleiades"
+MAIA_REPO="${PLEIADES_MAIN_REPO:-${PLEIADES_REPO_OWNER}/pleiades}"
 
 # Derive machine key for decryption
 if [ -f /etc/machine-id ]; then
@@ -1131,7 +1136,7 @@ except Exception:
                     # CLONE AND REBUILD
                     CLONE_DIR="/tmp/_maia_rebuild_$$"
                     log "Cloning from ${MAIA_REPO}..."
-                    git clone "https://Zheke32174:${TOKEN}@github.com/${MAIA_REPO}.git" "$CLONE_DIR" 2>/dev/null || {
+                    git clone "https://${PLEIADES_REPO_OWNER}:${TOKEN}@github.com/${MAIA_REPO}.git" "$CLONE_DIR" 2>/dev/null || {
                         log "Git clone failed — cannot rebuild"
                         exit 1
                     }
@@ -1170,7 +1175,7 @@ fi
 if [ "$DROP_EXISTS" = false ] && [ -n "$TOKEN" ]; then
     log "Drop repo absent — rebuilding from canonical source"
     CLONE_DIR="/tmp/_maia_rebuild_$$"
-    git clone "https://Zheke32174:${TOKEN}@github.com/${MAIA_REPO}.git" "$CLONE_DIR" 2>/dev/null && {
+    git clone "https://${PLEIADES_REPO_OWNER}:${TOKEN}@github.com/${MAIA_REPO}.git" "$CLONE_DIR" 2>/dev/null && {
         cd "$CLONE_DIR"
         bash core/Maia.sh --rehydrate-only 2>/dev/null || true
         log "System rebuilt from canonical source (fallback path)"
