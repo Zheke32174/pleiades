@@ -243,6 +243,51 @@ for f in core/*.sh modules/*.sh container/*.sh; do bash -n "$f" || echo "FAIL: $
 
 ---
 
+## Companion Container
+
+This suite deploys into a **Gentoo systemd-nspawn container** at
+[Zheke32174/pleiades-container](https://github.com/Zheke32174/pleiades-container).
+
+The container provides:
+- Isolated execution environment for the defense stack
+- Auto-start at boot via systemd units (bare metal / VM)
+- Purple bridge for host-side event relay
+- Self-destruct and re-deployment from GitHub
+
+```bash
+# Clone the companion container
+git clone https://github.com/Zheke32174/pleiades-container.git
+
+# Start the container
+cd pleiades-container
+sudo systemd-nspawn -D root.x86_64 -b --network-veth -M gentoo
+```
+
+See [pleiades-container](https://github.com/Zheke32174/pleiades-container) for full setup.
+
+## Dead Drop — GitHub as Rehydration Source
+
+The suite rehydrates from its own GitHub repo, eliminating the need for a unique external URL.
+
+`sophia_crypto probe` fetches
+[`dead_drop/signal.json`](dead_drop/signal.json) via the raw GitHub URL and verifies the
+Ed25519 signature. If valid and the message is a recognized command, the system acts on it.
+
+```
+Default probe URL:
+  https://raw.githubusercontent.com/Zheke32174/pleiades/main/dead_drop/signal.json
+```
+
+| Signal (decoded) | Action |
+|------------------|--------|
+| `RESURRECT` | `purple-redeploy.sh` — clone from GitHub, rebuild, re-deploy |
+| `PURGE\|AUTHORIZED_PURGE` | `purge-self.sh` — signal-gated self-destruct |
+
+The signal file is signed with the deployment's Ed25519 key. To sign a new signal,
+see [`dead_drop/README.md`](dead_drop/README.md).
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
