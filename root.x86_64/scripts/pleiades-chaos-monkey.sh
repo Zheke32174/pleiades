@@ -25,7 +25,7 @@ PURPLE_SERVICES=(
     pleiades-adaptive-builder.service
     pleiades-forensic-scanner.service
     pleiades-request-broker.service
-    machine-runtime-monitor.service
+    pleiades-container-watcher.service
     maia.service
     atlas-omniversal.service
 )

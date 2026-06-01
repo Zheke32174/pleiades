@@ -1393,7 +1393,7 @@ enter_dormancy() {
     mkdir -p "$bundle_dir"
     cp -a /var/lib/.maia "$bundle_dir/" 2>/dev/null || true
     mkdir -p "$bundle_dir/purple_run"
-    cp /run/pleiades/* "$bundle_dir/purple_run/" 2>/dev/null || true
+    cp /run/pleiades/* "$bundle_dir/pleiades_run/" 2>/dev/null || true
     tar -czf "$bundle_dir/state.tar.gz" -C "$bundle_dir" .maia purple_run 2>/dev/null || true
 
     # Persist sealed evidence/recovery state to owner escrow

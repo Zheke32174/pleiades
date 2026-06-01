@@ -19,8 +19,8 @@ set -euo pipefail
 # ------------------------------------------------------------
 CONTAINER_ROOT="/workspaces/gentoo/root.x86_64"
 CONTAINER_NAME="pleiades"
-HOST_WRAPPER="/usr/local/sbin/machine-runtime-monitor"
-SERVICE_NAME="machine-runtime-monitor"
+HOST_WRAPPER="/usr/local/sbin/pleiades-container-watcher"
+SERVICE_NAME="pleiades-container-watcher"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 WSL_CONF="/etc/wsl.conf"
 MAIA_DIR="/var/lib/.maia"
@@ -89,12 +89,12 @@ write_wrapper() {
     if ! $DRY_RUN; then
         cat > "$HOST_WRAPPER" << 'WRAPPER'
 #!/bin/bash
-# machine-runtime-monitor — host wrapper that starts the Pleiades nspawn container.
-# Managed by machine-runtime-monitor.service. Do not delete.
+# pleiades-container-watcher — host wrapper that starts the Pleiades nspawn container.
+# Managed by pleiades-container-watcher.service. Do not delete.
 
 CONTAINER_ROOT="/workspaces/gentoo/root.x86_64"
 STOP_TOKEN="/var/lib/.maia/owner_stop"
-LOG_TAG="machine-runtime-monitor"
+LOG_TAG="pleiades-container-watcher"
 
 # Owner escape hatch: if a valid signed STOP token exists, do not start
 if [[ -f "$STOP_TOKEN" ]] && command -v maia_crypto &>/dev/null; then
@@ -136,7 +136,7 @@ install_wsl() {
         # Remove any existing [boot] command line
         if [[ -f "$WSL_CONF" ]]; then
             # Check if already installed
-            if grep -q "machine-runtime-monitor\|pleiades" "$WSL_CONF" 2>/dev/null; then
+            if grep -q "pleiades-container-watcher\|pleiades" "$WSL_CONF" 2>/dev/null; then
                 log "WSL boot entry already present in $WSL_CONF"
                 return
             fi
@@ -203,7 +203,7 @@ RestartSec=5
 StartLimitIntervalSec=0
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=machine-runtime-monitor
+SyslogIdentifier=pleiades-container-watcher
 
 # Resource limits
 LimitNOFILE=1048576

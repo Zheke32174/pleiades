@@ -149,11 +149,11 @@ CONF
 
     # Install wrapper
     install -m755 "$SCRIPTS_DIR/pleiades-llm" /usr/local/bin/pleiades-llm 2>/dev/null \
-        || { log "WARN: could not install pleiades-llm from scripts dir — writing directly"; write_purple_llm_direct; }
+        || { log "WARN: could not install pleiades-llm from scripts dir — writing directly"; write_pleiades_llm_direct; }
     log "pleiades-llm installed to /usr/local/bin/pleiades-llm"
 }
 
-write_purple_llm_direct() {
+write_pleiades_llm_direct() {
     cat > /usr/local/bin/pleiades-llm << 'WRAPPER'
 #!/usr/bin/env bash
 # pleiades-llm — thin wrapper around llama-cli for purple team RE and fuzz workflows

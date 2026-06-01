@@ -378,7 +378,7 @@ var components = []Component{
     {"alcyone",       "alcyone-omniversal",       "alcyone_honeypot", "alcyone_pleiades-swarm",       "/usr/local/sbin/install-alcyone-omniversal.sh",       true},
     {"taygete",     "taygete-omniversal",     "taygete",        "taygete_pleiades-swarm",     "/usr/local/sbin/install-taygete-omniversal.sh",     true},
     {"atlas",          "atlas-omniversal",          "atlas_pleiades-swarm",    "atlas_pleiades-swarm",          "/usr/local/sbin/install-atlas-omniversal.sh",          true},
-    {"electra",        "machine-runtime-monitor",        "electra",           "sysmon_daemon",        "/usr/local/sbin/install-machine-runtime-monitor.sh",        true},
+    {"electra",        "pleiades-swarm-electra",        "electra",           "electra_daemon",        "/usr/local/sbin/install-pleiades-swarm-electra.sh",        true},
     {"pleiades-rebirth", "pleiades-rebirth-omniversal", "pleiades-rebirth",    "pleiades-rebirth_pleiades-swarm", "/usr/local/sbin/install-pleiades-rebirth-omniversal.sh", false},
     {"pleiades-nexus",    "pleiades-nexus-omniversal",    "pleiades-nexus",       "containment_controller",              "/usr/local/sbin/install-pleiades-nexus-omniversal.sh",    false},
 }
@@ -659,7 +659,7 @@ declare -A BIN_TO_NAME=(
     [alcyone_pleiades-swarm]=alcyone
     [taygete_pleiades-swarm]=taygete
     [atlas_pleiades-swarm]=atlas
-    [sysmon_daemon]=electra
+    [electra_daemon]=electra
     [pleiades-rebirth_pleiades-swarm]=pleiades-rebirth
     [containment_controller]=pleiades-nexus
 )

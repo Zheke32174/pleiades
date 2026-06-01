@@ -1228,7 +1228,7 @@ CAP
 install_pleiades-swarm_substrate() {
     if ! systemd_usable; then
         pkg_install screen
-        screen -dmS purple_request_broker /usr/local/bin/pleiades_request_broker.sh
+        screen -dmS pleiades_request_broker /usr/local/bin/pleiades_request_broker.sh
     else
         cat > /etc/systemd/system/pleiades-request-broker.service << SERVICE
 [Unit]
