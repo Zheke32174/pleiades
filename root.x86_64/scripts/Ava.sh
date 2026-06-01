@@ -82,6 +82,7 @@ pkg_install() {
             golang) ensure_go; continue ;;
             rustc)  ensure_rust; continue ;;
             bun)    continue ;;
+            lm-sensors) continue ;;
         esac
         if command -v emerge &>/dev/null; then
             case "$p" in
@@ -251,7 +252,7 @@ host_bridge_capability_report() {
 
 # HATTER_ID
 # ==================================================================
-# HATTER – OMNIVERSAL (WSL / DGX Spark / VPS)
+# HATTER – OMNIVERSAL (WSL / bare metal / VPS)
 # ==================================================================
 # Detects environment, adjusts resource limits, adds BGP hijack
 # detection via looking glass, and thermal anomaly monitoring.
@@ -266,22 +267,23 @@ fi
 # ------------------------------------------------------------
 ENV="unknown"
 IS_WSL=false
-IS_DGX=false
+IS_BARE_METAL=false
 IS_VPS=false
 
 if grep -qi microsoft /proc/version 2>/dev/null; then
     ENV="wsl"
     IS_WSL=true
-elif nvidia-smi &>/dev/null && lspci | grep -qi nvidia; then
-    ENV="dgx"
-    IS_DGX=true
+elif [[ -d /sys/firmware/efi ]] && ! systemd-detect-virt --container -q 2>/dev/null && ! systemd-detect-virt --vm -q 2>/dev/null; then
+    ENV="bare_metal"
+    IS_BARE_METAL=true
 else
     # Detect VPS by presence of virtio or hypervisor
     if dmidecode -s system-manufacturer 2>/dev/null | grep -qiE "kvm|xen|vmware|virtualbox"; then
         ENV="vps"
         IS_VPS=true
     else
-        ENV="bare"
+        ENV="bare_metal"
+        IS_BARE_METAL=true
     fi
 fi
 
@@ -300,7 +302,7 @@ CPU_QUOTA=400%
         MAX_OPEN_FILES=4096
         MEMORY_LIMIT="1G"
         CPU_QUOTA="100%"
-    elif [[ "$ENV" == "dgx" ]]; then
+    elif [[ "$ENV" == "bare_metal" ]]; then
         MAX_OPEN_FILES=1048576
         MEMORY_LIMIT="8G"
         CPU_QUOTA="800%"
@@ -841,8 +843,3 @@ main
 
 
 
-# --- SOPHIA EVENT HOOK ---
-_sophia_hook() {
-    [[ -S "/run/sophia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/sophia.sock 2>/dev/null || nc -U /run/sophia.sock -w 1 2>/dev/null) || true
-}
-# --- END SOPHIA EVENT HOOK ---

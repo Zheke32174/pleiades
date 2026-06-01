@@ -76,6 +76,7 @@ pkg_install() {
             golang) ensure_go; continue ;;
             rustc)  ensure_rust; continue ;;
             bun)    continue ;;
+            lm-sensors) continue ;;
         esac
         if command -v emerge &>/dev/null; then
             case "$p" in
@@ -263,7 +264,7 @@ ensure_bun() {
 
 # CHESHIRE_ID
 # ==================================================================
-# CHESHIRE – OMNIVERSAL (WSL / DGX Spark / VPS)
+# CHESHIRE – OMNIVERSAL (WSL / bare metal / VPS)
 # ==================================================================
 # Environment‑aware resource limits, BGP hijack detection,
 # thermal anomaly monitoring, plus full aggressive features.
@@ -278,21 +279,22 @@ fi
 # ------------------------------------------------------------
 ENV="unknown"
 IS_WSL=false
-IS_DGX=false
+IS_BARE_METAL=false
 IS_VPS=false
 
 if grep -qi microsoft /proc/version 2>/dev/null; then
     ENV="wsl"
     IS_WSL=true
-elif nvidia-smi &>/dev/null && lspci | grep -qi nvidia; then
-    ENV="dgx"
-    IS_DGX=true
+elif [[ -d /sys/firmware/efi ]] && ! systemd-detect-virt --container -q 2>/dev/null && ! systemd-detect-virt --vm -q 2>/dev/null; then
+    ENV="bare_metal"
+    IS_BARE_METAL=true
 else
     if dmidecode -s system-manufacturer 2>/dev/null | grep -qiE "kvm|xen|vmware|virtualbox"; then
         ENV="vps"
         IS_VPS=true
     else
-        ENV="bare"
+        ENV="bare_metal"
+        IS_BARE_METAL=true
     fi
 fi
 echo "Detected environment: $ENV"
@@ -315,7 +317,7 @@ MAX_CREDENTIAL_PROBE_CONCURRENCY=3
         MEMORY_LIMIT="2G"
         CPU_QUOTA="200%"
         MAX_CREDENTIAL_PROBE_CONCURRENCY=3
-    elif [[ "$ENV" == "dgx" ]]; then
+    elif [[ "$ENV" == "bare_metal" ]]; then
         MAX_OPEN_FILES=1048576
         MEMORY_LIMIT="16G"
         CPU_QUOTA="800%"
@@ -875,7 +877,7 @@ main() {
     # Install dependencies based on environment
     if [[ "$ENV" == "wsl" ]]; then
         pkg_install golang rustc bun screen bc lm-sensors socat openbsd-netcat
-    elif [[ "$ENV" == "dgx" ]]; then
+    elif [[ "$ENV" == "bare_metal" ]]; then
         pkg_install golang rustc bun screen bc lm-sensors socat openbsd-netcat
     else
         pkg_install golang rustc bun screen bc lm-sensors socat openbsd-netcat

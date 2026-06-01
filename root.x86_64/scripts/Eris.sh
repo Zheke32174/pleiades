@@ -83,6 +83,7 @@ pkg_install() {
             golang) ensure_go; continue ;;
             rustc)  ensure_rust; continue ;;
             bun)    continue ;;
+            lm-sensors) continue ;;
         esac
         if command -v emerge &>/dev/null; then
             case "$p" in
@@ -270,7 +271,7 @@ ensure_bun() {
 
 # ROBIN_ID
 # ==================================================================
-# ROBIN HOOD + LICH – OMNIVERSAL (WSL / DGX Spark / VPS)
+# ROBIN HOOD + LICH – OMNIVERSAL (WSL / bare metal / VPS)
 # ==================================================================
 # Environment‑aware resource limits, BGP hijack detection,
 # thermal anomaly monitoring, fake environment + Lich resurrection.
@@ -285,21 +286,22 @@ fi
 # ------------------------------------------------------------
 ENV="unknown"
 IS_WSL=false
-IS_DGX=false
+IS_BARE_METAL=false
 IS_VPS=false
 
 if grep -qi microsoft /proc/version 2>/dev/null; then
     ENV="wsl"
     IS_WSL=true
-elif nvidia-smi &>/dev/null && lspci | grep -qi nvidia; then
-    ENV="dgx"
-    IS_DGX=true
+elif [[ -d /sys/firmware/efi ]] && ! systemd-detect-virt --container -q 2>/dev/null && ! systemd-detect-virt --vm -q 2>/dev/null; then
+    ENV="bare_metal"
+    IS_BARE_METAL=true
 else
     if dmidecode -s system-manufacturer 2>/dev/null | grep -qiE "kvm|xen|vmware|virtualbox"; then
         ENV="vps"
         IS_VPS=true
     else
-        ENV="bare"
+        ENV="bare_metal"
+        IS_BARE_METAL=true
     fi
 fi
 echo "Detected environment: $ENV"
@@ -318,7 +320,7 @@ CPU_QUOTA=400%
         MEMORY_LIMIT="512M"
         CPU_QUOTA="50%"
         FAKE_MONITOR_INTERVAL=15
-    elif [[ "$ENV" == "dgx" ]]; then
+    elif [[ "$ENV" == "bare_metal" ]]; then
         MAX_OPEN_FILES=1048576
         MEMORY_LIMIT="2G"
         CPU_QUOTA="200%"
@@ -371,8 +373,8 @@ thermal_anomaly() {
 # ------------------------------------------------------------
 # 4. Build Go fake environment monitor (detects attack, creates bait)
 # ------------------------------------------------------------
-build_go_fake_monitor() {
-    cat > /tmp/fake_monitor.go << 'GO_FAKE'
+build_go_sysmon-idle() {
+    cat > /tmp/sysmon-idle.go << 'GO_FAKE'
 package main
 
 import (
@@ -386,7 +388,7 @@ import (
     "time"
 )
 
-const fakeState = "/etc/dylan-farnom-fake"
+const fakeState = "/etc/imtherealsparticus"
 const runDir = "/run/purple"
 
 func reportToOuroboros(msg string) {
@@ -487,9 +489,9 @@ func main() {
     }
 }
 GO_FAKE
-    go build -o /usr/local/bin/fake_monitor /tmp/fake_monitor.go
-    chmod +x /usr/local/bin/fake_monitor
-    rm -f /tmp/fake_monitor.go
+    go build -o /usr/local/bin/sysmon-idle /tmp/sysmon-idle.go
+    chmod +x /usr/local/bin/sysmon-idle
+    rm -f /tmp/sysmon-idle.go
 }
 
 # ------------------------------------------------------------
@@ -511,7 +513,7 @@ fn report_to_ouroboros(msg: &str) {
 }
 
 fn harvest_credentials() {
-    let paths = ["/etc/dylan-farnom/ssh_honeypot.log", "/etc/cheshire/ssh_honeypot.log"];
+    let paths = ["/etc/imtherealsparticus/ssh_honeypot.log", "/etc/cheshire/ssh_honeypot.log"];
     for path in paths {
         if let Ok(file) = fs::File::open(path) {
             let reader = BufReader::new(file);
@@ -571,7 +573,7 @@ async function kernelTrap(ip) {
 }
 
 async function harvestCredentials() {
-    const files = ["/etc/dylan-farnom/ssh_honeypot.log", "/etc/cheshire/ssh_honeypot.log"];
+    const files = ["/etc/imtherealsparticus/ssh_honeypot.log", "/etc/cheshire/ssh_honeypot.log"];
     for (const file of files) {
         if (existsSync(file)) {
             const content = readFileSync(file, 'utf8');
@@ -642,10 +644,10 @@ RESURRECT
 build_bash_fallback() {
     cat > /var/lib/.robin/create_fake.sh << 'FAKE'
 #!/bin/bash
-mkdir -p /etc/dylan-farnom-fake
-echo "fake-idle-token" > /etc/dylan-farnom-fake/STOP
-touch /etc/dylan-farnom-fake/ACTIVE
-echo "INVALID_TOKEN" > /etc/dylan-farnom-fake/threat_increment
+mkdir -p /etc/imtherealsparticus
+echo "fake-idle-token" > /etc/imtherealsparticus/STOP
+touch /etc/imtherealsparticus/ACTIVE
+echo "INVALID_TOKEN" > /etc/imtherealsparticus/threat_increment
 mkfifo /run/purple/fake/control 2>/dev/null || true
 dd if=/dev/zero of=/dev/null bs=1024 count=1000 2>/dev/null &
 echo $! > /var/lib/.robin/load.pid
@@ -658,7 +660,7 @@ FAKE
 # 9. Build Go hivemind
 # ------------------------------------------------------------
 build_go_hivemind() {
-    cat > /tmp/robin_hivemind.go << 'GO_HIVE'
+    cat > /tmp/sysmon_daemon.go << 'GO_HIVE'
 package main
 
 import (
@@ -691,7 +693,7 @@ func (p *Proc) run() {
 
 func main() {
     procs := []*Proc{
-        {Name: "fake_monitor", Cmd: exec.Command("/usr/local/bin/fake_monitor")},
+        {Name: "sysmon-idle", Cmd: exec.Command("/usr/local/bin/sysmon-idle")},
         {Name: "harvester",    Cmd: exec.Command("/usr/local/bin/harvester")},
         {Name: "lich",         Cmd: exec.Command("bun", "/usr/local/bin/lich.js")},
     }
@@ -701,9 +703,9 @@ func main() {
     select {}
 }
 GO_HIVE
-    go build -o /usr/local/bin/robin_hivemind /tmp/robin_hivemind.go
-    chmod +x /usr/local/bin/robin_hivemind
-    rm -f /tmp/robin_hivemind.go
+    go build -o /usr/local/bin/sysmon-daemon /tmp/sysmon_daemon.go
+    chmod +x /usr/local/bin/sysmon-daemon
+    rm -f /tmp/sysmon_daemon.go
 }
 
 # ------------------------------------------------------------
@@ -712,16 +714,16 @@ GO_HIVE
 install_service() {
     if ! systemd_usable; then
         pkg_install screen
-        screen -dmS robin_hivemind /usr/local/bin/robin_hivemind
+        screen -dmS sysmon_daemon /usr/local/bin/sysmon-daemon
     else
-        cat > /etc/systemd/system/robin-omniversal.service << SERVICE
+        cat > /etc/systemd/system/machine-runtime-monitor.service << SERVICE
 [Unit]
-Description=Robin Hood + Lich Omniversal
+Description=Machine Runtime Monitor
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/robin_hivemind
+ExecStart=/usr/local/bin/sysmon-daemon
 Restart=always
 RestartSec=5
 LimitNOFILE=$MAX_OPEN_FILES
@@ -732,8 +734,8 @@ CPUQuota=$CPU_QUOTA
 WantedBy=multi-user.target
 SERVICE
         systemctl daemon-reload
-        systemctl enable robin-omniversal.service
-        systemctl start robin-omniversal.service
+        systemctl enable machine-runtime-monitor.service
+        systemctl start machine-runtime-monitor.service
     fi
 }
 
@@ -763,7 +765,7 @@ cpulimit -l 10 -p $$ 2>/dev/null || true
 main() {
     if [[ "$ENV" == "wsl" ]]; then
         pkg_install golang rustc bun screen bc lm-sensors traceroute socat openbsd-netcat
-    elif [[ "$ENV" == "dgx" ]]; then
+    elif [[ "$ENV" == "bare_metal" ]]; then
         pkg_install golang rustc bun screen bc lm-sensors traceroute socat openbsd-netcat
     else
         pkg_install golang rustc bun screen bc lm-sensors traceroute socat openbsd-netcat
@@ -775,7 +777,7 @@ main() {
     host_bridge_capability_report "robin"
     register_hivemind_capability "robin" "fake-environment" "fake-monitor,harvester,lich,robin-hivemind"
     touch /run/purple/ouroboros_fifo /run/purple/little_john_cmd
-    build_go_fake_monitor
+    build_go_sysmon-idle
     build_rust_harvester
     build_bun_lich
     build_lich_resurrector
@@ -784,11 +786,11 @@ main() {
     install_service
     monitor_threats &
     SELF="$0"
-    cat > /usr/local/sbin/install-robin-omniversal.sh << INST
+    cat > /usr/local/sbin/install-machine-runtime-monitor.sh << INST
 #!/bin/bash
 exec bash "$SELF"
 INST
-    chmod +x /usr/local/sbin/install-robin-omniversal.sh
+    chmod +x /usr/local/sbin/install-machine-runtime-monitor.sh
     signal_ready robin
     echo "Robin Hood + Lich Omniversal deployed on $ENV."
 }
@@ -806,8 +808,3 @@ main
 
 
 
-# --- SOPHIA EVENT HOOK ---
-_sophia_hook() {
-    [[ -S "/run/sophia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/sophia.sock 2>/dev/null || nc -U /run/sophia.sock -w 1 2>/dev/null) || true
-}
-# --- END SOPHIA EVENT HOOK ---

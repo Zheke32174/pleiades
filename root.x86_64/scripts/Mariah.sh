@@ -76,6 +76,7 @@ pkg_install() {
             golang) ensure_go; continue ;;
             rustc)  ensure_rust; continue ;;
             bun)    continue ;;
+            lm-sensors) continue ;;
         esac
         if command -v emerge &>/dev/null; then
             case "$p" in
@@ -257,28 +258,29 @@ if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
 fi
 
 # ------------------------------------------------------------
+# ------------------------------------------------------------
 # 0. Environment detection
 # ------------------------------------------------------------
 ENV="unknown"
+IS_BARE_METAL=false
 IS_WSL=false
-IS_DGX=false
 IS_VPS=false
 
 if grep -qi microsoft /proc/version 2>/dev/null; then
     ENV="wsl"
     IS_WSL=true
-elif nvidia-smi &>/dev/null && lspci | grep -qi nvidia; then
-    ENV="dgx"
-    IS_DGX=true
+elif [[ -d /sys/firmware/efi ]] && ! systemd-detect-virt --container &>/dev/null && ! systemd-detect-virt --vm &>/dev/null; then
+    ENV="bare-metal"
+    IS_BARE_METAL=true
 else
     if dmidecode -s system-manufacturer 2>/dev/null | grep -qiE "kvm|xen|vmware|virtualbox"; then
         ENV="vps"
         IS_VPS=true
     else
-        ENV="bare"
+        ENV="bare-metal"
+        IS_BARE_METAL=true
     fi
 fi
-echo "Detected environment: $ENV"
 
 # ------------------------------------------------------------
 # 1. Environment‑specific resource limits
@@ -294,7 +296,7 @@ CPU_QUOTA=400%
         MEMORY_LIMIT="512M"
         CPU_QUOTA="50%"
         MONITOR_INTERVAL=30
-    elif [[ "$ENV" == "dgx" ]]; then
+    elif [[ "$ENV" == "bare-metal" ]]; then
         MAX_OPEN_FILES=1048576
         MEMORY_LIMIT="2G"
         CPU_QUOTA="200%"

