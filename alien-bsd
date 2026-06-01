@@ -1,0 +1,1206 @@
+#!/usr/bin/env python3
+"""
+alien-bsd — Universal package converter → apt (deb) and Gentoo (tbz2).
+
+Supported source formats:
+  FreeBSD  .pkg / .txz          (via +MANIFEST JSON)
+  pkgsrc   .tgz                 (via +CONTENTS text)
+  Debian   .deb                 (via DEBIAN/control)
+  RPM      .rpm                 (via rpm2cpio or cpio header)
+  Alpine   .apk                 (via .PKGINFO)
+  Arch     .pkg.tar.zst/.xz     (via .PKGINFO)
+  Python   .whl                 (via *.dist-info/METADATA)
+  npm      .tgz with package.json
+  Cargo    .crate (Rust)        (via Cargo.toml)
+
+Output formats:
+  --to-deb      Debian .deb  (dpkg-deb or ar fallback)
+  --to-gentoo   Gentoo binary .tbz2  (XPAK, emerge --usepkgonly)
+  --both        Both formats
+
+Usage:
+  alien-bsd [options] <package>
+
+Options:
+  --to-deb            Output .deb (default when neither flag given)
+  --to-gentoo         Output Gentoo .tbz2
+  --both              Both formats
+  --no-remap          Keep install prefix paths (don't remap to /usr)
+  --category CAT      Override Gentoo category (e.g. dev-libs)
+  --output-dir DIR    Output directory (default: .)
+  --dry-run           Print plan, write nothing
+  -v, --verbose       Verbose file listing
+"""
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import shutil
+import struct
+import subprocess
+import sys
+import tarfile
+import tempfile
+import time
+from pathlib import Path
+from typing import Optional
+
+# ── FreeBSD origin prefix → Gentoo category ─────────────────────────────────
+CATEGORY_MAP = {
+    "archivers":   "app-arch",
+    "audio":       "media-sound",
+    "cad":         "sci-electronics",
+    "comms":       "net-dialup",
+    "converters":  "app-text",
+    "databases":   "dev-db",
+    "deskutils":   "app-misc",
+    "devel":       "dev-libs",
+    "dns":         "net-dns",
+    "editors":     "app-editors",
+    "emulators":   "app-emulation",
+    "finance":     "app-office",
+    "fonts":       "media-fonts",
+    "ftp":         "net-ftp",
+    "games":       "games-misc",
+    "graphics":    "media-gfx",
+    "irc":         "net-irc",
+    "java":        "dev-java",
+    "lang":        "dev-lang",
+    "mail":        "mail-client",
+    "math":        "sci-mathematics",
+    "misc":        "app-misc",
+    "multimedia":  "media-video",
+    "net":         "net-misc",
+    "net-im":      "net-im",
+    "net-mgmt":    "net-analyzer",
+    "net-p2p":     "net-p2p",
+    "news":        "net-nntp",
+    "perl5":       "dev-perl",
+    "ports-mgmt":  "sys-apps",
+    "print":       "app-text",
+    "python":      "dev-python",
+    "ruby":        "dev-ruby",
+    "science":     "sci-misc",
+    "security":    "app-crypt",
+    "shells":      "app-shells",
+    "sysutils":    "sys-apps",
+    "textproc":    "app-text",
+    "www":         "www-apps",
+    "x11":         "x11-apps",
+    "x11-clocks":  "x11-misc",
+    "x11-drivers": "x11-drivers",
+    "x11-fonts":   "media-fonts",
+    "x11-themes":  "x11-themes",
+    "x11-toolkits":"x11-libs",
+    "x11-wm":      "x11-wm",
+}
+
+# ── FreeBSD pkg name → Gentoo atom (best-effort, strip version before lookup) ─
+DEP_MAP = {
+    "bzip2":            "app-arch/bzip2",
+    "curl":             "net-misc/curl",
+    "expat":            "dev-libs/expat",
+    "fontconfig":       "media-libs/fontconfig",
+    "freetype2":        "media-libs/freetype",
+    "gdbm":             "sys-libs/gdbm",
+    "gettext-runtime":  "dev-libs/gettext",
+    "glib2":            "dev-libs/glib",
+    "gnutls":           "net-libs/gnutls",
+    "harfbuzz":         "media-libs/harfbuzz",
+    "lcms2":            "media-libs/lcms",
+    "libbsd":           "dev-libs/libbsd",
+    "libffi":           "dev-libs/libffi",
+    "libiconv":         "dev-libs/libiconv",
+    "libidn2":          "net-libs/libidn2",
+    "libpng":           "media-libs/libpng",
+    "libxml2":          "dev-libs/libxml2",
+    "lz4":              "app-arch/lz4",
+    "ncurses":          "sys-libs/ncurses",
+    "oniguruma":        "dev-libs/oniguruma",
+    "openssl":          "dev-libs/openssl",
+    "pcre":             "dev-libs/libpcre",
+    "pcre2":            "dev-libs/libpcre2",
+    "popt":             "dev-libs/popt",
+    "python3":          "dev-lang/python:3",
+    "readline":         "sys-libs/readline",
+    "sqlite3":          "dev-db/sqlite",
+    "xz":               "app-arch/xz-utils",
+    "zlib":             "sys-libs/zlib",
+    "zstd":             "app-arch/zstd",
+    # Nim common deps
+    "openssl":          "dev-libs/openssl",
+    "zip":              "app-arch/zip",
+    "nimble":           "dev-nim/nimble",
+    # V common deps
+    "v":                "dev-lang/v",
+    "vls":              "dev-v/vls",
+}
+
+# ── FreeBSD arch tokens → deb / Gentoo arches ───────────────────────────────
+ARCH_DEB = {
+    "amd64": "amd64", "x86_64": "amd64",
+    "aarch64": "arm64", "armv7": "armhf", "armv6": "armel",
+    "i386": "i386", "i686": "i386",
+}
+ARCH_GENTOO = {
+    "amd64": "amd64", "x86_64": "amd64",
+    "aarch64": "arm64", "armv7": "arm", "armv6": "arm",
+    "i386": "x86", "i686": "x86",
+}
+CHOST_MAP = {
+    "amd64":  "x86_64-pc-linux-gnu",
+    "arm64":  "aarch64-unknown-linux-gnu",
+    "x86":    "i686-pc-linux-gnu",
+    "arm":    "armv7a-unknown-linux-gnueabihf",
+}
+
+# ── Path rewrites: BSD install prefix → Linux FHS ───────────────────────────
+# Ordered: longest match first.
+PATH_REWRITES = [
+    ("/usr/local/share/man/",  "/usr/share/man/"),
+    ("/usr/local/share/doc/",  "/usr/share/doc/"),
+    ("/usr/local/share/",      "/usr/share/"),
+    ("/usr/local/include/",    "/usr/include/"),
+    ("/usr/local/lib/",        "/usr/lib/"),
+    ("/usr/local/lib64/",      "/usr/lib64/"),
+    ("/usr/local/libexec/",    "/usr/libexec/"),
+    ("/usr/local/sbin/",       "/usr/sbin/"),
+    ("/usr/local/bin/",        "/usr/bin/"),
+    ("/usr/local/etc/",        "/etc/"),
+    ("/usr/local/var/",        "/var/"),
+    # pkgsrc default prefix
+    ("/opt/pkg/share/man/",    "/usr/share/man/"),
+    ("/opt/pkg/share/",        "/usr/share/"),
+    ("/opt/pkg/include/",      "/usr/include/"),
+    ("/opt/pkg/lib/",          "/usr/lib/"),
+    ("/opt/pkg/bin/",          "/usr/bin/"),
+    ("/opt/pkg/sbin/",         "/usr/sbin/"),
+    ("/opt/pkg/etc/",          "/etc/"),
+    # npm: package root → node_modules
+    ("/package/",              "/usr/lib/node_modules/"),
+    # Arch/Alpine: already FHS-rooted — no remap needed; handled by removing meta files
+]
+
+
+def rewrite_path(path: str, remap: bool) -> str:
+    if not remap:
+        return path
+    for src, dst in PATH_REWRITES:
+        if path.startswith(src):
+            return dst + path[len(src):]
+    return path
+
+
+def _detect_arch(arch_str: str) -> tuple[str, str]:
+    """Return (deb_arch, gentoo_arch) from FreeBSD arch string."""
+    for token in re.split(r"[:/]", arch_str):
+        if token in ARCH_DEB:
+            return ARCH_DEB[token], ARCH_GENTOO[token]
+    # default
+    return "amd64", "amd64"
+
+
+# ── Ecosystem detection ──────────────────────────────────────────────────────
+
+def detect_ecosystem(pkg_path: Path) -> str:
+    """Return ecosystem tag from filename and magic bytes."""
+    name = pkg_path.name.lower()
+    # Arch: name.pkg.tar.zst / .pkg.tar.xz / .pkg.tar.gz
+    if re.search(r'\.pkg\.tar\.(zst|xz|gz|bz2)$', name):
+        return "arch"
+    suffix = pkg_path.suffix.lower()
+    stem_lower = pkg_path.stem.lower()
+    if suffix == ".deb":
+        return "deb"
+    if suffix == ".rpm":
+        return "rpm"
+    if suffix == ".whl":
+        return "wheel"
+    if suffix == ".crate":
+        return "cargo"
+    if suffix == ".apk" and not name.endswith(".pkg.tar.apk"):
+        return "apk"
+    # npm tarballs are .tgz but contain package/package.json
+    if suffix in (".tgz", ".tar.gz"):
+        # peek inside without full extract
+        try:
+            with tarfile.open(pkg_path, "r:*") as tf:
+                names = tf.getnames()
+            if any(n.endswith("package.json") and n.count("/") <= 1 for n in names):
+                return "npm"
+        except Exception:
+            pass
+    if suffix in (".pkg", ".txz"):
+        return "freebsd"
+    if suffix in (".tgz", ".tbz"):
+        return "pkgsrc"
+    if suffix == ".nimble" or name.endswith(".nimble"):
+        return "nimble"
+    # V package: v.mod file or directory with v.mod
+    if name == "v.mod" or (pkg_path.is_dir() and (pkg_path / "v.mod").exists()):
+        return "vpkg"
+    # Also detect .nimble inside a directory
+    if pkg_path.is_dir() and list(pkg_path.glob("*.nimble")):
+        return "nimble"
+    return "unknown"
+
+
+# ── Multi-ecosystem parsers ───────────────────────────────────────────────────
+
+def _parse_deb(pkg_path: Path, files_dir: Path, verbose: bool) -> tuple[dict, dict]:
+    """Extract Debian .deb → (manifest, scripts)."""
+    import io
+    # .deb is an ar archive: debian-binary, control.tar.*, data.tar.*
+    # Try dpkg-deb first
+    if shutil.which("dpkg-deb"):
+        ctrl_out = subprocess.run(
+            ["dpkg-deb", "--field", str(pkg_path)],
+            capture_output=True, text=True,
+        )
+        ctrl_text = ctrl_out.stdout
+        subprocess.run(
+            ["dpkg-deb", "--extract", str(pkg_path), str(files_dir)],
+            capture_output=not verbose, check=True,
+        )
+    else:
+        # ar fallback: unpack manually
+        ar_dir = files_dir.parent / "_ar"
+        ar_dir.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["ar", "x", str(pkg_path)], cwd=str(ar_dir),
+                       capture_output=not verbose, check=True)
+        # extract data.tar.*
+        data_tars = sorted(ar_dir.glob("data.tar.*"))
+        if data_tars:
+            with tarfile.open(data_tars[0], "r:*") as tf:
+                tf.extractall(files_dir)
+        # read control
+        ctrl_tars = sorted(ar_dir.glob("control.tar.*"))
+        ctrl_text = ""
+        if ctrl_tars:
+            ctrl_dir = ar_dir / "ctrl"
+            ctrl_dir.mkdir()
+            with tarfile.open(ctrl_tars[0], "r:*") as tf:
+                tf.extractall(ctrl_dir)
+            ctrl_file = ctrl_dir / "control"
+            if ctrl_file.exists():
+                ctrl_text = ctrl_file.read_text(errors="replace")
+        shutil.rmtree(ar_dir, ignore_errors=True)
+
+    # Parse control fields
+    manifest: dict = {"deps": {}}
+    for line in ctrl_text.splitlines():
+        if ": " not in line:
+            continue
+        key, _, val = line.partition(": ")
+        key = key.strip().lower()
+        if key == "package":
+            manifest["name"] = val.strip()
+        elif key == "version":
+            manifest["version"] = val.strip()
+        elif key == "description":
+            manifest["comment"] = val.strip()
+        elif key == "homepage":
+            manifest["www"] = val.strip()
+        elif key == "maintainer":
+            manifest["maintainer"] = val.strip()
+        elif key == "depends":
+            for dep in re.split(r",\s*", val):
+                dep_name = re.sub(r"\s*[\(|].*", "", dep).strip()
+                if dep_name:
+                    manifest["deps"][dep_name] = {}
+        elif key == "section":
+            manifest["origin"] = val.strip() + "/unknown"
+
+    manifest.setdefault("name", pkg_path.stem)
+    manifest.setdefault("version", "0")
+    manifest["alien_ecosystem"] = "deb"
+
+    # Extract install scripts from DEBIAN/ dir if present
+    scripts: dict = {}
+    debian_dir = files_dir / "DEBIAN"
+    if debian_dir.exists():
+        for sname in ("preinst", "postinst", "prerm", "postrm"):
+            sp = debian_dir / sname
+            if sp.exists():
+                scripts["+" + sname.upper().replace("INST", "_INSTALL").replace("RM", "_DEINSTALL")] = sp.read_text(errors="replace")
+        shutil.rmtree(debian_dir, ignore_errors=True)
+
+    return manifest, scripts
+
+
+def _parse_rpm(pkg_path: Path, files_dir: Path, verbose: bool) -> tuple[dict, dict]:
+    """Extract RPM via rpm2cpio+cpio or 7z fallback → (manifest, scripts)."""
+    files_dir.mkdir(parents=True, exist_ok=True)
+    manifest: dict = {"deps": {}, "alien_ecosystem": "rpm"}
+
+    # Try rpm2cpio | cpio
+    extracted = False
+    if shutil.which("rpm2cpio") and shutil.which("cpio"):
+        r2c = subprocess.run(["rpm2cpio", str(pkg_path)], capture_output=True)
+        if r2c.returncode == 0:
+            cpio = subprocess.run(
+                ["cpio", "-idm", "--quiet"],
+                input=r2c.stdout, cwd=str(files_dir), capture_output=not verbose,
+            )
+            extracted = cpio.returncode == 0
+
+    if not extracted and shutil.which("7z"):
+        subprocess.run(["7z", "x", "-y", str(pkg_path)], cwd=str(files_dir),
+                       capture_output=not verbose)
+        extracted = True
+
+    if not extracted:
+        raise RuntimeError(f"Cannot extract RPM {pkg_path.name}: install rpm2cpio+cpio or 7z")
+
+    # Read RPM metadata via rpm --query if available
+    if shutil.which("rpm"):
+        qfmt = "%{NAME}|%{VERSION}-%{RELEASE}|%{SUMMARY}|%{URL}|%{PACKAGER}|%{GROUP}"
+        rq = subprocess.run(
+            ["rpm", "-qp", "--queryformat", qfmt, str(pkg_path)],
+            capture_output=True, text=True,
+        )
+        if rq.returncode == 0:
+            parts = rq.stdout.strip().split("|")
+            if len(parts) >= 4:
+                manifest["name"]     = parts[0]
+                manifest["version"]  = parts[1]
+                manifest["comment"]  = parts[2]
+                manifest["www"]      = parts[3]
+                manifest["maintainer"] = parts[4] if len(parts) > 4 else ""
+                manifest["origin"]   = (parts[5] if len(parts) > 5 else "").lower().replace(" ", "-") + "/unknown"
+        # Deps
+        rdep = subprocess.run(
+            ["rpm", "-qp", "--requires", str(pkg_path)],
+            capture_output=True, text=True,
+        )
+        for line in rdep.stdout.splitlines():
+            dep = line.strip().split()[0]
+            if dep and not dep.startswith("/") and not dep.startswith("rpmlib"):
+                manifest["deps"][dep] = {}
+
+    manifest.setdefault("name", pkg_path.stem.split(".")[0])
+    manifest.setdefault("version", "0")
+    return manifest, {}
+
+
+def _parse_apk(pkg_path: Path, files_dir: Path, verbose: bool) -> tuple[dict, dict]:
+    """Extract Alpine .apk (gzip tarball with .PKGINFO) → (manifest, scripts)."""
+    files_dir.mkdir(parents=True, exist_ok=True)
+    # APK is a gzip tarball (may have a signature prepended — try r:gz directly)
+    try:
+        with tarfile.open(pkg_path, "r:gz") as tf:
+            tf.extractall(files_dir)
+    except Exception:
+        with tarfile.open(pkg_path, "r:*") as tf:
+            tf.extractall(files_dir)
+
+    manifest: dict = {"deps": {}, "alien_ecosystem": "apk"}
+    pkginfo = files_dir / ".PKGINFO"
+    if pkginfo.exists():
+        for line in pkginfo.read_text(errors="replace").splitlines():
+            if " = " not in line or line.startswith("#"):
+                continue
+            k, _, v = line.partition(" = ")
+            k, v = k.strip(), v.strip()
+            if k == "pkgname":    manifest["name"] = v
+            elif k == "pkgver":   manifest["version"] = v
+            elif k == "pkgdesc":  manifest["comment"] = v
+            elif k == "url":      manifest["www"] = v
+            elif k == "packager": manifest["maintainer"] = v
+            elif k == "origin":   manifest["origin"] = f"alpine/{v}"
+            elif k == "depend" and not v.startswith("!"):
+                manifest["deps"][re.sub(r"[>=<].*", "", v)] = {}
+        pkginfo.unlink(missing_ok=True)
+
+    manifest.setdefault("name", pkg_path.stem.split("-")[0])
+    manifest.setdefault("version", "0")
+    return manifest, {}
+
+
+def _parse_arch(pkg_path: Path, files_dir: Path, verbose: bool) -> tuple[dict, dict]:
+    """Extract Arch .pkg.tar.zst → (manifest, scripts)."""
+    files_dir.mkdir(parents=True, exist_ok=True)
+
+    # zstd decompress if needed
+    name_lower = pkg_path.name.lower()
+    if name_lower.endswith(".zst"):
+        if shutil.which("zstd"):
+            raw = subprocess.run(["zstd", "-d", "-c", str(pkg_path)],
+                                 capture_output=True)
+            import io
+            with tarfile.open(fileobj=io.BytesIO(raw.stdout)) as tf:
+                tf.extractall(files_dir)
+        else:
+            raise RuntimeError("zstd not found — install zstd to handle Arch packages")
+    else:
+        with tarfile.open(pkg_path, "r:*") as tf:
+            tf.extractall(files_dir)
+
+    manifest: dict = {"deps": {}, "alien_ecosystem": "arch"}
+    pkginfo = files_dir / ".PKGINFO"
+    if pkginfo.exists():
+        for line in pkginfo.read_text(errors="replace").splitlines():
+            if " = " not in line or line.startswith("#"):
+                continue
+            k, _, v = line.partition(" = ")
+            k, v = k.strip(), v.strip()
+            if k == "pkgname":    manifest["name"] = v
+            elif k == "pkgver":   manifest["version"] = v
+            elif k == "pkgdesc":  manifest["comment"] = v
+            elif k == "url":      manifest["www"] = v
+            elif k == "packager": manifest["maintainer"] = v
+            elif k == "depend":   manifest["deps"][re.sub(r"[>=<].*","",v)] = {}
+        pkginfo.unlink(missing_ok=True)
+    for mf in (".BUILDINFO", ".CHANGELOG", ".MTREE"):
+        (files_dir / mf).unlink(missing_ok=True)
+
+    manifest.setdefault("name", re.sub(r"-\d.*", "", pkg_path.name))
+    manifest.setdefault("version", "0")
+    return manifest, {}
+
+
+def _parse_wheel(pkg_path: Path, files_dir: Path, verbose: bool) -> tuple[dict, dict]:
+    """Extract Python wheel (.whl is a zip) → (manifest, scripts)."""
+    import zipfile
+    files_dir.mkdir(parents=True, exist_ok=True)
+    manifest: dict = {"deps": {}, "alien_ecosystem": "wheel"}
+
+    with zipfile.ZipFile(pkg_path) as zf:
+        zf.extractall(files_dir)
+
+    # Find *.dist-info/METADATA
+    for meta_path in files_dir.rglob("*/METADATA"):
+        if ".dist-info" in str(meta_path):
+            for line in meta_path.read_text(errors="replace").splitlines():
+                if ": " not in line:
+                    break  # end of RFC 822 headers
+                k, _, v = line.partition(": ")
+                k, v = k.strip(), v.strip()
+                if k == "Name":          manifest["name"] = v.replace("-", "_").lower()
+                elif k == "Version":     manifest["version"] = v
+                elif k == "Summary":     manifest["comment"] = v
+                elif k == "Home-page":   manifest["www"] = v
+                elif k == "Author-email":manifest["maintainer"] = v
+                elif k == "License":     manifest["license"] = [v]
+                elif k == "Requires-Dist":
+                    dep = re.sub(r"\s*[\[;(><=!].*", "", v).strip().replace("-", "_").lower()
+                    if dep:
+                        manifest["deps"][dep] = {}
+            manifest.setdefault("origin", "python/" + manifest.get("name", "unknown"))
+            break
+
+    # Remap wheel layout: name-ver.dist-info/ and name/ → /usr/lib/python3/dist-packages/
+    manifest.setdefault("name", pkg_path.stem.split("-")[0].lower())
+    manifest.setdefault("version", "0")
+    manifest.setdefault("origin", f"python/{manifest['name']}")
+    if not manifest.get("category_override"):
+        manifest["category_override"] = "dev-python"
+    return manifest, {}
+
+
+def _parse_npm(pkg_path: Path, files_dir: Path, verbose: bool) -> tuple[dict, dict]:
+    """Extract npm tarball → (manifest, scripts)."""
+    files_dir.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(pkg_path, "r:*") as tf:
+        tf.extractall(files_dir)
+
+    manifest: dict = {"deps": {}, "alien_ecosystem": "npm"}
+    # npm tarballs unpack to package/
+    pkg_json_candidates = list(files_dir.rglob("package.json"))
+    pkg_json_candidates = [p for p in pkg_json_candidates if p.parent.name == "package" or p.parent == files_dir]
+    if pkg_json_candidates:
+        data = json.loads(pkg_json_candidates[0].read_text(errors="replace"))
+        manifest["name"] = re.sub(r"^@[^/]+/", "", data.get("name", pkg_path.stem)).replace("/", "-")
+        manifest["version"] = data.get("version", "0")
+        manifest["comment"] = data.get("description", "")
+        manifest["www"] = data.get("homepage", "")
+        manifest["license"] = [data.get("license", "unknown")]
+        manifest["maintainer"] = str(data.get("author", ""))
+        for dep in (data.get("dependencies") or {}).keys():
+            manifest["deps"][dep] = {}
+
+    manifest.setdefault("name", pkg_path.stem)
+    manifest.setdefault("version", "0")
+    manifest.setdefault("origin", f"nodejs/{manifest['name']}")
+    manifest["category_override"] = "dev-nodejs"
+    return manifest, {}
+
+
+def _parse_cargo(pkg_path: Path, files_dir: Path, verbose: bool) -> tuple[dict, dict]:
+    """Extract Cargo .crate (gzip tarball) → (manifest, scripts)."""
+    files_dir.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(pkg_path, "r:gz") as tf:
+        tf.extractall(files_dir)
+
+    manifest: dict = {"deps": {}, "alien_ecosystem": "cargo"}
+    cargo_tomls = list(files_dir.rglob("Cargo.toml"))
+    if cargo_tomls:
+        text = cargo_tomls[0].read_text(errors="replace")
+        # Minimal TOML parse (no external deps)
+        in_package = False
+        in_deps = False
+        for line in text.splitlines():
+            line = line.strip()
+            if line == "[package]":
+                in_package, in_deps = True, False
+            elif line.startswith("["):
+                in_package = False
+                in_deps = line in ("[dependencies]", "[dev-dependencies]")
+            elif in_package:
+                m = re.match(r'^(\w+)\s*=\s*"([^"]+)"', line)
+                if m:
+                    k, v = m.group(1), m.group(2)
+                    if k == "name":        manifest["name"] = v
+                    elif k == "version":   manifest["version"] = v
+                    elif k == "description": manifest["comment"] = v
+                    elif k == "homepage":  manifest["www"] = v
+                    elif k == "license":   manifest["license"] = [v]
+            elif in_deps:
+                m = re.match(r'^(\w[\w-]*)\s*=', line)
+                if m:
+                    manifest["deps"][m.group(1)] = {}
+
+    manifest.setdefault("name", pkg_path.stem.rsplit("-", 1)[0])
+    manifest.setdefault("version", "0")
+    manifest.setdefault("origin", f"cargo/{manifest['name']}")
+    manifest["category_override"] = "dev-rust"
+    return manifest, {}
+
+
+def _parse_nimble(pkg_path: Path, files_dir: Path, verbose: bool) -> tuple[dict, dict]:
+    """Parse Nim .nimble package descriptor → (manifest, scripts)."""
+    files_dir.mkdir(parents=True, exist_ok=True)
+    manifest: dict = {"deps": {}, "alien_ecosystem": "nimble"}
+
+    # pkg_path may be the .nimble file itself or a dir containing one
+    if pkg_path.is_dir():
+        nimble_files = list(pkg_path.glob("*.nimble"))
+        nimble_file = nimble_files[0] if nimble_files else None
+        # Copy entire directory as file tree
+        shutil.copytree(str(pkg_path), str(files_dir), dirs_exist_ok=True)
+    else:
+        nimble_file = pkg_path
+        files_dir.mkdir(parents=True, exist_ok=True)
+
+    if nimble_file and nimble_file.exists():
+        text = nimble_file.read_text(errors="replace")
+        for line in text.splitlines():
+            line = line.strip()
+            m = re.match(r'^(packageName|version|author|description|license|srcDir|bin)\s*=\s*"([^"]+)"', line)
+            if m:
+                k, v = m.group(1), m.group(2)
+                if k in ("packageName", "bin"):  manifest["name"] = v
+                elif k == "version":             manifest["version"] = v
+                elif k == "description":         manifest["comment"] = v
+                elif k == "license":             manifest["license"] = [v]
+            # requires "pkgname >= version"
+            req = re.match(r'requires\s+"([^">=\s]+)', line)
+            if req:
+                manifest["deps"][req.group(1)] = {}
+
+    manifest.setdefault("name", pkg_path.stem if pkg_path.is_file() else pkg_path.name)
+    manifest.setdefault("version", "0")
+    manifest.setdefault("origin", f"nimble/{manifest['name']}")
+    manifest["category_override"] = "dev-nim"
+    return manifest, {}
+
+
+def _parse_vpkg(pkg_path: Path, files_dir: Path, verbose: bool) -> tuple[dict, dict]:
+    """Parse V v.mod package descriptor → (manifest, scripts)."""
+    files_dir.mkdir(parents=True, exist_ok=True)
+    manifest: dict = {"deps": {}, "alien_ecosystem": "vpkg"}
+
+    vmod_file = pkg_path if pkg_path.name == "v.mod" else pkg_path / "v.mod"
+    if pkg_path.is_dir():
+        shutil.copytree(str(pkg_path), str(files_dir), dirs_exist_ok=True)
+    else:
+        shutil.copy2(str(pkg_path), str(files_dir))
+
+    if vmod_file.exists():
+        text = vmod_file.read_text(errors="replace")
+        for line in text.splitlines():
+            line = line.strip()
+            # v.mod format: Module { name: 'foo', version: '1.0.0', ... }
+            m = re.search(r"name:\s*'([^']+)'", line)
+            if m: manifest["name"] = m.group(1)
+            m = re.search(r"version:\s*'([^']+)'", line)
+            if m: manifest["version"] = m.group(1)
+            m = re.search(r"description:\s*'([^']+)'", line)
+            if m: manifest["comment"] = m.group(1)
+            # deps: [ 'pkg1', 'pkg2' ]
+            for dep in re.findall(r"'([a-zA-Z][a-zA-Z0-9_-]+)'", line):
+                if dep not in (manifest.get("name", ""), manifest.get("version", "")):
+                    manifest["deps"][dep] = {}
+
+    manifest.setdefault("name", pkg_path.parent.name if pkg_path.name == "v.mod" else pkg_path.name)
+    manifest.setdefault("version", "0")
+    manifest.setdefault("origin", f"vpkg/{manifest['name']}")
+    manifest["category_override"] = "dev-v"
+    return manifest, {}
+
+
+# ── Package parsing ──────────────────────────────────────────────────────────
+
+def _is_meta_path(rel: str) -> bool:
+    """True for FreeBSD pkg metadata files (+MANIFEST, etc.)."""
+    name = Path(rel).name
+    return name.startswith("+") or name.startswith(".")
+
+
+def parse_pkg(pkg_path: Path, workdir: Path, verbose: bool) -> dict:
+    """
+    Universal package parser. Detects ecosystem and dispatches to the
+    correct backend. Returns:
+      manifest  - unified dict (name, version, comment, deps, origin, ...)
+      files_dir - Path to extracted file tree (ready to stage)
+      scripts   - dict of install script name → text
+    """
+    files_dir = workdir / "extracted"
+    files_dir.mkdir(parents=True)
+
+    eco = detect_ecosystem(pkg_path)
+    if verbose:
+        print(f"  ecosystem: {eco}  ({pkg_path.name})")
+
+    scripts: dict = {}
+
+    if eco == "deb":
+        manifest, scripts = _parse_deb(pkg_path, files_dir, verbose)
+
+    elif eco == "rpm":
+        manifest, scripts = _parse_rpm(pkg_path, files_dir, verbose)
+
+    elif eco == "apk":
+        manifest, scripts = _parse_apk(pkg_path, files_dir, verbose)
+
+    elif eco == "arch":
+        manifest, scripts = _parse_arch(pkg_path, files_dir, verbose)
+
+    elif eco == "wheel":
+        manifest, scripts = _parse_wheel(pkg_path, files_dir, verbose)
+
+    elif eco == "npm":
+        manifest, scripts = _parse_npm(pkg_path, files_dir, verbose)
+
+    elif eco == "cargo":
+        manifest, scripts = _parse_cargo(pkg_path, files_dir, verbose)
+
+    elif eco == "nimble":
+        manifest, scripts = _parse_nimble(pkg_path, files_dir, verbose)
+
+    elif eco == "vpkg":
+        manifest, scripts = _parse_vpkg(pkg_path, files_dir, verbose)
+
+    else:
+        # FreeBSD pkg / pkgsrc / bare tarball (original path)
+        suffix = pkg_path.suffix.lower()
+        mode = "r:xz" if suffix in (".pkg", ".txz") else "r:*"
+        with tarfile.open(pkg_path, mode) as tf:
+            tf.extractall(files_dir)
+
+        manifest_path = files_dir / "+MANIFEST"
+        compact_path  = files_dir / "+COMPACT_MANIFEST"
+        contents_path = files_dir / "+CONTENTS"
+
+        if manifest_path.exists():
+            with open(manifest_path) as f:
+                manifest = json.load(f)
+        elif compact_path.exists():
+            with open(compact_path) as f:
+                manifest = json.load(f)
+        elif contents_path.exists():
+            manifest = _parse_pkgsrc_contents(contents_path, pkg_path)
+        else:
+            manifest = _synthesise_manifest(pkg_path)
+        manifest.setdefault("alien_ecosystem", eco)
+
+        for sname in ("+PRE_INSTALL", "+POST_INSTALL", "+PRE_DEINSTALL",
+                      "+POST_DEINSTALL", "+INSTALL", "+DEINSTALL"):
+            sp = files_dir / sname
+            if sp.exists():
+                scripts[sname] = sp.read_text(errors="replace")
+
+    # Propagate category override from ecosystem parsers
+    if "category_override" in manifest:
+        manifest.setdefault("_category_override", manifest.pop("category_override"))
+
+    return {"manifest": manifest, "files_dir": files_dir, "scripts": scripts}
+
+
+def _parse_pkgsrc_contents(contents_path: Path, pkg_path: Path) -> dict:
+    """Minimal manifest from pkgsrc +CONTENTS."""
+    manifest: dict = {"name": pkg_path.stem, "version": "0", "deps": {}}
+    for line in contents_path.read_text(errors="replace").splitlines():
+        if line.startswith("@name "):
+            manifest["name"] = line.split(None, 1)[1]
+        elif line.startswith("@comment "):
+            rest = line.split(None, 1)[1]
+            if rest.startswith("DESC="):
+                manifest["comment"] = rest[5:]
+            elif rest.startswith("ORIGIN="):
+                manifest["origin"] = rest[7:]
+        elif line.startswith("@pkgdep "):
+            dep = line.split(None, 1)[1]
+            manifest.setdefault("deps", {})[dep] = {}
+    return manifest
+
+
+def _synthesise_manifest(pkg_path: Path) -> dict:
+    """Guess name/version from filename like libfoo-1.2.3.pkg."""
+    stem = pkg_path.stem
+    m = re.match(r"^(.+?)-(\d[\d.]+.*)$", stem)
+    if m:
+        return {"name": m.group(1), "version": m.group(2), "deps": {}}
+    return {"name": stem, "version": "0", "deps": {}}
+
+
+def collect_files(files_dir: Path, remap: bool) -> list[tuple[Path, str]]:
+    """Return [(src_path, dest_abs_path)] for all real files (skip +META)."""
+    result = []
+    for p in sorted(files_dir.rglob("*")):
+        rel = "/" + p.relative_to(files_dir).as_posix()
+        if _is_meta_path(rel):
+            continue
+        mapped = rewrite_path(rel, remap)
+        result.append((p, mapped))
+    return result
+
+
+# ── Dependency translation ───────────────────────────────────────────────────
+
+def _dep_base(name: str) -> str:
+    """Strip version suffix from dep name: 'openssl-3.1.0' → 'openssl'."""
+    return re.sub(r"-[\d].*$", "", name)
+
+
+def deps_to_gentoo(deps: dict) -> str:
+    lines = []
+    for dep_name in (deps or {}):
+        base = _dep_base(dep_name)
+        atom = DEP_MAP.get(base)
+        if atom:
+            lines.append(atom)
+        else:
+            lines.append(f"# unmapped: {dep_name}")
+    return "\n".join(lines)
+
+
+def deps_to_deb(deps: dict) -> str:
+    pkgs = []
+    for dep_name in (deps or {}):
+        base = _dep_base(dep_name)
+        atom = DEP_MAP.get(base, base)
+        pkgs.append(atom.split("/")[-1].split(":")[0])
+    return ", ".join(pkgs)
+
+
+def guess_category(origin: str, manifest: Optional[dict] = None) -> str:
+    if manifest and manifest.get("_category_override"):
+        return manifest["_category_override"]
+    prefix = origin.split("/")[0] if "/" in origin else ""
+    return CATEGORY_MAP.get(prefix, "app-misc")
+
+
+# ── .deb builder ─────────────────────────────────────────────────────────────
+
+def build_deb(manifest: dict, scripts: dict, files_dir: Path,
+              workdir: Path, output_dir: Path, remap: bool, verbose: bool) -> Path:
+
+    name    = manifest.get("name", "unknown")
+    ver_raw = manifest.get("version", "0")
+    # Sanitise for deb: only [0-9a-zA-Z.+~:-]
+    version = re.sub(r"[^0-9a-zA-Z.+~:-]", ".", ver_raw).strip(".")
+    arch_str = str(manifest.get("arch", "amd64"))
+    deb_arch, _ = _detect_arch(arch_str)
+
+    comment  = manifest.get("comment", "Converted from FreeBSD package")
+    long_desc = manifest.get("desc", comment)
+    www      = manifest.get("www", "")
+    maint    = manifest.get("maintainer", "alien-bsd <unknown@unknown>")
+    deps     = manifest.get("deps", {})
+
+    pkg_dir  = workdir / "deb" / f"{name}_{version}_{deb_arch}"
+    deb_dir  = pkg_dir / "DEBIAN"
+    deb_dir.mkdir(parents=True)
+
+    # Stage files
+    for src, dest in collect_files(files_dir, remap):
+        if src.is_dir():
+            continue
+        tgt = pkg_dir / dest.lstrip("/")
+        tgt.parent.mkdir(parents=True, exist_ok=True)
+        if src.is_symlink():
+            link = os.readlink(src)
+            if tgt.exists() or tgt.is_symlink():
+                tgt.unlink()
+            os.symlink(link, tgt)
+        else:
+            shutil.copy2(src, tgt)
+            if verbose:
+                print(f"    + {dest}")
+
+    # DEBIAN/control
+    long_fmt = long_desc.replace("\n", "\n ").strip()
+    control  = (
+        f"Package: {name}\n"
+        f"Version: {version}\n"
+        f"Architecture: {deb_arch}\n"
+        f"Maintainer: {maint}\n"
+        f"Description: {comment}\n"
+        f" {long_fmt}\n"
+    )
+    if www:
+        control += f"Homepage: {www}\n"
+    dep_str = deps_to_deb(deps)
+    if dep_str:
+        control += f"Depends: {dep_str}\n"
+    control += "Section: misc\nPriority: optional\n"
+    (deb_dir / "control").write_text(control)
+
+    # Install scripts
+    script_map = {
+        "+PRE_INSTALL":    "preinst",
+        "+INSTALL":        "preinst",
+        "+POST_INSTALL":   "postinst",
+        "+PRE_DEINSTALL":  "prerm",
+        "+POST_DEINSTALL": "postrm",
+        "+DEINSTALL":      "prerm",
+    }
+    for bsd, deb in script_map.items():
+        if bsd in scripts and not (deb_dir / deb).exists():
+            sp = deb_dir / deb
+            sp.write_text("#!/bin/sh\nset -e\n" + scripts[bsd])
+            sp.chmod(0o755)
+
+    deb_out = output_dir / f"{name}_{version}_{deb_arch}.deb"
+
+    # Try dpkg-deb first, fall back to ar+tar
+    r = subprocess.run(
+        ["dpkg-deb", "--build", "--root-owner-group", str(pkg_dir), str(deb_out)],
+        capture_output=True,
+    )
+    if r.returncode != 0:
+        _build_deb_ar(pkg_dir, deb_dir, deb_out, verbose)
+
+    return deb_out
+
+
+def _build_deb_ar(pkg_dir: Path, deb_dir: Path, deb_out: Path, verbose: bool) -> None:
+    """Build .deb using ar + tar when dpkg-deb is unavailable."""
+    tmp = deb_out.parent / "_ar_work"
+    tmp.mkdir(parents=True, exist_ok=True)
+
+    dbin = tmp / "debian-binary"
+    dbin.write_text("2.0\n")
+
+    ctrl_tar = tmp / "control.tar.gz"
+    with tarfile.open(ctrl_tar, "w:gz") as tf:
+        for f in sorted(deb_dir.iterdir()):
+            tf.add(str(f), arcname=f"./{f.name}")
+
+    data_tar = tmp / "data.tar.gz"
+    with tarfile.open(data_tar, "w:gz") as tf:
+        for p in sorted(pkg_dir.rglob("*")):
+            if deb_dir in p.parents or p == deb_dir:
+                continue
+            arc = "./" + p.relative_to(pkg_dir).as_posix()
+            tf.add(str(p), arcname=arc, recursive=False)
+
+    subprocess.run(
+        ["ar", "r", str(deb_out), str(dbin), str(ctrl_tar), str(data_tar)],
+        check=True, capture_output=not verbose,
+    )
+    shutil.rmtree(tmp, ignore_errors=True)
+
+
+# ── Gentoo .tbz2 / XPAK builder ─────────────────────────────────────────────
+
+def build_xpak(meta: dict) -> bytes:
+    """
+    Encode a dict as an XPAK block.
+
+    Layout:
+      b"XPAKBEGIN"            9 bytes
+      index_len (>I)          4 bytes
+      data_len  (>I)          4 bytes
+      [name_len(>I) name data_offset(>I) data_size(>I)]...   index
+      [utf-8 values concatenated]                             data
+      b"XPAKSTOP"             8 bytes
+    """
+    index = b""
+    data  = b""
+    off   = 0
+    for key, val in meta.items():
+        vb = (val or "").encode("utf-8") if isinstance(val, str) else (val or b"")
+        kb = key.encode("utf-8")
+        index += struct.pack(">I", len(kb)) + kb + struct.pack(">II", off, len(vb))
+        data  += vb
+        off   += len(vb)
+    return (
+        b"XPAKBEGIN"
+        + struct.pack(">I", len(index))
+        + struct.pack(">I", len(data))
+        + index + data
+        + b"XPAKSTOP"
+    )
+
+
+def _append_xpak(tbz2: Path, xpak: bytes) -> None:
+    """
+    Append XPAK to a .tbz2 file in Portage's expected layout:
+      [bz2 tarball][xpak block][4-byte xpak size (>I)][b"XPAKSTOP"]
+    """
+    with open(tbz2, "ab") as f:
+        f.write(xpak)
+        f.write(struct.pack(">I", len(xpak)))
+        f.write(b"XPAKSTOP")
+
+
+def _build_contents(files_dir: Path, remap: bool) -> str:
+    """
+    Gentoo CONTENTS format:
+      dir /usr/lib
+      obj /usr/lib/libfoo.so.1 <md5> <mtime>
+      sym /usr/lib/libfoo.so -> libfoo.so.1 <mtime>
+    """
+    lines  = []
+    seen   = set()
+    mtime  = int(time.time())
+
+    for src, dest in collect_files(files_dir, remap):
+        parent = str(Path(dest).parent)
+        if parent != "/" and parent not in seen:
+            lines.append(f"dir {parent}")
+            seen.add(parent)
+
+        if src.is_symlink():
+            lines.append(f"sym {dest} -> {os.readlink(src)} {mtime}")
+        elif src.is_dir():
+            if dest not in seen:
+                lines.append(f"dir {dest}")
+                seen.add(dest)
+        else:
+            md5 = hashlib.md5(src.read_bytes()).hexdigest()
+            lines.append(f"obj {dest} {md5} {mtime}")
+
+    return "\n".join(lines)
+
+
+def _clean_version_gentoo(raw: str) -> str:
+    """Strip non-Portage characters from version string."""
+    v = re.sub(r"[^0-9a-zA-Z._-]", ".", raw)
+    m = re.match(r"([\d]+(?:\.[\d]+)*)", v)
+    return m.group(1) if m else "0"
+
+
+def build_gentoo_tbz2(manifest: dict, scripts: dict, files_dir: Path,
+                      workdir: Path, output_dir: Path, remap: bool,
+                      category: Optional[str], verbose: bool) -> Path:
+
+    name     = manifest.get("name", "unknown")
+    pv       = _clean_version_gentoo(manifest.get("version", "0"))
+    pf       = f"{name}-{pv}"
+    origin   = manifest.get("origin", "misc/unknown")
+    cat      = category or guess_category(origin, manifest)
+    arch_str = str(manifest.get("arch", "amd64"))
+    _, gentoo_arch = _detect_arch(arch_str)
+    chost    = CHOST_MAP.get(gentoo_arch, "x86_64-pc-linux-gnu")
+
+    comment  = manifest.get("comment", "BSD package converted by alien-bsd")
+    www      = manifest.get("www", "")
+    deps     = manifest.get("deps", {})
+    lic_raw  = manifest.get("license", [])
+    lic      = " ".join(lic_raw) if isinstance(lic_raw, list) else (lic_raw or "unknown")
+
+    # Stage files
+    staging = workdir / "gentoo_stage"
+    staging.mkdir(parents=True)
+    for src, dest in collect_files(files_dir, remap):
+        if src.is_dir():
+            continue
+        tgt = staging / dest.lstrip("/")
+        tgt.parent.mkdir(parents=True, exist_ok=True)
+        if src.is_symlink():
+            link = os.readlink(src)
+            if tgt.exists() or tgt.is_symlink():
+                tgt.unlink()
+            os.symlink(link, tgt)
+        else:
+            shutil.copy2(src, tgt)
+            if verbose:
+                print(f"    + {dest}")
+
+    tbz2_out = output_dir / f"{pf}.tbz2"
+
+    # Write bzip2 tarball
+    with tarfile.open(tbz2_out, "w:bz2") as tf:
+        for p in sorted(staging.rglob("*")):
+            arc = "/" + p.relative_to(staging).as_posix()
+            tf.add(str(p), arcname=arc, recursive=False)
+
+    # Build and append XPAK
+    xpak_meta = {
+        "CATEGORY":        cat,
+        "PF":              pf,
+        "PN":              name,
+        "PV":              pv,
+        "PR":              "r0",
+        "DESCRIPTION":     comment,
+        "HOMEPAGE":        www,
+        "SLOT":            "0",
+        "KEYWORDS":        f"~{gentoo_arch}",
+        "LICENSE":         lic or "unknown",
+        "RDEPEND":         deps_to_gentoo(deps),
+        "DEPEND":          "",
+        "BDEPEND":         "",
+        "CONTENTS":        _build_contents(files_dir, remap),
+        "CBUILD":          chost,
+        "CHOST":           chost,
+        "CTARGET":         chost,
+        "BUILD_TIME":      str(int(time.time())),
+        "SIZE":            str(tbz2_out.stat().st_size),
+        "EAPI":            "8",
+        "DEFINED_PHASES":  "-",
+        # Marks origin for emerge --info
+        "ALIEN_BSD_SRC":        manifest.get("origin", "unknown"),
+        "ALIEN_SRC_ECOSYSTEM":  manifest.get("alien_ecosystem", "unknown"),
+    }
+
+    xpak = build_xpak(xpak_meta)
+    _append_xpak(tbz2_out, xpak)
+
+    if verbose:
+        print(f"    XPAK: {len(xpak)} bytes appended")
+
+    return tbz2_out
+
+
+# ── Ebuild skeleton generator (bonus output) ─────────────────────────────────
+
+def write_ebuild_skeleton(manifest: dict, output_dir: Path,
+                          category: Optional[str]) -> Path:
+    """
+    Write a template ebuild for source-based installation.
+    Not a working build — provides the skeleton for the operator to fill in.
+    """
+    name    = manifest.get("name", "unknown")
+    pv      = _clean_version_gentoo(manifest.get("version", "0"))
+    origin  = manifest.get("origin", "misc/unknown")
+    cat     = category or guess_category(origin)
+    www     = manifest.get("www", "")
+    comment = manifest.get("comment", "")
+    deps    = manifest.get("deps", {})
+    lic_raw = manifest.get("license", [])
+    lic     = " ".join(lic_raw) if isinstance(lic_raw, list) else (lic_raw or "unknown")
+    rdepend = deps_to_gentoo(deps)
+
+    ebuild_dir = output_dir / cat / name
+    ebuild_dir.mkdir(parents=True, exist_ok=True)
+    ebuild_path = ebuild_dir / f"{name}-{pv}.ebuild"
+
+    body = f"""# Automatically generated by alien-bsd from FreeBSD port {origin}
+# Review before use — this is a skeleton, not a working ebuild.
+
+EAPI=8
+
+DESCRIPTION="{comment}"
+HOMEPAGE="{www}"
+SRC_URI=""  # TODO: set to upstream source tarball URL
+
+LICENSE="{lic}"
+SLOT="0"
+KEYWORDS="~amd64"
+
+RDEPEND="
+{chr(10).join('    ' + l for l in rdepend.splitlines())}
+"
+DEPEND="${{RDEPEND}}"
+
+src_install() {{
+    # TODO: implement
+    default
+}}
+"""
+    ebuild_path.write_text(body)
+    return ebuild_path
+
+
+# ── Main ─────────────────────────────────────────────────────────────────────
+
+def main() -> None:
+    p = argparse.ArgumentParser(
+        description="alien-bsd: Convert FreeBSD/pkgsrc packages to deb or Gentoo tbz2"
+    )
+    p.add_argument("package", help=".pkg/.txz/.tgz file or extracted directory")
+    p.add_argument("--to-deb",      action="store_true")
+    p.add_argument("--to-gentoo",   action="store_true")
+    p.add_argument("--both",        action="store_true")
+    p.add_argument("--ebuild",      action="store_true",
+                   help="Also write an ebuild skeleton alongside tbz2")
+    p.add_argument("--no-remap",    action="store_true",
+                   help="Don't remap /usr/local → /usr")
+    p.add_argument("--category",    "-c", default=None,
+                   help="Override Gentoo category (e.g. dev-libs)")
+    p.add_argument("--output-dir",  "-o", default=".",
+                   help="Output directory (default: .)")
+    p.add_argument("--dry-run",     action="store_true")
+    p.add_argument("--verbose",     "-v", action="store_true")
+    args = p.parse_args()
+
+    if args.both:
+        args.to_deb = args.to_gentoo = True
+    if not args.to_deb and not args.to_gentoo:
+        args.to_deb = True  # default
+
+    pkg_path   = Path(args.package).resolve()
+    output_dir = Path(args.output_dir).resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    remap = not args.no_remap
+
+    if not pkg_path.exists():
+        sys.exit(f"ERROR: {pkg_path} not found")
+
+    with tempfile.TemporaryDirectory(prefix="alien-bsd-") as tmp:
+        workdir = Path(tmp)
+
+        print(f"Parsing  {pkg_path.name} ...")
+        data      = parse_pkg(pkg_path, workdir, args.verbose)
+        manifest  = data["manifest"]
+        scripts   = data["scripts"]
+        files_dir = data["files_dir"]
+
+        print(f"  name    : {manifest.get('name','?')}")
+        print(f"  version : {manifest.get('version','?')}")
+        print(f"  origin  : {manifest.get('origin','?')}")
+        print(f"  comment : {manifest.get('comment','')[:72]}")
+        print(f"  deps    : {len(manifest.get('deps',{}))}")
+        print(f"  scripts : {list(scripts)}")
+        print(f"  remap   : {remap}  (/usr/local → /usr)")
+
+        if args.dry_run:
+            print("\nDry run — nothing written.")
+            return
+
+        if args.to_deb:
+            print("\nBuilding .deb ...")
+            out = build_deb(manifest, scripts, files_dir,
+                            workdir, output_dir, remap, args.verbose)
+            print(f"  → {out}")
+
+        if args.to_gentoo:
+            print("\nBuilding Gentoo .tbz2 ...")
+            out = build_gentoo_tbz2(manifest, scripts, files_dir,
+                                    workdir, output_dir, remap,
+                                    args.category, args.verbose)
+            print(f"  → {out}")
+            if args.ebuild:
+                eskel = write_ebuild_skeleton(manifest, output_dir, args.category)
+                print(f"  → {eskel}  (skeleton)")
+
+    print("\nDone.")
+
+
+if __name__ == "__main__":
+    main()

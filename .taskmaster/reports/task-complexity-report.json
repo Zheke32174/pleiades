@@ -1,0 +1,157 @@
+{
+	"meta": {
+		"generatedAt": "2026-05-31T17:13:59.959Z",
+		"tasksAnalyzed": 18,
+		"totalTasks": 18,
+		"analysisCount": 18,
+		"thresholdScore": 5,
+		"projectName": "Pleiades Team / Gentoo Container",
+		"usedResearch": false
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 9,
+			"taskTitle": "Build machine-readable compiler/toolchain catalog",
+			"complexityScore": 4,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down the GitHub catalog creation into: (1) Define JSON schema and create template structure, (2) Implement GitHub API fetcher with rate limiting and fallback to web scraping, (3) Populate all 45 repos with metadata validation and Zheke32174 visibility checks",
+			"reasoning": "Moderate complexity. Requires GitHub API integration with rate limiting, JSON schema design, and handling 45 repos across multiple categories. The codebase has no existing GitHub API infrastructure (grep found no usage). However, the task is straightforward data collection with well-defined output format. Main challenges: API rate limits, handling private/visibility status for Zheke32174 repos, and ensuring all 45 entries are correctly categorized."
+		},
+		{
+			"taskId": 19,
+			"taskTitle": "Create distro-agnostic security package install scripts",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down distro-agnostic package management into: (1) Implement Bedrock/stratum detection logic, (2) Create distro-map.json with all 32 tool mappings across 4 distros, (3) Implement omnipkg install-cross dispatcher with package manager abstraction, (4) Add error handling and offline mode support",
+			"reasoning": "Medium-high complexity. Extends existing omnipkg (513 lines) with cross-distro dispatch logic. Requires understanding Bedrock Linux strata, mapping 32 security tools across 4 package managers (emerge, apt, pacman, apk), and handling edge cases like missing strata or unalcyoneilable packages. The existing omnipkg has good infrastructure (_log, _event, install DB) to build upon. Main challenges: Bedrock detection reliability, package name mapping accuracy, and testing across multiple distros (limited to Gentoo base in current env)."
+		},
+		{
+			"taskId": 21,
+			"taskTitle": "Create offline security package bundle for air-gapped deployment",
+			"complexityScore": 3,
+			"recommendedSubtasks": 2,
+			"expansionPrompt": "Break down offline bundle creation into: (1) Implement package collection from binpkg cache with manifest generation (checksums, sizes, metadata), (2) Create install-offline.sh script with verification and container deployment logic",
+			"reasoning": "Low-medium complexity. Straightforward tarball creation task that collects .tbz2 files from existing cache, generates manifest with checksums, and creates an install script. Depends on task #17 completing first. The omnipkg infrastructure already handles binpkg management. Main work is: collecting files, computing checksums, creating MANIFEST.json, and writing a simple install script. Testing requires extracting and validating in a fresh container."
+		},
+		{
+			"taskId": 18,
+			"taskTitle": "Deploy quantized local LLM inference stack",
+			"complexityScore": 8,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down LLM deployment into: (1) Build llama.cpp with CUDA detection and optimal compile flags, (2) Download and validate 4-bit quantized model (~4GB), (3) Create pleiades-llm wrapper with context/GPU/memory tuning, (4) Integrate with pleiades-re.sh and pleiades-fuzz.sh via stdin/stdout, (5) Add resource limits and performance benchmarking",
+			"reasoning": "High complexity. Involves compiling llama.cpp (requires build toolchain, CUDA detection), downloading large models (~4GB), optimizing inference parameters (ctx-size, gpu-layers, mlock, speculative decoding), and integrating with two other scripts (pleiades-re.sh and pleiades-fuzz.sh which don't exist yet). No existing LLM infrastructure in codebase. Main challenges: CUDA support detection, model download/storage, performance tuning for 8K context, memory management (8GB limit), and creating a robust wrapper interface. Integration testing requires the dependent scripts to be written."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Extend omnipkg for compiler/toolchain binary staging",
+			"complexityScore": 5,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down toolchain installation into: (1) Add install-toolchain subcommand with tarball fetch and checksum verification, (2) Implement Zig handler (ziglang.org download, /opt/zig extraction, symlinks), (3) Implement Nim handler (choosenim vs tarball decision logic), (4) Implement V handler and create toolchains.json metadata database",
+			"reasoning": "Medium complexity. Extends existing omnipkg (513 lines) with new subcommand and three fetch handlers. Requires downloading tarballs from different sources (Zig, Nim, V), verifying checksums, extracting to /opt, creating symlinks to /usr/local/bin, and maintaining install DB. Existing omnipkg has _log, _event, and install DB infrastructure to build upon. Main challenges: handling different tarball formats/URLs for each toolchain, checksum verification (not all may provide checksums), offline mode with caching, and ensuring correct PATH setup. Depends on task #9 for catalog metadata."
+		},
+		{
+			"taskId": 13,
+			"taskTitle": "Evaluate and stage AI coding agents (Aider, OpenHands)",
+			"complexityScore": 5,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down AI agent staging into: (1) Install Aider via pip and create pleiadesctl plugin stub, (2) Verify OpenHands installation and create integration wrapper, (3) Register both as pleiades-swarm capabilities with policy gates, (4) Create configuration files and update nlspec documentation",
+			"reasoning": "Medium complexity. OpenHands already exists in tools/ directory. Aider requires pip install. Main work is creating pleiadesctl plugin infrastructure (/run/pleiades/pleiadesctl-plugins/ai-agents.sh), using existing register_pleiades-swarm_capability() function (found in 9 scripts), and setting up config files. Codebase has strong capability registry pattern already established. Main challenges: pleiadesctl plugin mechanism may not be fully documented, policy-gated access integration, and ensuring both tools work correctly in container environment. Depends on task #9 for context but not blocked."
+		},
+		{
+			"taskId": 14,
+			"taskTitle": "Build binary decompilation + LLM refinement pipeline",
+			"complexityScore": 9,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Break down RE pipeline into: (1) Create pleiades-re.sh script skeleton with argument parsing, (2) Implement Stage 1 Ghidra/radare2 decompilation with tool detection, (3) Implement Stage 2 LLM refinement integration (depends on task #18), (4) Implement Stage 3 type recovery heuristics, (5) Implement Stage 4 report generation with markdown formatting, (6) Integration with pleiades-forensic-scanner.sh",
+			"reasoning": "Very high complexity. Requires creating a new 4-stage pipeline from scratch: decompilation (Ghidra headless or radare2), LLM integration (depends on task #18 pleiades-llm), type recovery algorithms, and report generation. Tools/ directory has angr alcyoneilable. No existing pleiades-re.sh in scripts/. Main challenges: Ghidra headless API complexity, radare2 scripting, LLM prompt engineering for code refinement, type recovery heuristics, coordinating with pleiades-forensic-scanner.sh (exists), and handling various binary formats. High technical complexity across reverse engineering, AI integration, and report generation domains."
+		},
+		{
+			"taskId": 22,
+			"taskTitle": "Implement repo2mcp pipeline (GitHub → context packer → MCP server)",
+			"complexityScore": 7,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down repo2mcp pipeline into: (1) Create pleiades-mcp-converters.sh and install gitingest/repomix dependencies, (2) Implement repo cloning and context packing stage, (3) Implement Aider integration for FastMCP generation with templating, (4) Create FastMCP server output with Python/TypeScript support, (5) Add pleiadesctl convert repo2mcp command and test with sample repos",
+			"reasoning": "Medium-high complexity. Creates new conversion pipeline using external tools (gitingest, repomix, Aider). MCP infrastructure exists (tools/fastmcp, tools/openapi-mcp-codegen found). Requires coordinating: repo cloning, context packing tools, Aider prompt engineering, FastMCP template generation, and pleiadesctl integration. Main challenges: ensuring Aider generates valid FastMCP code (AI reliability), handling both Python and TypeScript output, managing temp directories, and testing with diverse repos. Depends on task #13 for Aider alcyoneilability."
+		},
+		{
+			"taskId": 12,
+			"taskTitle": "Integrate Zheke32174 repos into pleiades team build pipeline",
+			"complexityScore": 4,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down Zheke32174 integration into: (1) Clone all four repos to external/zheke32174/ and verify access, (2) Three-way merge alien fork with local alien-bsd and document conflicts, (3) Analyze scandroid/Tracendroid/underlode purpose and create integration specs, (4) Update taskmaster docs and register tools in capability registry if applicable",
+			"reasoning": "Moderate complexity. Primarily integration and documentation work. alien-bsd exists locally (1113 lines). Main work: git operations (clone, diff, three-way merge), analyzing unfamiliar codebases (scandroid/Tracendroid/underlode), documenting decisions, and potentially registering as capabilities. Main challenges: handling merge conflicts between alien forks, understanding purpose of unknown repos without documentation, and deciding integration strategy (capability vs dev dependency). Depends on task #11 (alien-bsd Nim/V support) but could proceed independently for analysis."
+		},
+		{
+			"taskId": 24,
+			"taskTitle": "Implement openapi2mcp converter (OpenAPI spec → MCP server)",
+			"complexityScore": 6,
+			"recommendedSubtasks": 4,
+			"expansionPrompt": "Break down openapi2mcp into: (1) Install openapi-mcp-codegen or fastapi-mcp and extend pleiades-mcp-converters.sh, (2) Implement OpenAPI spec parsing for endpoints and parameters, (3) Generate MCP tools with authentication handling for OpenAPI 3.0/3.1, (4) Create pleiadesctl convert openapi2mcp command and test with public APIs",
+			"reasoning": "Medium complexity. Extends pleiades-mcp-converters.sh (created in task #22). tools/openapi-mcp-codegen already exists. Main work: parsing OpenAPI specs (YAML/JSON), generating MCP tools for each endpoint, handling auth schemes (OAuth, API keys, etc.), and supporting both OpenAPI 3.0 and 3.1. Main challenges: OpenAPI spec complexity and variety, authentication handling (many schemes), testing with real APIs (requires API keys), and ensuring generated servers work correctly. Depends on task #13 for MCP infrastructure understanding."
+		},
+		{
+			"taskId": 11,
+			"taskTitle": "Extend alien-bsd for Nim nimble and V vpkg packages",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down this task with a focus on extend alien-bsd for nim nimble and v vpkg packages.",
+			"reasoning": "Automatically added due to missing analysis in AI response."
+		},
+		{
+			"taskId": 15,
+			"taskTitle": "Set up cross-ISA translation layer (QEMU user-mode + Box64)",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down this task with a focus on set up cross-isa translation layer (qemu user-mode + box64).",
+			"reasoning": "Automatically added due to missing analysis in AI response."
+		},
+		{
+			"taskId": 16,
+			"taskTitle": "Implement vulnerability discovery + fuzzing loop",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down this task with a focus on implement vulnerability discovery + fuzzing loop.",
+			"reasoning": "Automatically added due to missing analysis in AI response."
+		},
+		{
+			"taskId": 17,
+			"taskTitle": "Deploy all 32 verified Gentoo security atoms",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down this task with a focus on deploy all 32 verified gentoo security atoms.",
+			"reasoning": "Automatically added due to missing analysis in AI response."
+		},
+		{
+			"taskId": 20,
+			"taskTitle": "Wire security tools into Pleiades Team capability registry",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down this task with a focus on wire security tools into pleiades team capability registry.",
+			"reasoning": "Automatically added due to missing analysis in AI response."
+		},
+		{
+			"taskId": 23,
+			"taskTitle": "Implement paper2mcp pipeline (arXiv → Paper2Code → MCP tool)",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down this task with a focus on implement paper2mcp pipeline (arxiv → paper2code → mcp tool).",
+			"reasoning": "Automatically added due to missing analysis in AI response."
+		},
+		{
+			"taskId": 25,
+			"taskTitle": "Add WASM runtime stratum to Asterope.sh BSD layer",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down this task with a focus on add wasm runtime stratum to asterope.sh bsd layer.",
+			"reasoning": "Automatically added due to missing analysis in AI response."
+		},
+		{
+			"taskId": 26,
+			"taskTitle": "Disaster recovery test: full pleiades team rebuild from scratch",
+			"complexityScore": 5,
+			"recommendedSubtasks": 3,
+			"expansionPrompt": "Break down this task with a focus on disaster recovery test: full pleiades team rebuild from scratch.",
+			"reasoning": "Automatically added due to missing analysis in AI response."
+		}
+	]
+}

@@ -9,7 +9,7 @@ dev-debug.log
 # Backups and agent manifests
 *.bak
 *.bak.*
-.purple-backups/
+.pleiades-backups/
 *.lck
 
 # Dependency directories

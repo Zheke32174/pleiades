@@ -33,8 +33,8 @@
       "Bash(find /workspaces/* *)",
       "Bash(find . *)",
 
-      "Bash(cat /run/purple-gentoo-heartbeat/status)",
-      "Bash(cat /run/purple/zod_mode)",
+      "Bash(cat /run/pleiades-gentoo-heartbeat/status)",
+      "Bash(cat /run/pleiades/pleiades-atlas_mode)",
 
       "Bash(git push origin *)",
       "Bash(git fetch*)",
@@ -53,8 +53,8 @@
       "Bash(python3 -c *)",
 
       "Read(/workspaces/**)",
-      "Read(/run/purple-gentoo-heartbeat/status)",
-      "Read(/run/purple/**)"
+      "Read(/run/pleiades-gentoo-heartbeat/status)",
+      "Read(/run/pleiades/**)"
     ]
   },
   "hooks": {

@@ -1,0 +1,28 @@
+{
+  "schema": "pleiades-factory-toolchain-v1",
+  "updated_utc": "2026-05-30T14:10:00Z",
+  "cli": "/workspaces/gentoo/pleiades-factory-tools.sh",
+  "tools": [
+    {
+      "id": "paper2code",
+      "repo": "https://github.com/PrathamLearnsToCode/paper2code",
+      "local_path": "/workspaces/gentoo/tools/paper2code",
+      "factory_role": "research-paper-to-citation-anchored-implementation",
+      "commands": ["paper2code-fetch", "paper2code-structure"]
+    },
+    {
+      "id": "hermes-evolution",
+      "repo": "https://github.com/NousResearch/hermes-agent-self-evolution",
+      "local_path": "/workspaces/gentoo/tools/hermes-agent-self-evolution",
+      "factory_role": "skill-prompt-tool-evolution-with-constraint-gates",
+      "commands": ["hermes-evolve"]
+    },
+    {
+      "id": "continual-harness",
+      "repo": "https://github.com/sethkarten/continual-harness",
+      "local_path": "/workspaces/gentoo/tools/continual-harness",
+      "factory_role": "reset-free-agent-harness-refinement-and-cli-agent-benchmark",
+      "commands": ["continual-harness"]
+    }
+  ]
+}

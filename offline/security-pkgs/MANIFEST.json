@@ -1,0 +1,6 @@
+{
+  "schema": "pleiades-offline-bundle-v1",
+  "generated": "2026-06-01",
+  "note": "Populate packages[] by running: omnipkg security-baseline bundle --output-dir /workspaces/gentoo/offline/security-pkgs",
+  "packages": []
+}

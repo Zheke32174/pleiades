@@ -1,0 +1,32 @@
+# RePro base configuration
+# Parameter citations: §-numbers are from arXiv 2508.16671
+
+# ── LLM assignments (§4.1 — SPECIFIED) ────────────────────────────────────────
+llm:
+  design_model: "deepseek/deepseek-chat"    # §4.1: Deepseek-V3 for supervisory signal + verification
+  impl_model: "o3-mini-high"                # §4.1: o3-mini-high for initial impl + revision planning + refinement
+  plan_model: "o3-mini-high"                # §4.1
+  verify_model: "deepseek/deepseek-chat"    # §4.1
+
+# ── Embedding (§4.1 — SPECIFIED) ──────────────────────────────────────────────
+embedding:
+  model: "all-MiniLM-L6-v2"               # §4.1: sentence-transformers
+
+# ── Source grounding (§3.1 — SPECIFIED) ───────────────────────────────────────
+grounding:
+  top_k_paragraphs: 3                      # §3.1: top-3 paragraphs per criterion unit
+
+# ── Reflective code development (§4.1 — SPECIFIED) ───────────────────────────
+development:
+  max_iterations: 4                        # §4.1: up to 4 iterations
+  early_stop_on_all_pass: true             # §4.1: early stop when all criteria pass
+
+# ── Criteria filtering (§3.1 — PARTIALLY SPECIFIED) ──────────────────────────
+filtering:
+  cluster_distance_threshold: 0.15        # [UNSPECIFIED-1]: cosine distance; paper says "cluster-based" only
+  use_llm_semantic_filter: true           # §3.1 SPECIFIED
+
+# ── Guide extraction (§3.1 — SPECIFIED for 3 levels; model UNSPECIFIED for L3) ─
+guide_extraction:
+  levels: 3                               # §3.1: framework, configuration, paragraph
+  paragraph_batch_size: 1                 # [UNSPECIFIED-4]: one paragraph per LLM call

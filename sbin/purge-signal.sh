@@ -4,7 +4,7 @@
 # create the signal file to authorize self-destruct.
 set -uo pipefail
 
-GITHUB_URL_FILE="/var/lib/.sophia/github_drop_url"
+GITHUB_URL_FILE="/var/lib/.maia/github_drop_url"
 SIGNAL_FILE="/tmp/purge_signal"
 
 if [[ ! -f "$GITHUB_URL_FILE" ]]; then
@@ -12,7 +12,7 @@ if [[ ! -f "$GITHUB_URL_FILE" ]]; then
 fi
 
 URL=$(cat "$GITHUB_URL_FILE")
-MESSAGE=$(curl -s --max-time 10 "$URL" | sophia_crypto verify-drop /dev/stdin 2>/dev/null || echo "")
+MESSAGE=$(curl -s --max-time 10 "$URL" | maia_crypto verify-drop /dev/stdin 2>/dev/null || echo "")
 
 if echo "$MESSAGE" | grep -q "PURGE|AUTHORIZED_PURGE" 2>/dev/null; then
     echo "AUTHORIZED_PURGE" > "$SIGNAL_FILE"

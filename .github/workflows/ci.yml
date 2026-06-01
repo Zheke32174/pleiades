@@ -51,12 +51,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check PURPLE_STATE.md presence
+      - name: Check PLEIADES_STATE.md presence
         run: |
-          if [ -f "PURPLE_STATE.md" ]; then
-            echo "PURPLE_STATE.md found — ecosystem integration verified"
+          if [ -f "PLEIADES_STATE.md" ]; then
+            echo "PLEIADES_STATE.md found — ecosystem integration verified"
           else
-            echo "::notice::No PURPLE_STATE.md — this repo may not be ecosystem-aware"
+            echo "::notice::No PLEIADES_STATE.md — this repo may not be ecosystem-aware"
           fi
       - name: Validate directory structure
         run: |

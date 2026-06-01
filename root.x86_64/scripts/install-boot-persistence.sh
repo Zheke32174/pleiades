@@ -7,7 +7,7 @@
 # Hardening:
 #   - Restart=always + StartLimitIntervalSec=0 (survives crashes)
 #   - chattr +i on binary and unit file (attacker can't delete without knowing trick)
-#   - Owner escape hatch: sophia_crypto issue-stop → signed STOP token
+#   - Owner escape hatch: maia_crypto issue-stop → signed STOP token
 #   - Host footprint: one wrapper + one service unit, nothing else on the host
 #
 # Usage: bash install-boot-persistence.sh [--dry-run] [--uninstall]
@@ -23,7 +23,7 @@ HOST_WRAPPER="/usr/local/sbin/machine-runtime-monitor"
 SERVICE_NAME="machine-runtime-monitor"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 WSL_CONF="/etc/wsl.conf"
-SOPHIA_DIR="/var/lib/.sophia"
+MAIA_DIR="/var/lib/.maia"
 LOG_TAG="pleiades-boot"
 
 DRY_RUN=false
@@ -93,12 +93,12 @@ write_wrapper() {
 # Managed by machine-runtime-monitor.service. Do not delete.
 
 CONTAINER_ROOT="/workspaces/gentoo/root.x86_64"
-STOP_TOKEN="/var/lib/.sophia/owner_stop"
+STOP_TOKEN="/var/lib/.maia/owner_stop"
 LOG_TAG="machine-runtime-monitor"
 
 # Owner escape hatch: if a valid signed STOP token exists, do not start
-if [[ -f "$STOP_TOKEN" ]] && command -v sophia_crypto &>/dev/null; then
-    if sophia_crypto verify "$STOP_TOKEN" 2>/dev/null; then
+if [[ -f "$STOP_TOKEN" ]] && command -v maia_crypto &>/dev/null; then
+    if maia_crypto verify "$STOP_TOKEN" 2>/dev/null; then
         logger -t "$LOG_TAG" "Signed STOP token found — staying dormant per owner instruction"
         exit 0
     fi
@@ -109,8 +109,8 @@ exec systemd-nspawn \
     --directory="$CONTAINER_ROOT" \
     --machine=pleiades \
     --boot \
-    --bind=/run/purple \
-    --bind=/var/lib/.sophia \
+    --bind=/run/pleiades \
+    --bind=/var/lib/.maia \
     --bind-ro=/etc/machine-id \
     --bind-ro=/etc/hostname \
     --network-veth \
@@ -235,14 +235,14 @@ SERVICE
 # Owner escape hatch setup
 # ------------------------------------------------------------
 setup_escape_hatch() {
-    if command -v sophia_crypto &>/dev/null; then
-        run mkdir -p "$SOPHIA_DIR/keys"
-        log "Owner escape hatch: run 'sophia_crypto issue-stop' to create signed STOP token"
-        log "STOP token path: $SOPHIA_DIR/owner_stop"
-        log "To resume: rm $SOPHIA_DIR/owner_stop && systemctl restart $SERVICE_NAME"
+    if command -v maia_crypto &>/dev/null; then
+        run mkdir -p "$MAIA_DIR/keys"
+        log "Owner escape hatch: run 'maia_crypto issue-stop' to create signed STOP token"
+        log "STOP token path: $MAIA_DIR/owner_stop"
+        log "To resume: rm $MAIA_DIR/owner_stop && systemctl restart $SERVICE_NAME"
     else
-        log "WARN: sophia_crypto not found — escape hatch requires it"
-        log "      Install with: bash $CONTAINER_ROOT/scripts/SofiaX.sh --install-crypto-only"
+        log "WARN: maia_crypto not found — escape hatch requires it"
+        log "      Install with: bash $CONTAINER_ROOT/scripts/Maia.sh --install-crypto-only"
     fi
 }
 
@@ -250,7 +250,7 @@ setup_escape_hatch() {
 # Main
 # ------------------------------------------------------------
 log "Installing Pleiades boot persistence (env=$ENV, dry_run=$DRY_RUN)"
-run mkdir -p /run/purple "$SOPHIA_DIR"
+run mkdir -p /run/pleiades "$MAIA_DIR"
 
 case "$ENV" in
     wsl)        install_wsl ;;

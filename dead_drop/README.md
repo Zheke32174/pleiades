@@ -1,10 +1,10 @@
 # Dead Drop Signal
 
-This directory contains the resurrection signal for the Purple Team Ouroboros system.
+This directory contains the pleiades-rebirth signal for the Pleiades Team Pleiades Nexus system.
 
 ## How it works
 
-The `sophia_crypto probe` binary periodically fetches this file from the raw GitHub URL
+The `maia_crypto probe` binary periodically fetches this file from the raw GitHub URL
 and verifies the Ed25519 signature. If the signature is valid and the message decodes to
 a recognized command (e.g. "RESURRECT" or "PURGE|AUTHORIZED_PURGE"), the system acts on it.
 
@@ -23,9 +23,9 @@ cat > /tmp/signal.json << JSONEOF
 }
 JSONEOF
 
-# Sign the JSON (using sophia_crypto from the container)
+# Sign the JSON (using maia_crypto from the container)
 echo '{"message":"'"$(cat /tmp/message.b64)"'","sig":"MUST_BE_SIGNED","ts":'$(date +%s)'}' > /tmp/to_sign.json
-sophia_crypto sign /tmp/to_sign.json > /tmp/signature.hex
+maia_crypto sign /tmp/to_sign.json > /tmp/signature.hex
 
 # Update signal.json with real signature
 python3 -c "

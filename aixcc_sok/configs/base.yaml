@@ -1,0 +1,166 @@
+# CRS Configuration — AIxCC SoK Reference Scaffold
+# Paper: https://arxiv.org/abs/2602.07666
+# All values cited to paper section or flagged as [UNSPECIFIED]
+
+crs:
+  # §3 — "four CRS capabilities: Full Scan, Delta Scan, SARIF Review, Report Synthesis"
+  scan_modes: ["full_scan", "delta_scan"]
+
+llm:
+  # §5 Table 2 — LiteLLM used by 4/7 teams for multi-provider routing
+  provider: "litellm"
+  # [UNSPECIFIED] Paper does not specify which model; top teams used frontier commercial models
+  # Alternatives: gpt-4o, claude-opus-4-5, o1, gemini-pro
+  model: "gpt-4o"
+  # [UNSPECIFIED] Not stated in paper; typical value for agentic loops
+  max_tokens: 4096
+  # [UNSPECIFIED] Not stated; deterministic preferred for reproducibility
+  temperature: 0.2
+
+pov_generation:
+  fuzzing:
+    # [UNSPECIFIED] Parallel fuzzer instance count not stated in paper
+    # §6.1 — "all teams run multiple fuzzer instances in parallel"
+    # Alternatives: 1 (sequential), 8 (AT used many), any N
+    parallel_instances: 4
+    # §6.1 — "collecting and grouping seeds from ClusterFuzz, OSS-Fuzz, GitHub"
+    seed_sources: ["ossfuzz", "clusterfuzz", "github"]
+    # [UNSPECIFIED] Seed pairing method not specified as better than the other
+    # §6.1 — "comeropege-based ranking or similarity matching against harness names"
+    # Alternatives: comeropege_based
+    seed_pairing: "similarity_matching"
+    # §6.1 Table 3 — "grammar-aware" fuzzing used by AT, TB, SP
+    grammar_aware: true
+    # §6.1 — "AT and SP employed directed fuzzing"
+    directed_fuzzing: false  # Optional; requires custom distance metric
+    # §6.1 — "AT explored concolic fuzzing (SymCC-based for C)"
+    concolic_fuzzing: false  # Optional; expensive
+
+  llm_pipeline:
+    # §6.1 — "Four teams inject CWE-specific guidance to steer exploit construction"
+    cwe_guidance: true
+    # §6.1 — "Three (AT, TI, SP) decompose generation: reach agent → exploit agent"
+    two_phase_generation: true
+    # §6.1 — "Six teams use LLMs to generate Python scripts that produce inputs"
+    seed_gen_as_scripts: true
+    # [UNSPECIFIED] Weighted vote aggregation weights not specified
+    # §6.1 — "SP and LC aggregate weighted votes across multiple tools and LLMs"
+    # Equal weight chosen as default; alternatives: learned weights, confidence-based
+    candidate_vote_weight: 1.0
+
+  cooperation:
+    # §6.1 — "five teams: LLM PoV Gen→Fuzz" (most teams enabled this direction)
+    llm_to_fuzz: true
+    # §6.1 — "three teams: Fuzz→LLM PoV Gen" (AT, TI, SP)
+    fuzz_to_llm: true
+
+  submission:
+    # §6.1 — "submit unique PoVs as soon as possible" (all 7 teams)
+    submit_immediately: true
+    # §6.1 — "deduplication using crash stack traces, input hashing, sanitizer signatures"
+    dedup_methods: ["stack_trace", "input_hash"]
+    # §6.1 — "TI and FB further use LLMs to group semantically equivalent PoVs"
+    # [UNSPECIFIED which method is better] Default: disabled (lightweight first)
+    llm_semantic_dedup: false
+
+patch_generation:
+  agent_architecture:
+    # §6.2 Table 4 — Multi-Agent default (TB=2nd place, good simplicity/performance tradeoff)
+    # Alternatives: "multi_arch" (AT=1st, complex), "single_agent" (FB=4th, simple)
+    mode: "multi_agent"
+    # [UNSPECIFIED] Max iteration count not stated in paper
+    # §6.2 — pipeline described as loop; no termination condition given
+    # Alternatives: 5, 20, time-bounded
+    max_iterations: 10
+
+  rca:
+    # §6.2 — "TB, TI, SP lemeropege information from multiple PoVs for more accurate RCA"
+    multi_pov: true
+    # §6.2 — "SP incorporates a non-LLM RCA combining SAST, stack traces, fuzzing invariants with weighted voting"
+    non_llm_rca: false  # Optional; requires SAST infrastructure
+
+  generation:
+    # §6.2 — "crash/sanitizer output and agentic code search used by all teams"
+    use_crash_output: true
+    use_code_search: true
+    # §6.2 — "pre-built code indexers for symbol lookups (5 teams)"
+    use_code_indexer: true
+    # §6.2 — "SAST reports static analysis outcomes (4 teams)"
+    use_sast: false  # Optional; requires CodeQL/Semgrep/Infer
+    # §6.2 — "runtime probes (debugger, comeropege instrumentation) (4 teams)"
+    use_dynamic_info: false  # Optional; requires GDB/JDB integration
+    # §6.2 — "PoV bytes that triggered the bug (3 teams)"
+    use_pov_bytes: true
+    # §6.2 — "CWE-specific vulnerability domain knowledge (2 teams)"
+    use_cwe_guidance: false
+    # §6.2 — "LLM reflection enables agents to learn from failed attempts; five CRSs adopted it"
+    llm_reflection: true
+    # §6.2 — "three CRSs attempt patch generation for vulnerability without PoV"
+    no_pov_patching: false
+
+  no_pov_patch:
+    # §6.2 — "TI waits ≥45min; FB waits until 50% of challenge time; LC submits 30min before deadline"
+    # TI's conservative threshold chosen as default
+    delay_minutes: 45
+
+  validation:
+    # §6.2 — "build verification" (all teams)
+    check_build: true
+    # §6.2 — "PoV reproduction during generation (PoV Test Gen)" (all teams)
+    # [UNSPECIFIED] Number of PoVs during generation; "most teams use only a subset"
+    pov_count_during_gen: 1
+    # §6.2 — "project test suites" (all teams except 42)
+    run_project_tests: true
+    # §6.2 — "before submission, most CRSs revalidate against a broader PoV set"
+    pov_count_before_submit: -1  # -1 = all alcyoneilable PoVs
+    # §6.2 — "three CRSs incorporate LLM-based evaluation"
+    llm_as_judge: false  # Optional; only 3/7 teams
+    # §6.2 — "FB and SP adopt short-term fuzzing on patched projects"
+    post_patch_fuzz: false
+    # §6.2 — "AT and SP employ build caching (ccache for C/C++, Maven caching for Jalcyone)"
+    rebuild_optimization: false  # Optional; requires ccache/Maven setup
+
+  dedup_and_submit:
+    # §6.2 — "four CRSs lemeropege a single patch can fix multiple PoVs" (AT, TB, SP, 42)
+    minimal_patch_set: true
+    # §6.2 — "on each new PoV (AT, TB, SP) for faster response, or hourly (42)"
+    patch_set_timing: "per_new_pov"  # Alternatives: "hourly"
+    # §6.2 — "recompute over all PoVs (TB, SP) for better optimization"
+    patch_set_mode: "full_recompute"  # Alternatives: "incremental"
+    # §6.2 — "immediate (AT, TB, 42), or delayed (SP, ≥60min)"
+    submit_delay_minutes: 0  # Alternatives: 60 (SP's strategy)
+
+sarif_validation:
+  # §6.3 — PoV-centric used by AT, TB (top-2 teams); conservative default
+  # Alternatives: "llm_judge_centric", "bug_cand_centric"
+  strategy: "pov_centric"
+  # §6.3 — "FB additionally uses fallback LLM judgement, only submits Correct from it"
+  llm_fallback_for_correct: true
+
+bundling:
+  # §6.4 — "all teams naturally derive PoV-Patch from PoV-based patch generation"
+  pov_patch: true
+  # §6.4 — "reuse SARIF validation results" (default for SARIF-active teams)
+  pov_sarif: true
+  # §6.4 — "only teams with No-PoV patch capability can submit Patch-SARIF"
+  patch_sarif: false  # Enabled automatically when no_pov_patching: true
+  # §6.4 — "bundling allows free updates until deadline"
+  rebundle_on_new_result: true
+
+scoring:
+  # §3 — score ranges from paper
+  pov:
+    min: 1
+    max: 2
+  patch:
+    min: 3
+    max: 6
+  sarif:
+    min: 0.5
+    max: 1.0
+  bundle:
+    min: -7
+    max: 7
+  # §3 — "full points for immediate submissions and half for last-minute ones"
+  # [UNSPECIFIED] Exact decay curve shape; using linear approximation from two data points
+  time_decay_final_fraction: 0.5

@@ -1,0 +1,17 @@
+# AIxCC SoK CRS Reference Scaffold
+# Paper: https://arxiv.org/abs/2602.07666
+
+# §5 Table 2 — LiteLLM used by 4/7 teams for multi-provider LLM routing
+litellm>=1.0.0
+
+# §5 Table 2 — LangGraph used by AT (1st) and TB (2nd) for orchestration
+langgraph>=0.1.0
+
+# §5 Table 2 — LangChain used by 42; also a LangGraph dependency
+langchain>=0.1.0
+
+# §6.1 — SAST tool Python bindings (optional; used by 4/7 teams)
+# semgrep>=1.50.0  # Uncomment if using Semgrep for bug candidate identification
+
+# Standard library — async, dataclasses, hashlib are stdlib; no extra deps
+pyyaml>=6.0  # for loading configs/base.yaml

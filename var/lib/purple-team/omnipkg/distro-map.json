@@ -1,0 +1,27 @@
+{
+  "schema": "pleiades-distro-map-v1",
+  "tools": {
+    "nmap":        {"gentoo": "net-analyzer/nmap",       "ubuntu": "nmap",         "arch": "nmap",          "alpine": "nmap"},
+    "wireshark":   {"gentoo": "net-analyzer/wireshark",  "ubuntu": "wireshark",    "arch": "wireshark",     "alpine": "wireshark"},
+    "tcpdump":     {"gentoo": "net-analyzer/tcpdump",    "ubuntu": "tcpdump",      "arch": "tcpdump",       "alpine": "tcpdump"},
+    "radare2":     {"gentoo": "app-security/radare2",    "ubuntu": "radare2",      "arch": "radare2",       "alpine": "radare2"},
+    "gdb":         {"gentoo": "dev-util/gdb",            "ubuntu": "gdb",          "arch": "gdb",           "alpine": "gdb"},
+    "strace":      {"gentoo": "dev-util/strace",         "ubuntu": "strace",       "arch": "strace",        "alpine": "strace"},
+    "hashcat":     {"gentoo": "app-crypt/hashcat",       "ubuntu": "hashcat",      "arch": "hashcat",       "alpine": ""},
+    "hydra":       {"gentoo": "net-analyzer/hydra",      "ubuntu": "hydra",        "arch": "thc-hydra",     "alpine": ""},
+    "sqlmap":      {"gentoo": "app-security/sqlmap",     "ubuntu": "sqlmap",       "arch": "sqlmap",        "alpine": ""},
+    "john":        {"gentoo": "app-crypt/johntheripper", "ubuntu": "john",         "arch": "john",          "alpine": "john"},
+    "aircrack-ng": {"gentoo": "net-wireless/aircrack-ng","ubuntu": "aircrack-ng",  "arch": "aircrack-ng",   "alpine": ""},
+    "tor":         {"gentoo": "net-vpn/tor",             "ubuntu": "tor",          "arch": "tor",           "alpine": "tor"},
+    "snort":       {"gentoo": "net-analyzer/snort",      "ubuntu": "snort",        "arch": "snort",         "alpine": ""},
+    "suricata":    {"gentoo": "net-analyzer/suricata",   "ubuntu": "suricata",     "arch": "suricata",      "alpine": ""},
+    "fail2ban":    {"gentoo": "app-admin/fail2ban",      "ubuntu": "fail2ban",     "arch": "fail2ban",      "alpine": "fail2ban"},
+    "lynis":       {"gentoo": "app-security/lynis",      "ubuntu": "lynis",        "arch": "lynis",         "alpine": "lynis"},
+    "rkhunter":    {"gentoo": "app-security/rkhunter",   "ubuntu": "rkhunter",     "arch": "rkhunter",      "alpine": ""},
+    "aide":        {"gentoo": "app-security/aide",       "ubuntu": "aide",         "arch": "aide",          "alpine": ""},
+    "openvpn":     {"gentoo": "net-vpn/openvpn",         "ubuntu": "openvpn",      "arch": "openvpn",       "alpine": "openvpn"},
+    "wg":          {"gentoo": "net-vpn/wireguard-tools", "ubuntu": "wireguard",    "arch": "wireguard-tools","alpine": "wireguard-tools"},
+    "gpg":         {"gentoo": "app-crypt/gnupg",         "ubuntu": "gnupg",        "arch": "gnupg",         "alpine": "gnupg"},
+    "openssl":     {"gentoo": "dev-libs/openssl",        "ubuntu": "openssl",      "arch": "openssl",       "alpine": "openssl"}
+  }
+}

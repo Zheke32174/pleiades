@@ -1,0 +1,12 @@
+{
+  "run_id": "factory-20260531-025048",
+  "spec_path": ".octo/factory/specs/omnipkg-to-gentoo.nlspec.md",
+  "satisfaction_target": 0.85,
+  "complexity": "complex",
+  "behavior_count": 10,
+  "holdout_ratio": 0.20,
+  "max_retries": 1,
+  "maturity": {"level":"Validated","sections":5,"quality_markers":0,"detail":{"purpose":1,"actors":1,"behaviors":1,"constraints":1,"dependencies":0,"acceptance":1,"edge_cases":0,"preconditions":0,"postconditions":0},"assessed_at":"2026-05-31T06:50:48Z"},
+  "status": "initialized",
+  "started_at": "2026-05-31T06:50:48Z"
+}

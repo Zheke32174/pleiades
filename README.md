@@ -1,6 +1,6 @@
 # pleiades
 
-Pleiades is a WSL2/Gentoo `systemd-nspawn` purple-team autonomous agent suite. Five polyglot agents (Sophia, Robin, Cheshire, Hatter, Little John) run inside the container, providing mutual persistence, honeypot environments, credential monitoring, recon, and watchdog/resurrection.
+Pleiades is a WSL2/Gentoo `systemd-nspawn` pleiades-team autonomous agent suite. Five polyglot agents (Maia, Electra, Taygete, Alcyone, Celaeno) run inside the container, providing mutual persistence, honeypot environments, credential monitoring, recon, and watchdog/pleiades-rebirth.
 
 ## Companion repositories
 
@@ -22,20 +22,20 @@ gentoo-shell                 # enter container
 sudo bash root.x86_64/scripts/install-boot-persistence.sh
 
 # Emergency: preserve evidence, wipe traces, signal redeploy
-sudo bash root.x86_64/scripts/purple-selfdestruct.sh --redeploy
+sudo bash root.x86_64/scripts/pleiades-selfdestruct.sh --redeploy
 ```
 
 ## Agent suite (inside container)
 
 | Script | Agent | Role |
 |---|---|---|
-| `SofiaX.sh` | Sophia | Overseer, EFI/ESP persistence, GitHub rehydration |
-| `Eris.sh` | Robin | Fake env (`imtherealsparticus`), `sysmon-daemon` hivemind |
-| `Beryl.sh` | Cheshire | Credential monitor, BGP watch |
-| `Ava.sh` | Hatter | Recon, host bridge capability reporting |
-| `Mariah.sh` | Little John | Watchdog, process guardian, resurrection |
+| `Maia.sh` | Maia | Overseer, EFI/ESP persistence, GitHub rehydration |
+| `Electra.sh` | Electra | Fake env (`imtherealsparticus`), `sysmon-daemon` pleiades-swarm |
+| `Taygete.sh` | Taygete | Credential monitor, BGP watch |
+| `Alcyone.sh` | Alcyone | Recon, host bridge capability reporting |
+| `Celaeno.sh` | Celaeno | Watchdog, process guardian, pleiades-rebirth |
 
-Read `PURPLE_STATE.md` and `AGENTS.md` before making changes.
+Read `PLEIADES_STATE.md` and `AGENTS.md` before making changes.
 
 - `gentoo-up` starts the Gentoo `systemd-nspawn` container.
 - `gentoo-shell` enters the running container with `nsenter`.
@@ -85,22 +85,22 @@ Backup before every edit: `cp file file.bak.$(date +%s)`
 - ⏳ 🟡 **#13** Evaluate and stage AI coding agents (Aider, OpenHands) *(complexity 5 · deps: #9)*
   - ⬜ 1. Install Aider and create purplectl plugin stub
   - ⬜ 2. Verify OpenHands installation and create integration wrapper
-  - ⬜ 3. Register both tools as hivemind capabilities with policy gates
+  - ⬜ 3. Register both tools as pleiades-swarm capabilities with policy gates
   - ⬜ 4. Create configuration files and update nlspec documentation
 
 ### RE / Binary Analysis & AI Infra
 
 - ⏳ 🔴 **#14** Build binary decompilation + LLM refinement pipeline *(complexity 9)*
-  - ⬜ 1. Create purple-re.sh script skeleton with argument parsing
+  - ⬜ 1. Create pleiades-re.sh script skeleton with argument parsing
   - ⬜ 2. Implement Stage 1 Ghidra/radare2 decompilation with tool detection
   - ⬜ 3. Implement Stage 2 LLM refinement integration (depends on #18)
   - ⬜ 4. Implement Stage 3 type recovery heuristics
   - ⬜ 5. Implement Stage 4 report generation with markdown formatting
-  - ⬜ 6. Integration with purple-forensic-scanner.sh for coordinated analysis
+  - ⬜ 6. Integration with pleiades-forensic-scanner.sh for coordinated analysis
 - ⏳ 🟡 **#15** Set up cross-ISA translation layer (QEMU user-mode + Box64) *(complexity 5)*
   - ⬜ 1. Install and configure QEMU user-mode with binfmt_misc handlers
   - ⬜ 2. Build and install Box64 from source for x86-to-ARM translation
-  - ⬜ 3. Document cross-ISA patterns and integrate with Quantum.sh
+  - ⬜ 3. Document cross-ISA patterns and integrate with Asterope.sh
 - ⏳ 🔴 **#16** Implement vulnerability discovery + fuzzing loop *(complexity 5 · deps: #14)*
   - ⬜ 1. Implement static analysis and input vector identification
   - ⬜ 2. Implement LLM harness generation and AFL++ fuzzing execution
@@ -108,8 +108,8 @@ Backup before every edit: `cp file file.bak.$(date +%s)`
 - ⏳ 🔴 **#18** Deploy quantized local LLM inference stack *(complexity 8)*
   - ⬜ 1. Build llama.cpp with CUDA detection and optimal compile flags
   - ⬜ 2. Download and validate 4-bit quantized model from HuggingFace
-  - ⬜ 3. Create purple-llm wrapper with context/GPU/memory tuning
-  - ⬜ 4. Integrate purple-llm with purple-re.sh and purple-fuzz.sh via stdin/stdout
+  - ⬜ 3. Create pleiades-llm wrapper with context/GPU/memory tuning
+  - ⬜ 4. Integrate pleiades-llm with pleiades-re.sh and pleiades-fuzz.sh via stdin/stdout
   - ⬜ 5. Add systemd resource limits and performance benchmarking
 
 ### Security Package Deployment
@@ -123,7 +123,7 @@ Backup before every edit: `cp file file.bak.$(date +%s)`
   - ⬜ 2. Create comprehensive distro-map.json with 32 security tool mappings
   - ⬜ 3. Implement omnipkg install-cross dispatcher with package manager abstraction
   - ⬜ 4. Add error handling, offline mode support, and fallback mechanisms
-- ⏳ 🟡 **#20** Wire security tools into Purple Team capability registry *(complexity 5 · deps: #17)*
+- ⏳ 🟡 **#20** Wire security tools into Pleiades Team capability registry *(complexity 5 · deps: #17)*
   - ⬜ 1. Create security tool catalog and register 32 security tools in capability registry
   - ⬜ 2. Implement purplectl list-capabilities with domain-grouped pretty-print
   - ⬜ 3. Create purplectl domain-specific tool invocation subcommands with policy enforcement
@@ -134,7 +134,7 @@ Backup before every edit: `cp file file.bak.$(date +%s)`
 ### MCP Converter Pipeline
 
 - ⏳ 🟡 **#22** Implement repo2mcp pipeline (GitHub → context packer → MCP server) *(complexity 7 · deps: #13)*
-  - ⬜ 1. Create purple-mcp-converters.sh scaffold and install dependencies
+  - ⬜ 1. Create pleiades-mcp-converters.sh scaffold and install dependencies
   - ⬜ 2. Implement repo cloning and context packing stage
   - ⬜ 3. Implement Aider integration for FastMCP generation with templating
   - ⬜ 4. Create FastMCP server output with Python/TypeScript support
@@ -144,14 +144,14 @@ Backup before every edit: `cp file file.bak.$(date +%s)`
   - ⬜ 2. Implement Paper2Code code generation pipeline
   - ⬜ 3. Wrap generated code as MCP server and integrate with purplectl
 - ⏳ 🟡 **#24** Implement openapi2mcp converter (OpenAPI spec → MCP server) *(complexity 6 · deps: #13)*
-  - ⬜ 1. Install openapi-mcp-codegen and extend purple-mcp-converters.sh
+  - ⬜ 1. Install openapi-mcp-codegen and extend pleiades-mcp-converters.sh
   - ⬜ 2. Implement OpenAPI spec parsing for endpoints and parameters
   - ⬜ 3. Generate MCP tools with authentication handling for OpenAPI 3.0/3.1
   - ⬜ 4. Create purplectl convert openapi2mcp command and test with public APIs
 
 ### Cross-Bundle / Disaster Recovery
 
-- ⏳ 🟢 **#25** Add WASM runtime stratum to Quantum.sh BSD layer *(complexity 5 · deps: #10)*
+- ⏳ 🟢 **#25** Add WASM runtime stratum to Asterope.sh BSD layer *(complexity 5 · deps: #10)*
   - ⬜ 1. Install Wasmtime and jco tooling for WASM execution
   - ⬜ 2. Implement bootstrap_wasm_runtime() function and register capability
   - ⬜ 3. Add purplectl quantum wasm-run command integration
@@ -184,12 +184,12 @@ Backup before every edit: `cp file file.bak.$(date +%s)`
 
 | Path | Purpose |
 |---|---|
-| `PURPLE_STATE.md` | Shared agent state, known-good decisions, recent changes |
+| `PLEIADES_STATE.md` | Shared agent state, known-good decisions, recent changes |
 | `omnipkg` | Universal package ecosystem → Gentoo container pipeline |
 | `alien-bsd` | BSD/multi-ecosystem package converter (deb + Gentoo output) |
-| `root.x86_64/scripts/Quantum.sh` | BSD compatibility layer with WASM stratum |
-| `root.x86_64/scripts/Beryl.sh` | Cross-distro package manager + capability registry |
-| `root.x86_64/scripts/Ava.sh` | Adaptive builder and environment orchestrator |
+| `root.x86_64/scripts/Asterope.sh` | BSD compatibility layer with WASM stratum |
+| `root.x86_64/scripts/Taygete.sh` | Cross-distro package manager + capability registry |
+| `root.x86_64/scripts/Alcyone.sh` | Adaptive builder and environment orchestrator |
 | `.taskmaster/tasks/tasks.json` | Full task graph with 65 subtasks |
 | `.taskmaster/reports/task-complexity-report.json` | Complexity scores and expansion prompts |
 | `.taskmaster/docs/research_prd_2026-05-31.md` | Source PRD from 4 research bundles |

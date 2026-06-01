@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-SOPHIA_DIR="/var/lib/.sophia"
-REPO_FILE="${SOPHIA_DIR}/github_drop_repo"
-TOKEN_FILE="${SOPHIA_DIR}/github_token"
+MAIA_DIR="/var/lib/.maia"
+REPO_FILE="${MAIA_DIR}/github_drop_repo"
+TOKEN_FILE="${MAIA_DIR}/github_token"
 
 [ ! -f "$REPO_FILE" ] && { echo "[destroy-drop] No drop repo configured"; exit 0; }
 
@@ -30,5 +30,5 @@ else
     echo "[destroy-drop] WARN: No token available, skipping deletion"
 fi
 
-rm -f "$REPO_FILE" "${SOPHIA_DIR}/github_drop_url" 2>/dev/null || true
+rm -f "$REPO_FILE" "${MAIA_DIR}/github_drop_url" 2>/dev/null || true
 echo "[destroy-drop] Local state cleaned"

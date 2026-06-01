@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# purple-llm — thin wrapper around llama-cli for purple team RE and fuzz workflows
+set -euo pipefail
+
+CONF="${PURPLE_LLM_CONF:-/etc/pleiades/llm.conf}"
+[[ -f "$CONF" ]] || { echo "purple-llm: config not found at $CONF" >&2; exit 1; }
+# shellcheck source=/dev/null
+source "$CONF"
+
+MODE=""
+SYS_PROMPT=""
+INPUT_FILE=""
+OUTPUT_FILE=""
+CTX="${CTX_SIZE:-8192}"
+TEMP="${TEMP_DEFAULT:-0.1}"
+EXTRA_ARGS=()
+
+for arg in "$@"; do
+    case "$arg" in
+        --mode=re)       MODE=re;   SYS_PROMPT="You are a binary analysis expert. Analyze the decompiled code and identify: function purpose, parameter types, return values, security vulnerabilities (buffer overflows, format strings, privilege escalation, crypto weaknesses), and algorithm patterns. Be concise and precise." ;;
+        --mode=fuzz)     MODE=fuzz; SYS_PROMPT="You are a fuzzing and vulnerability research expert. Given this function signature and decompiled code, identify: input constraints and valid ranges, edge cases and boundary conditions, crash-inducing inputs, and write a minimal AFL++ harness in C." ;;
+        --mode=patch)    MODE=patch; SYS_PROMPT="You are a security patch engineer. Given this vulnerable code, write a minimal, correct patch that fixes the security issue without changing behavior. Output only the patched function." ;;
+        --sys=*)         SYS_PROMPT="${arg#--sys=}" ;;
+        --ctx=*)         CTX="${arg#--ctx=}" ;;
+        --temp=*)        TEMP="${arg#--temp=}" ;;
+        --file=*)        INPUT_FILE="${arg#--file=}" ;;
+        --output=*)      OUTPUT_FILE="${arg#--output=}" ;;
+        --*)             EXTRA_ARGS+=("$arg") ;;
+    esac
+done
+
+# Read input from file or stdin
+local_input=""
+if [[ -n "$INPUT_FILE" ]]; then
+    local_input=$(cat "$INPUT_FILE")
+elif [[ ! -t 0 ]]; then
+    local_input=$(cat)
+fi
+
+[[ -z "$local_input" ]] && { echo "purple-llm: no input (pipe text or use --file=)" >&2; exit 1; }
+[[ ! -x "$(command -v llama-cli)" ]] && { echo "purple-llm: llama-cli not found — run install-llm-stack.sh" >&2; exit 1; }
+
+LLAMA_ARGS=(
+    -m "$MODEL_PATH"
+    -c "$CTX"
+    -ngl "${GPU_LAYERS:-0}"
+    -t "${THREADS:-4}"
+    --temp "$TEMP"
+    --top-p "${TOP_P:-0.9}"
+    --repeat-penalty "${REPEAT_PENALTY:-1.1}"
+    -n "${MAX_TOKENS:-2048}"
+    --no-display-prompt
+    -s 42
+)
+
+if [[ -n "$SYS_PROMPT" ]]; then
+    LLAMA_ARGS+=(-p "[INST] <<SYS>>
+${SYS_PROMPT}
+<</SYS>>
+
+${local_input} [/INST]")
+else
+    LLAMA_ARGS+=(-p "$local_input")
+fi
+
+if [[ -n "$OUTPUT_FILE" ]]; then
+    llama-cli "${LLAMA_ARGS[@]}" "${EXTRA_ARGS[@]}" 2>/dev/null > "$OUTPUT_FILE"
+    echo "purple-llm: output written to $OUTPUT_FILE" >&2
+else
+    llama-cli "${LLAMA_ARGS[@]}" "${EXTRA_ARGS[@]}" 2>/dev/null
+fi

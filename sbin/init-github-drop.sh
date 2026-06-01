@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-SOPHIA_DIR="/var/lib/.sophia"
-mkdir -p "$SOPHIA_DIR"
+MAIA_DIR="/var/lib/.maia"
+mkdir -p "$MAIA_DIR"
 
 # Get GitHub token — check saved file, env var, or gh CLI
 TOKEN=""
-if [[ -f "${SOPHIA_DIR}/github_token" ]]; then
-    TOKEN=$(cat "${SOPHIA_DIR}/github_token")
+if [[ -f "${MAIA_DIR}/github_token" ]]; then
+    TOKEN=$(cat "${MAIA_DIR}/github_token")
 elif [[ -n "${GITHUB_TOKEN:-}" ]]; then
     TOKEN="$GITHUB_TOKEN"
-    echo "$TOKEN" > "${SOPHIA_DIR}/github_token"
+    echo "$TOKEN" > "${MAIA_DIR}/github_token"
 elif command -v gh &>/dev/null; then
-    TOKEN=$(gh auth token 2>/dev/null) && echo "$TOKEN" > "${SOPHIA_DIR}/github_token" || true
+    TOKEN=$(gh auth token 2>/dev/null) && echo "$TOKEN" > "${MAIA_DIR}/github_token" || true
 fi
 
 if [[ -z "$TOKEN" ]]; then
-    echo "[init-drop] ERROR: No GitHub token. Set GITHUB_TOKEN env var or save to ${SOPHIA_DIR}/github_token"
+    echo "[init-drop] ERROR: No GitHub token. Set GITHUB_TOKEN env var or save to ${MAIA_DIR}/github_token"
     exit 1
 fi
 
@@ -46,7 +46,7 @@ else
     echo "[init-drop] Creating private repo: ${USERNAME}/${REPO_NAME}"
     CREATE_RESP=$(curl -s -X POST -H "Authorization: token $TOKEN" \
         -H "Content-Type: application/json" \
-        -d "{\"name\":\"${REPO_NAME}\",\"private\":true,\"auto_init\":true,\"description\":\"Purple Team ephemeral dead drop\"}" \
+        -d "{\"name\":\"${REPO_NAME}\",\"private\":true,\"auto_init\":true,\"description\":\"Pleiades Team ephemeral dead drop\"}" \
         https://api.github.com/user/repos 2>/dev/null)
     
     # Verify creation
@@ -91,26 +91,26 @@ else
 fi
 
 # Store config
-echo "${USERNAME}/${REPO_NAME}" > "${SOPHIA_DIR}/github_drop_repo"
-echo "https://raw.githubusercontent.com/${USERNAME}/${REPO_NAME}/main/signal.json" > "${SOPHIA_DIR}/github_drop_url"
+echo "${USERNAME}/${REPO_NAME}" > "${MAIA_DIR}/github_drop_repo"
+echo "https://raw.githubusercontent.com/${USERNAME}/${REPO_NAME}/main/signal.json" > "${MAIA_DIR}/github_drop_url"
 
 echo "[init-drop] Active dead drop: ${USERNAME}/${REPO_NAME}"
-echo "[init-drop] Signal URL: $(cat ${SOPHIA_DIR}/github_drop_url)"
+echo "[init-drop] Signal URL: $(cat ${MAIA_DIR}/github_drop_url)"
 
 # === Seed ESP with encrypted credentials bundle ===
 echo "[init-drop] Seeding ESP recovery bundle..."
-TMP_BUNDLE="/tmp/_sophia_esp_bundle_$$.tar.gz"
+TMP_BUNDLE="/tmp/_maia_esp_bundle_$$.tar.gz"
 
 # Gather credentials into a bundle
-BUNDLE_DIR="/tmp/_sophia_bundle_$$"
+BUNDLE_DIR="/tmp/_maia_bundle_$$"
 mkdir -p "$BUNDLE_DIR"
-cp "${SOPHIA_DIR}/github_token" "$BUNDLE_DIR/github_token" 2>/dev/null || true
-cp /var/lib/.sophia/keys/ed25519.priv "$BUNDLE_DIR/" 2>/dev/null || true
-cp /var/lib/.sophia/keys/ed25519.pub "$BUNDLE_DIR/" 2>/dev/null || true
+cp "${MAIA_DIR}/github_token" "$BUNDLE_DIR/github_token" 2>/dev/null || true
+cp /var/lib/.maia/keys/ed25519.priv "$BUNDLE_DIR/" 2>/dev/null || true
+cp /var/lib/.maia/keys/ed25519.pub "$BUNDLE_DIR/" 2>/dev/null || true
 echo "${USERNAME}/${REPO_NAME}" > "$BUNDLE_DIR/github_drop_repo"
-cat "${SOPHIA_DIR}/github_drop_url" > "$BUNDLE_DIR/github_drop_url" 2>/dev/null || true
+cat "${MAIA_DIR}/github_drop_url" > "$BUNDLE_DIR/github_drop_url" 2>/dev/null || true
 echo "RESURRECT" | base64 > "$BUNDLE_DIR/signal_msg.b64"
-echo "SOPHIA_READY" > "$BUNDLE_DIR/state"
+echo "MAIA_READY" > "$BUNDLE_DIR/state"
 
 # Create compressed bundle
 tar -czf "$TMP_BUNDLE" -C "$BUNDLE_DIR" . 2>/dev/null || {
@@ -125,24 +125,24 @@ openssl enc -aes-256-cbc -salt -in "$TMP_BUNDLE" -out "${TMP_BUNDLE}.enc" -pass 
     cp "$TMP_BUNDLE" "${TMP_BUNDLE}.enc"
 }
 
-# Seed into ESP via efi_capsule_persist from SofiaX.sh
-if [[ -f /var/lib/.sophia/scripts/SofiaX.sh ]] || [[ -f /workspaces/gentoo/root.x86_64/scripts/SofiaX.sh ]]; then
+# Seed into ESP via efi_capsule_persist from Maia.sh
+if [[ -f /var/lib/.maia/scripts/Maia.sh ]] || [[ -f /workspaces/gentoo/root.x86_64/scripts/Maia.sh ]]; then
     # Source the efi_capsule_persist function
     SOFIA_SRC=""
-    for p in /var/lib/.sophia/scripts/SofiaX.sh /workspaces/gentoo/root.x86_64/scripts/SofiaX.sh; do
+    for p in /var/lib/.maia/scripts/Maia.sh /workspaces/gentoo/root.x86_64/scripts/Maia.sh; do
         [[ -f "$p" ]] && { SOFIA_SRC="$p"; break; }
     done
     if [[ -n "$SOFIA_SRC" ]]; then
         source "$SOFIA_SRC" 2>/dev/null || true
         if declare -f efi_capsule_persist &>/dev/null; then
-            efi_capsule_persist "${TMP_BUNDLE}.enc" "SOPHIA_READY" 2>/dev/null || \
+            efi_capsule_persist "${TMP_BUNDLE}.enc" "MAIA_READY" 2>/dev/null || \
                 echo "[init-drop] WARN: efi_capsule_persist returned non-zero"
         else
             echo "[init-drop] WARN: efi_capsule_persist not found after sourcing"
         fi
     fi
 else
-    echo "[init-drop] WARN: Cannot find SofiaX.sh to source efi_capsule_persist"
+    echo "[init-drop] WARN: Cannot find Maia.sh to source efi_capsule_persist"
 fi
 
 rm -rf "$BUNDLE_DIR" "$TMP_BUNDLE" "${TMP_BUNDLE}.enc" 2>/dev/null || true
