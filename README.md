@@ -8,6 +8,7 @@ Pleiades is a WSL2/Gentoo `systemd-nspawn` pleiades-team autonomous agent suite.
 |---|---|
 | **[Zheke32174/pleiades](https://github.com/Zheke32174/pleiades)** | This repo — host scripts, task master, toolchain catalog |
 | **[Zheke32174/pleiades-container](https://github.com/Zheke32174/pleiades-container)** | Gentoo nspawn rootfs — the container image running the agent stack |
+| **[Zheke32174/pleiades-factory-stack](https://github.com/Zheke32174/pleiades-factory-stack)** | Factory tools, AI/LLM stack, cross-ISA toolchain |
 | **[Zheke32174/pleiades-evidence](https://github.com/Zheke32174/pleiades-evidence)** | Private — secured evidence archive (auto-pushed by selfdestruct) |
 
 **Rehydration:** `dead_drop/signal.json` in this repo is the dead drop — writing `{"action":"redeploy"}` triggers the ESP capsule to pull and rebuild.
@@ -193,3 +194,42 @@ Backup before every edit: `cp file file.bak.$(date +%s)`
 | `.taskmaster/tasks/tasks.json` | Full task graph with 65 subtasks |
 | `.taskmaster/reports/task-complexity-report.json` | Complexity scores and expansion prompts |
 | `.taskmaster/docs/research_prd_2026-05-31.md` | Source PRD from 4 research bundles |
+
+---
+
+## Credits & Third-Party Components
+
+This project incorporates and builds upon the following open-source projects and technologies:
+
+### Core Infrastructure
+- **Gentoo Linux** — Stage 3 base system ([gentoo.org](https://gentoo.org)) — GPL v2
+- **systemd** — System and service manager ([systemd.io](https://systemd.io)) — LGPL v2.1+
+- **s6-overlay** — Process supervision suite ([skarnet.org](https://skarnet.org/software/s6/)) — ISC License
+- **Bedrock Linux** — Multi-distribution strata system ([bedrocklinux.org](https://bedrocklinux.org)) — GPL v2
+- **systemd-nspawn** — Lightweight namespace containers — LGPL v2.1+
+- **WSL2** — Windows Subsystem for Linux ([learn.microsoft.com/wsl](https://learn.microsoft.com/en-us/windows/wsl/)) — Microsoft ToS
+
+### Agent & AI Frameworks
+- **Hermes Agent** — AI agent framework ([github.com/NousResearch/hermes](https://github.com/NousResearch/hermes)) — MIT
+- **Claude Code** — CLI coding agent ([docs.anthropic.com](https://docs.anthropic.com/en/docs/claude-code)) — Anthropic ToS
+- **Codex CLI** — CLI coding agent ([github.com/openai/codex](https://github.com/openai/codex)) — Apache 2.0
+- **Gemini CLI** — CLI coding agent ([google-gemini.github.io](https://google-gemini.github.io)) — Google ToS
+- **OpenCode** — CLI coding agent ([github.com/samp-labs/opencode](https://github.com/samp-labs/opencode)) — Apache 2.0
+
+### Emulation & Cross-ISA
+- **QEMU** — Machine emulator ([qemu.org](https://qemu.org)) — GPL v2
+- **Box64** — Linux x86_64 emulator for ARM64 ([github.com/ptitSeb/box64](https://github.com/ptitSeb/box64)) — MIT
+- **FEX** — Fast x86 emulator for ARM ([github.com/FEX-Emu/FEX](https://github.com/FEX-Emu/FEX)) — MIT
+
+### Research & Tooling
+- **arXiv** — Open access scholarly articles ([arxiv.org](https://arxiv.org)) — Cornell University
+- **Weights & Biases** — ML experiment tracking ([wandb.ai](https://wandb.ai)) — MIT
+- **PyGount** — Code analysis and LOC counting ([github.com/roskakori/pygount](https://github.com/roskakori/pygount)) — BSD
+- **TaskMaster** — AI-driven task orchestration framework — Part of this project
+
+### Development Resources
+- **[Underhall](https://github.com/Zheke32174/underhall)** — Original Arch nspawn install layer (companion project)
+- **[Undercity](https://github.com/Zheke32174/undercity)** — Backup/restore tooling (companion project)
+
+### License
+The Pleiades-sourced content in this repository is provided under the MIT License unless otherwise noted. Each integrated third-party component is subject to its own license as referenced above.
