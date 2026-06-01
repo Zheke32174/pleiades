@@ -1,0 +1,36 @@
+{
+    "name": "Pleiades Purple Team Suite",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+        "ghcr.io/devcontainers/features/go:1": {},
+        "ghcr.io/devcontainers/features/python:1": {},
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    },
+    "forwardPorts": [8080, 9090],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "hashicorp.terraform",
+                "yzhang.markdown-all-in-one",
+                "mads-hartmann.bash-ide-vscode",
+                "timonwong.shellcheck",
+                "ms-python.python",
+                "exiasr.hadolint",
+                "bierner.markdown-mermaid",
+                "redhat.ansible",
+                "github.vscode-github-actions"
+            ],
+            "settings": {
+                "files.autoSave": "onFocusChange",
+                "editor.formatOnSave": true,
+                "shellcheck.run": "onSave",
+                "terminal.integrated.defaultProfile.linux": "bash"
+            }
+        }
+    },
+    "postCreateCommand": "chmod +x .devcontainer/setup.sh && bash .devcontainer/setup.sh",
+    "remoteUser": "vscode",
+    "mounts": [
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    ]
+}
