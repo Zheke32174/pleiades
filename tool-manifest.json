@@ -1,0 +1,678 @@
+{
+  "schema": "pleiades-tool-manifest-v1",
+  "framework": "agents-best-practices",
+  "tools": {
+    "CoEvoSkills": {
+      "category": "Skill & Knowledge",
+      "path": "/workspaces/gentoo/tools/CoEvoSkills",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "CodexSaver": {
+      "category": "Skill & Knowledge",
+      "path": "/workspaces/gentoo/tools/CodexSaver",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "DeepCode": {
+      "category": "Other",
+      "path": "/workspaces/gentoo/tools/DeepCode",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "FEX": {
+      "category": "Emulation & Cross-ISA",
+      "path": "/workspaces/gentoo/tools/FEX",
+      "has_readme": false,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "LUKSbox": {
+      "category": "Other",
+      "path": "/workspaces/gentoo/tools/LUKSbox",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "MemOS": {
+      "category": "Other",
+      "path": "/workspaces/gentoo/tools/MemOS",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "OpenHands": {
+      "category": "Other",
+      "path": "/workspaces/gentoo/tools/OpenHands",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "Photo-agents": {
+      "category": "Other",
+      "path": "/workspaces/gentoo/tools/Photo-agents",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "ShadowCat": {
+      "category": "Other",
+      "path": "/workspaces/gentoo/tools/ShadowCat",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "SkillGen": {
+      "category": "Skill & Knowledge",
+      "path": "/workspaces/gentoo/tools/SkillGen",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "SkillX": {
+      "category": "Skill & Knowledge",
+      "path": "/workspaces/gentoo/tools/SkillX",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "WSL": {
+      "category": "Other",
+      "path": "/workspaces/gentoo/tools/WSL",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "agent-oss": {
+      "category": "Skill & Knowledge",
+      "path": "/workspaces/gentoo/tools/agent-oss",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "agent-rules-books": {
+      "category": "Skill & Knowledge",
+      "path": "/workspaces/gentoo/tools/agent-rules-books",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "ai-memory": {
+      "category": "Skill & Knowledge",
+      "path": "/workspaces/gentoo/tools/ai-memory",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "angr": {
+      "category": "Binary Analysis & Reversing",
+      "path": "/workspaces/gentoo/tools/angr",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "auth.md": {
+      "category": "Skill & Knowledge",
+      "path": "/workspaces/gentoo/tools/auth.md",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "auto-identity-remove": {
+      "category": "Skill & Knowledge",
+      "path": "/workspaces/gentoo/tools/auto-identity-remove",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "box64": {
+      "category": "Emulation & Cross-ISA",
+      "path": "/workspaces/gentoo/tools/box64",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "btype": {
+      "category": "Emulation & Cross-ISA",
+      "path": "/workspaces/gentoo/tools/btype",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "chorus": {
+      "category": "AI/Agent Frameworks",
+      "path": "/workspaces/gentoo/tools/chorus",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "claude-p": {
+      "category": "Other",
+      "path": "/workspaces/gentoo/tools/claude-p",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "codegraph": {
+      "category": "Binary Analysis & Reversing",
+      "path": "/workspaces/gentoo/tools/codegraph",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "codeindex": {
+      "category": "Research Tools",
+      "path": "/workspaces/gentoo/tools/codeindex",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "continual-harness": {
+      "category": "Research Tools",
+      "path": "/workspaces/gentoo/tools/continual-harness",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "ddisasm": {
+      "category": "Binary Analysis & Reversing",
+      "path": "/workspaces/gentoo/tools/ddisasm",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "elephant-agent": {
+      "category": "AI/Agent Frameworks",
+      "path": "/workspaces/gentoo/tools/elephant-agent",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "fastapi_mcp": {
+      "category": "MCP Connectors",
+      "path": "/workspaces/gentoo/tools/fastapi_mcp",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "fastmcp": {
+      "category": "MCP Connectors",
+      "path": "/workspaces/gentoo/tools/fastmcp",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "files-sdk": {
+      "category": "MCP Connectors",
+      "path": "/workspaces/gentoo/tools/files-sdk",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "ghidra": {
+      "category": "Binary Analysis & Reversing",
+      "path": "/workspaces/gentoo/tools/ghidra",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "gitingest": {
+      "category": "Research Tools",
+      "path": "/workspaces/gentoo/tools/gitingest",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "hermes-agent-self-evolution": {
+      "category": "AI/Agent Frameworks",
+      "path": "/workspaces/gentoo/tools/hermes-agent-self-evolution",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "jcodemunch-mcp": {
+      "category": "MCP Connectors",
+      "path": "/workspaces/gentoo/tools/jcodemunch-mcp",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "mcsema": {
+      "category": "Binary Analysis & Reversing",
+      "path": "/workspaces/gentoo/tools/mcsema",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "openapi-mcp-codegen": {
+      "category": "MCP Connectors",
+      "path": "/workspaces/gentoo/tools/openapi-mcp-codegen",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "opensquilla": {
+      "category": "AI/Agent Frameworks",
+      "path": "/workspaces/gentoo/tools/opensquilla",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "paper2code": {
+      "category": "Research Tools",
+      "path": "/workspaces/gentoo/tools/paper2code",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "piia-engram": {
+      "category": "MCP Connectors",
+      "path": "/workspaces/gentoo/tools/piia-engram",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "remill": {
+      "category": "Binary Analysis & Reversing",
+      "path": "/workspaces/gentoo/tools/remill",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "repomix": {
+      "category": "Research Tools",
+      "path": "/workspaces/gentoo/tools/repomix",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "resym": {
+      "category": "Binary Analysis & Reversing",
+      "path": "/workspaces/gentoo/tools/resym",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "retrowrite": {
+      "category": "Binary Analysis & Reversing",
+      "path": "/workspaces/gentoo/tools/retrowrite",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "revng": {
+      "category": "Binary Analysis & Reversing",
+      "path": "/workspaces/gentoo/tools/revng",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "rmux": {
+      "category": "Other",
+      "path": "/workspaces/gentoo/tools/rmux",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "smallcode": {
+      "category": "AI/Agent Frameworks",
+      "path": "/workspaces/gentoo/tools/smallcode",
+      "has_readme": true,
+      "has_setup_script": true,
+      "has_mcp_config": true,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "zerolang": {
+      "category": "AI/Agent Frameworks",
+      "path": "/workspaces/gentoo/tools/zerolang",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    },
+    "zerostack": {
+      "category": "AI/Agent Frameworks",
+      "path": "/workspaces/gentoo/tools/zerostack",
+      "has_readme": true,
+      "has_setup_script": false,
+      "has_mcp_config": false,
+      "integration_status": "unknown",
+      "agent_compatibility": [
+        "claude",
+        "codex",
+        "gemini",
+        "opencode"
+      ]
+    }
+  }
+}
