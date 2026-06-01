@@ -369,7 +369,7 @@ var attackerCount int64
 var contained bool
 const threshold = 500
 
-func reportToPleiades Nexus(msg string) {
+func reportToPleiadesNexus(msg string) {
     f, err := os.OpenFile("/run/pleiades/pleiades-nexus_fifo", os.O_WRONLY|os.O_APPEND|syscall.O_NONBLOCK, 0666)
     if err == nil {
         defer f.Close()
@@ -386,7 +386,7 @@ func addToBlocklist(ip string) {
         "{ type ipv4_addr; flags interval; }").Run()
     exec.Command("nft", "add", "element", "inet", "filter", "blocklist",
         "{ "+ip+" }").Run()
-    reportToPleiades Nexus(fmt.Sprintf("BLOCKLIST_ADD|%s", ip))
+    reportToPleiadesNexus(fmt.Sprintf("BLOCKLIST_ADD|%s", ip))
 }
 
 func archiveLogs() {
@@ -401,7 +401,7 @@ func archiveLogs() {
     os.Remove("/tmp/pleiades_journal_" + stamp + ".json")
     exec.Command("journalctl", "--rotate").Run()
     exec.Command("journalctl", "--vacuum-time=1s").Run()
-    reportToPleiades Nexus(fmt.Sprintf("LOGS_ARCHIVED|%s", archive))
+    reportToPleiadesNexus(fmt.Sprintf("LOGS_ARCHIVED|%s", archive))
 }
 
 func contain() {
@@ -410,7 +410,7 @@ func contain() {
     }
     contained = true
     log.Println("Threat threshold exceeded – initiating Pleiades Nexus containment")
-    reportToPleiades Nexus("CONTAINMENT_TRIGGERED")
+    reportToPleiadesNexus("CONTAINMENT_TRIGGERED")
 
     // Block all current attackers from conntrack
     cmd := exec.Command("conntrack", "-L")
