@@ -52,3 +52,9 @@ root.x86_64/scripts/*_20[0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9]
 root.x86_64/scripts/.pytest_cache/
 root.x86_64/scripts/node_modules/
 .claude/
+
+# AI session artifacts — internal only, never ship
+.octo/
+.claude-octopus/
+polyglot-testing/
+*.bak.*

@@ -20,7 +20,7 @@ gentoo-up                    # start container
 gentoo-shell                 # enter container
 
 # Install auto-start at OS boot (WSL or bare metal)
-sudo bash root.x86_64/scripts/install-boot-persistence.sh
+sudo bash scripts/pleiades-install-host-autostart.sh
 
 # Emergency: preserve evidence, wipe traces, signal redeploy
 sudo bash root.x86_64/scripts/pleiades-selfdestruct.sh --redeploy
