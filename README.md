@@ -4,29 +4,6 @@ Pleiades is an owner-authorized defensive container lab for host-protection rese
 
 The project is designed around a minimal host footprint. The host provides a small launcher, heartbeat, bridge, and recovery escape hatch. Active analysis, decoy behavior, policy decisions, and forensic processing live inside a Gentoo `systemd-nspawn` container or nested sandbox.
 
-## Intended Use
-
-Pleiades is intended for:
-
-- local security labs on hardware you own or administer
-- defensive telemetry collection with owner awareness
-- decoy service testing and honeypot research
-- forensic evidence handling and incident response support
-- policy-gated automation research
-- owner-authorized recovery testing
-
-Pleiades is **not** intended for unauthorized deployment, stealth installation, credential theft, lateral movement, anti-forensic use, or third-party reconnaissance.
-
-## Scope and Safety
-
-| Allowed | Not allowed |
-|---------|-------------|
-| Local lab testing on owned hardware | Deployment without explicit authorization |
-| Owner-authorized host monitoring | Unauthorized persistence |
-| Decoy service telemetry | Credential theft |
-| Forensic evidence capture | Lateral movement |
-| Container recovery testing | Unauthorized reconnaissance |
-| Defensive automation research | Log wiping to conceal unauthorized activity |
 
 ## Repository Map
 
