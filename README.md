@@ -12,7 +12,6 @@ The project is designed around a minimal host footprint. The host provides a sma
 | [`pleiades`](https://github.com/Zheke32174/pleiades) | Host launcher, docs, agent scripts, architecture |
 | [`pleiades-container`](https://github.com/Zheke32174/pleiades-container) | Gentoo `systemd-nspawn` container layer |
 | [`pleiades-factory-stack`](https://github.com/Zheke32174/pleiades-factory-stack) | Tooling, AI/LLM integration, cross-ISA research helpers |
-| `pleiades-evidence` | Private forensic evidence archive — never public |
 
 ## Architecture
 
