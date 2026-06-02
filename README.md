@@ -1,25 +1,36 @@
 # Pleiades
 
-Pleiades is an owner-authorized defensive container lab for host-protection research, decoy-service telemetry, and forensic evidence collection.
+Pleiades is a defensive container lab for host-protection research, honeypot telemetry, and forensic evidence collection on hardware you own and administer.
 
-The project is designed around a minimal host footprint. The host provides a small launcher, heartbeat, bridge, and recovery escape hatch. Active analysis, decoy behavior, policy decisions, and forensic processing live inside a Gentoo `systemd-nspawn` container or nested sandbox.
+The design keeps the host footprint small. The host runs a launcher, a heartbeat service, and a host-to-container bridge. The active analysis, decoy behavior, policy decisions, and forensic processing run inside a Gentoo `systemd-nspawn` container.
 
+## What it's for
+
+- Local security labs on hardware you own or explicitly administer
+- Honeypot and decoy service research with local telemetry
+- Forensic evidence collection and incident response testing
+- Container rebuild and recovery drills
+- Policy-gated automation research
+
+**Not intended for:** unauthorized deployment, stealth installation, credential theft, lateral movement, anti-forensics, or reconnaissance on systems you don't own.
 
 ## Repository Map
 
-| Repo | Purpose |
-|------|---------|
-| [`pleiades`](https://github.com/Zheke32174/pleiades) | Host launcher, docs, agent scripts, architecture |
-| [`pleiades-container`](https://github.com/Zheke32174/pleiades-container) | Gentoo `systemd-nspawn` container layer |
-| [`pleiades-factory-stack`](https://github.com/Zheke32174/pleiades-factory-stack) | Tooling, AI/LLM integration, cross-ISA research helpers |
+| Repo | Status | Purpose |
+|------|--------|---------|
+| [`pleiades`](https://github.com/Zheke32174/pleiades) | Release-track | Host launcher, docs, agent scripts, architecture |
+| [`pleiades-container`](https://github.com/Zheke32174/pleiades-container) | Release-track | Gentoo `systemd-nspawn` container layer |
+| [`pleiades-factory-stack`](https://github.com/Zheke32174/pleiades-factory-stack) | Release-track | Tooling, AI/LLM integration, cross-ISA research helpers |
+| `pleiades-factory` | Private staging | Future factory orchestration work; not public-ready yet |
+| `pleiades-evidence` | Private forever | Forensic evidence archive — never public |
 
 ## Architecture
 
 ```
 Host (minimal footprint)
-  ├─ owner-authorized launcher + heartbeat
+  ├─ launcher + heartbeat
   ├─ host-to-container bridge and telemetry relay
-  └─ recovery escape hatch (owner-signed stop token)
+  └─ recovery fallback (stop token)
 
 Gentoo systemd-nspawn container
   ├─ Alcyone   — host capability inventory
@@ -33,14 +44,13 @@ Gentoo systemd-nspawn container
   └─ Sterope   — watchdog and integrity verifier
 ```
 
-## Safety Defaults
+## How It Works
 
-- Deny-by-default request policy
-- Explicit owner approval required for write/mutate operations
+- Requests to decoy services are policy-gated before any action is taken
 - Destructive operations require explicit flags (`--cleanup-local`, `--confirm-owned-system`)
-- All scripts support `--dry-run`
-- No committed secrets or credentials
-- Evidence archive remains private
+- Risky setup and recovery scripts should be run with `--dry-run` where supported — review each script before use
+- No credentials or secrets are committed to this repository
+- The evidence archive remains private
 
 ## Quick Start
 
@@ -60,9 +70,15 @@ bash root.x86_64/scripts/pleiades-regression.sh --dry-run
 
 For container setup on a new machine, see [`pleiades-container`](https://github.com/Zheke32174/pleiades-container).
 
-## Owner-Authorized Recovery (Advanced)
+## Recovery Tools (Advanced)
 
-Recovery helpers are experimental and kept under `experimental/owner-authorized-recovery/`. They are **not installed by default**. Review each script and use `--dry-run` first. These tools are only for systems the operator owns and explicitly administers.
+Recovery helpers live under `experimental/owner-authorized-recovery/`. They are not installed by default. Review each script and use `--dry-run` first. These tools are only for systems you own and explicitly administer.
+
+## AI Assistance Disclosure
+
+Parts of this project's documentation, planning notes, cleanup checklists, and script scaffolding were developed with assistance from AI tools, including Claude by Anthropic and ChatGPT by OpenAI.
+
+Human maintainers are responsible for reviewing, testing, security boundaries, attribution, and final repository contents. AI assistance does not replace upstream attribution — every third-party tool must still be credited to its original developer or organization.
 
 ## License
 
@@ -70,7 +86,7 @@ See [LICENSE](LICENSE).
 
 ## Security
 
-See [SECURITY.md](SECURITY.md). Report security issues via [GitHub Security Advisories](https://github.com/Zheke32174/pleiades/security/advisories).
+See [SECURITY.md](SECURITY.md). Report issues via [GitHub Security Advisories](https://github.com/Zheke32174/pleiades/security/advisories).
 
 ## Disclaimer
 
