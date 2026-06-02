@@ -101,6 +101,20 @@ jobs:
           fi
           echo "No .env files found."
 
+  # ── Polyglot heredoc syntax (hard fail) ─────────────────────────────────
+  polyglot-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: false
+      - name: Check polyglot heredoc syntax (Go/Rust/JS)
+        run: |
+          chmod +x ci/check-polyglot.sh
+          bash ci/check-polyglot.sh root.x86_64/scripts
+
   # ── DevContainer (advisory) ──────────────────────────────────────────────
   devcontainer:
     runs-on: ubuntu-latest
