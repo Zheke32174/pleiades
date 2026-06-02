@@ -447,7 +447,7 @@ const blocked   = new Set();
 const fakeHosts = new Map();
 const sessionProfiles = new Map();
 
-const pleiades-rebirthActive = () => existsSync("/run/pleiades/pleiades-rebirth_active");
+const pleiadesRebirthActive = () => existsSync("/run/pleiades/pleiades-rebirth_active");
 
 function generateFakeIP() {
     return `10.${(Math.random()*256)|0}.${(Math.random()*256)|0}.${(Math.random()*256)|0}`;
@@ -636,7 +636,7 @@ const server = createServer((conn) => {
 
     if (!fakeHosts.has(ip)) fakeHosts.set(ip, generateFakeIP());
 
-    if (pleiades-rebirthActive()) {
+    if (pleiadesRebirthActive()) {
         conn.write(`Connected to ${fakeHosts.get(ip)}\r\n`);
     }
     handleSSH(conn, ip);

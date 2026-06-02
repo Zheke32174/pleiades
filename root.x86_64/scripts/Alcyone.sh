@@ -367,7 +367,7 @@ import (
     "time"
 )
 
-func reportToPleiades Nexus(msg string) {
+func reportToPleiadesNexus(msg string) {
     f, err := os.OpenFile("/run/pleiades/pleiades-nexus_fifo", os.O_WRONLY|os.O_APPEND|syscall.O_NONBLOCK|os.O_CREATE, 0666)
     if err == nil {
         defer f.Close()
@@ -425,7 +425,7 @@ func handleConn(conn net.Conn, port string) {
     if len(lines) > 0 {
         event += "|data=" + strings.Join(lines[:min(2, len(lines))], ";")
     }
-    reportToPleiades Nexus(event)
+    reportToPleiadesNexus(event)
     setAttackerIP(remoteIP)
 }
 

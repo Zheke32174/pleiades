@@ -27,13 +27,23 @@ run_group() {
 }
 
 container_up() {
+    # Prefer the machinectl leader PID (the container's init) over the nspawn
+    # manager wrapper — nsenter on the manager enters the host namespace, not
+    # the container's, so binary checks and ss/systemctl calls all fail.
+    local leader
+    leader="$(machinectl show pleiades-dr 2>/dev/null | awk -F= '/^Leader=/{print $2}')"
+    if [[ -n "$leader" && "$leader" -gt 1 ]]; then
+        CONTAINER_PID="$leader"
+        return 0
+    fi
+    # Fallback: nspawn manager PID (works for pgrep presence check only)
     CONTAINER_PID="$(pgrep -x systemd-nspawn | head -1 2>/dev/null || true)"
     [[ -n "$CONTAINER_PID" ]]
 }
 
 in_container() {
-    # Run a command inside the nspawn container via nsenter
-    nsenter -t "$CONTAINER_PID" -m -u -i -n -p -- bash -c "$1" 2>/dev/null
+    # Run a command inside the nspawn container via nsenter on the leader PID
+    sudo nsenter -t "$CONTAINER_PID" -m -u -i -n -p -- bash -c "$1" 2>/dev/null
 }
 
 summary() {

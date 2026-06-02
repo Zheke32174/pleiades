@@ -388,7 +388,7 @@ func isWSL() bool {
     return strings.Contains(strings.ToLower(string(data)), "microsoft")
 }
 
-func reportToPleiades Nexus(msg string) {
+func reportToPleiadesNexus(msg string) {
     f, err := os.OpenFile("/run/pleiades/pleiades-nexus_fifo", os.O_WRONLY|os.O_APPEND|syscall.O_NONBLOCK, 0666)
     if err == nil {
         defer f.Close()
@@ -396,7 +396,7 @@ func reportToPleiades Nexus(msg string) {
     }
 }
 
-func isPleiades RebirthActive() bool {
+func isPleiadesRebirthActive() bool {
     _, err := os.Stat("/run/pleiades/pleiades-rebirth_active")
     return err == nil
 }
@@ -415,18 +415,18 @@ func isAlive(comp Component) bool {
 
 func regenerate(comp Component) {
     // If pleiades-rebirth is active and component is critical, skip to avoid interference
-    if isPleiades RebirthActive() && comp.IsCritical {
+    if isPleiadesRebirthActive() && comp.IsCritical {
         log.Printf("Pleiades Rebirth active – skipping regeneration of %s", comp.Name)
-        reportToPleiades Nexus(fmt.Sprintf("SKIP_REGENERATE|%s", comp.Name))
+        reportToPleiadesNexus(fmt.Sprintf("SKIP_REGENERATE|%s", comp.Name))
         return
     }
     if _, err := os.Stat(comp.Installer); err == nil {
         log.Printf("Regenerating %s", comp.Name)
-        reportToPleiades Nexus(fmt.Sprintf("REGENERATE|%s", comp.Name))
+        reportToPleiadesNexus(fmt.Sprintf("REGENERATE|%s", comp.Name))
         exec.Command(comp.Installer).Run()
     } else {
         log.Printf("Installer missing for %s", comp.Name)
-        reportToPleiades Nexus(fmt.Sprintf("MISSING_INSTALLER|%s", comp.Name))
+        reportToPleiadesNexus(fmt.Sprintf("MISSING_INSTALLER|%s", comp.Name))
     }
 }
 
@@ -461,16 +461,16 @@ func processCommands() {
                         if _, err := os.Stat(sockPath); err == nil {
                             sh := fmt.Sprintf("echo %q | nc -U %s -w 1", instruction, sockPath)
                             exec.Command("sh", "-c", sh).Run()
-                            reportToPleiades Nexus(fmt.Sprintf("UPGRADE|%s|%s", compName, instruction))
+                            reportToPleiadesNexus(fmt.Sprintf("UPGRADE|%s|%s", compName, instruction))
                         }
                     }
                 } else if line == "pause_regeneration" {
                     log.Println("Regeneration paused")
-                    reportToPleiades Nexus("PAUSE_REGENERATION")
+                    reportToPleiadesNexus("PAUSE_REGENERATION")
                     os.WriteFile("/run/pleiades/.pause_regeneration", []byte("1"), 0644)
                 } else if line == "resume_regeneration" {
                     log.Println("Regeneration resumed")
-                    reportToPleiades Nexus("RESUME_REGENERATION")
+                    reportToPleiadesNexus("RESUME_REGENERATION")
                     os.Remove("/run/pleiades/.pause_regeneration")
                 }
             }
@@ -512,7 +512,7 @@ use std::process::Command;
 use std::thread;
 use std::time::Duration;
 
-fn report_to_pleiades-nexus(msg: &str) {
+fn report_to_pleiades_nexus(msg: &str) {
     if let Ok(mut fifo) = OpenOptions::new().write(true).append(true).custom_flags(0o4000).open("/run/pleiades/pleiades-nexus_fifo") {
         let _ = writeln!(fifo, "{}", msg);
     }
@@ -525,7 +525,7 @@ fn hot_patch_conntrack_flood() {
     let _ = Command::new("sysctl")
         .args(&["-w", "net.netfilter.nf_conntrack_tcp_timeout_established=300"])
         .output();
-    report_to_pleiades-nexus("HOTPATCH|conntrack_flood");
+    report_to_pleiades_nexus("HOTPATCH|conntrack_flood");
 }
 
 fn hot_patch_watchdog_suspend() {
@@ -533,11 +533,11 @@ fn hot_patch_watchdog_suspend() {
         .args(&["bash", "-c", "while true; do systemctl restart alcyone-watchdog taygete-watchdog 2>/dev/null; sleep 2; done &"])
         .spawn()
         .ok();
-    report_to_pleiades-nexus("HOTPATCH|watchdog_suspend");
+    report_to_pleiades_nexus("HOTPATCH|watchdog_suspend");
 }
 
 fn hot_patch_ssh_block() {
-    report_to_pleiades-nexus("HOTPATCH|remote_access_degraded|local_ssh_unreachable|no_listener_opened");
+    report_to_pleiades_nexus("HOTPATCH|remote_access_degraded|local_ssh_unreachable|no_listener_opened");
 }
 
 fn detect_and_patch() {
@@ -592,7 +592,7 @@ function log(msg) {
     appendFileSync(LOG, `${ts} - ${msg}\n`);
 }
 
-function reportToPleiades Nexus(msg) {
+function reportToPleiadesNexus(msg) {
     try { appendFileSync("/run/pleiades/pleiades-nexus_fifo", msg + "\n"); } catch(e) {}
 }
 
@@ -601,7 +601,7 @@ if (!existsSync(CMD_PATH)) {
 }
 
 log("Command processor started");
-reportToPleiades Nexus("CMD_PROCESSOR_STARTED");
+reportToPleiadesNexus("CMD_PROCESSOR_STARTED");
 
 let offset = 0;
 
@@ -612,7 +612,7 @@ function processCmd(line) {
             const component = parts[1];
             const instruction = parts.slice(2).join(':');
             log(`Upgrading ${component} with ${instruction}`);
-            reportToPleiades Nexus(`UPGRADE|${component}|${instruction}`);
+            reportToPleiadesNexus(`UPGRADE|${component}|${instruction}`);
             const sockPath = `/run/pleiades/${component}.sock`;
             if (existsSync(sockPath)) {
                 try {
@@ -626,11 +626,11 @@ function processCmd(line) {
         }
     } else if (line === 'pause_regeneration') {
         log('Regeneration paused');
-        reportToPleiades Nexus('PAUSE_REGENERATION');
+        reportToPleiadesNexus('PAUSE_REGENERATION');
         writeFileSync('/run/pleiades/.pause_regeneration', '1');
     } else if (line === 'resume_regeneration') {
         log('Regeneration resumed');
-        reportToPleiades Nexus('RESUME_REGENERATION');
+        reportToPleiadesNexus('RESUME_REGENERATION');
         if (existsSync('/run/pleiades/.pause_regeneration')) unlinkSync('/run/pleiades/.pause_regeneration');
     }
 }

