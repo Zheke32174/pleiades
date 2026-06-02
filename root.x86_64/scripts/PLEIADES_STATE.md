@@ -133,6 +133,16 @@ These things look wrong but are intentional. Do not "fix" them.
 
 ## Recently Changed
 
+### 2026-06-02 (DR test + polyglot identifier fixes)
+- **Disaster recovery test (Task #26) completed**: fresh stage3 rootfs → Maia deployment → full stack → PASS=34 FAIL=0 SKIP=1 (skip is `/host/sys` WSL limitation only).
+- **Root cause found**: polyglot code generators in 4 scripts emitted Go/Rust/JS identifiers with hyphens or spaces, which are illegal in those languages. Fixed in commit `136b2f8`.
+  - Celaeno.sh: Go `reportToPleiades Nexus` → `reportToPleiadesNexus`; Rust `report_to_pleiades-nexus` → `report_to_pleiades_nexus`
+  - Alcyone.sh: Go `reportToPleiades Nexus` → `reportToPleiadesNexus`
+  - Electra.sh: Rust `report_to_pleiades-nexus` → `report_to_pleiades_nexus`
+  - Taygete.sh: JS `pleiades-rebirthActive` → `pleiadesRebirthActive`
+- **pleiades-regression.sh**: fixed `in_container` to use container leader PID (from `machinectl show`) instead of nspawn wrapper PID; added `sudo` to nsenter calls. Prior to this fix, `maia_crypto` and port checks all probed the host namespace instead of the container.
+- **bun PATH bug**: `ensure_bun` in Taygete.sh/Celaeno.sh installs bun to `/root/.bun/bin/bun` but doesn't add it to PATH, causing fallthrough to `pkg_install nodejs` (multi-hour compile). Worked around by symlinking `/root/.bun/bin/bun` → `/usr/local/bin/bun`; scripts now find bun on PATH immediately. Consider fixing `ensure_bun` to add `/root/.bun/bin` to PATH after the curl install.
+
 ### 2026-05-30 (Codex hook compatibility fix)
 - Diagnosed Codex PreToolUse/PostToolUse failures as a `claude-mem` hook schema mismatch, not a pleiades-team runtime failure.
 - Codex rejected hook JSON containing `suppressOutput`; patched the active `claude-mem` worker bundle under `/home/fixxia/.claude/plugins/cache/thedotmack/claude-mem/13.3.0/scripts/worker-service.cjs` so Codex-facing hook responses no longer emit that unsupported field.
