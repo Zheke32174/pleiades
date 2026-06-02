@@ -1,18 +1,8 @@
 # Pleiades
 
-Pleiades is a defensive container lab for host-protection research, honeypot telemetry, and forensic evidence collection on hardware you own and administer.
+Pleiades is a Gentoo `systemd-nspawn` container lab for running honeypot services, collecting forensic evidence, and testing defensive automation on hardware you own. The host does the minimum — launcher, heartbeat, bridge. Analysis, decoy behavior, and policy decisions run inside the container.
 
-The design keeps the host footprint small. The host runs a launcher, a heartbeat service, and a host-to-container bridge. The active analysis, decoy behavior, policy decisions, and forensic processing run inside a Gentoo `systemd-nspawn` container.
-
-## What it's for
-
-- Local security labs on hardware you own or explicitly administer
-- Honeypot and decoy service research with local telemetry
-- Forensic evidence collection and incident response testing
-- Container rebuild and recovery drills
-- Policy-gated automation research
-
-**Not intended for:** unauthorized deployment, stealth installation, credential theft, lateral movement, anti-forensics, or reconnaissance on systems you don't own.
+It is not for unauthorized deployment, stealth installation, credential theft, lateral movement, or reconnaissance on systems you don't own.
 
 ## Repository Map
 
@@ -44,13 +34,9 @@ Gentoo systemd-nspawn container
   └─ Sterope   — watchdog and integrity verifier
 ```
 
-## How It Works
+## Behavior
 
-- Requests to decoy services are policy-gated before any action is taken
-- Destructive operations require explicit flags (`--cleanup-local`, `--confirm-owned-system`)
-- Risky setup and recovery scripts should be run with `--dry-run` where supported — review each script before use
-- No credentials or secrets are committed to this repository
-- The evidence archive remains private
+Requests to decoy services are policy-gated before any action is taken. Destructive operations require explicit confirmation flags (`--cleanup-local`, `--confirm-owned-system`). Setup and recovery scripts that have `--dry-run` support should be run with it first — review each script before running it on a live system. No credentials are committed to this repository; the evidence archive is private.
 
 ## Quick Start
 
@@ -70,24 +56,16 @@ bash root.x86_64/scripts/pleiades-regression.sh --dry-run
 
 For container setup on a new machine, see [`pleiades-container`](https://github.com/Zheke32174/pleiades-container).
 
-## Recovery Tools (Advanced)
+## Recovery Tools
 
-Recovery helpers live under `experimental/owner-authorized-recovery/`. They are not installed by default. Review each script and use `--dry-run` first. These tools are only for systems you own and explicitly administer.
+Recovery helpers live under `experimental/owner-authorized-recovery/`. They are not installed by default. Review each script and use `--dry-run` first; these are only for systems you own and administer.
 
-## AI Assistance Disclosure
+## AI Assistance
 
-Parts of this project's documentation, planning notes, cleanup checklists, and script scaffolding were developed with assistance from AI tools, including Claude by Anthropic and ChatGPT by OpenAI.
+Documentation and script scaffolding were partly drafted with Claude (Anthropic) and ChatGPT (OpenAI). Third-party attribution and security review remain the maintainer's responsibility — every tool used must still be credited to its original author.
 
-Human maintainers are responsible for reviewing, testing, security boundaries, attribution, and final repository contents. AI assistance does not replace upstream attribution — every third-party tool must still be credited to its original developer or organization.
+---
 
-## License
+[LICENSE](LICENSE) · [SECURITY.md](SECURITY.md) · [DISCLAIMER.md](DISCLAIMER.md) · [CONTRIBUTING.md](CONTRIBUTING.md)
 
-See [LICENSE](LICENSE).
-
-## Security
-
-See [SECURITY.md](SECURITY.md). Report issues via [GitHub Security Advisories](https://github.com/Zheke32174/pleiades/security/advisories).
-
-## Disclaimer
-
-See [DISCLAIMER.md](DISCLAIMER.md).
+Report security issues privately via [GitHub Security Advisories](https://github.com/Zheke32174/pleiades/security/advisories).
