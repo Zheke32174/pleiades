@@ -184,6 +184,8 @@ if [[ -f "$LIB" ]]; then
     run_group "Host-bridge + Windows telemetry" test_host_bridge
     run_group "Celaeno liveness"         test_celaeno_alive
     run_group "Maia crypto round-trip"     test_maia_crypto
+    run_group "LLM stack (task #30)"         test_llm_stack
+    run_group "RE pipeline (task #31)"       test_re_pipeline
     # Concurrency cap runs last — floods 127.0.0.1 and may trigger AGGRESSIVE mode
     run_group "Decoy port liveness + Taygete concurrency" test_ports_and_concurrency
 else

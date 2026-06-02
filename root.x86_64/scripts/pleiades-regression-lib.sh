@@ -153,6 +153,134 @@ test_celaeno_alive() {
     fi
 }
 
+# ── LLM stack verification (task #30) ────────────────────────────────────────
+
+test_llm_stack() {
+    if ! container_up; then skip "LLM stack (container down)"; return; fi
+
+    # 1. llama-cli binary
+    if ! in_container "test -x /usr/local/bin/llama-cli" &>/dev/null; then
+        skip "llama-cli not found — run install-llm-stack.sh to build"
+        return
+    fi
+    pass "llama-cli installed"
+
+    # 2. Config file with expected keys
+    if ! in_container "test -f /etc/pleiades/llm.conf" &>/dev/null; then
+        fail "/etc/pleiades/llm.conf missing — install-llm-stack.sh not run"
+        return
+    fi
+    pass "/etc/pleiades/llm.conf present"
+
+    local model_path
+    model_path="$(in_container "grep '^MODEL_PATH=' /etc/pleiades/llm.conf | cut -d= -f2" 2>/dev/null)" || true
+    if [[ -z "$model_path" ]]; then
+        fail "MODEL_PATH not set in /etc/pleiades/llm.conf"
+        return
+    fi
+
+    # 3. Model file >1 GiB
+    local model_size
+    model_size="$(in_container "wc -c < '$model_path' 2>/dev/null || echo 0")" || model_size=0
+    model_size="${model_size//[^0-9]/}"; model_size="${model_size:-0}"
+    if (( model_size > 1000000000 )); then
+        pass "model file present ($(( model_size / 1048576 )) MiB)"
+    else
+        fail "model file missing or too small at $model_path (${model_size} bytes)"
+        return
+    fi
+
+    # 4. pleiades-llm wrapper
+    if in_container "test -x /usr/local/bin/pleiades-llm" &>/dev/null; then
+        pass "pleiades-llm wrapper executable"
+    else
+        fail "pleiades-llm wrapper not found"
+        return
+    fi
+
+    # 5. systemd resource slice present
+    if in_container "test -f /etc/systemd/system/pleiades-llm.slice" &>/dev/null; then
+        pass "pleiades-llm.slice unit present"
+    else
+        fail "pleiades-llm.slice missing — resource limits not configured"
+    fi
+}
+
+# ── RE pipeline verification (task #31) ───────────────────────────────────────
+
+test_re_pipeline() {
+    if ! container_up; then skip "RE pipeline (container down)"; return; fi
+
+    # Locate pleiades-re inside the container (installed binary or script)
+    local re_cmd=""
+    if in_container "test -x /usr/local/bin/pleiades-re" &>/dev/null; then
+        re_cmd="/usr/local/bin/pleiades-re"
+    elif in_container "test -f /scripts/pleiades-re.sh" &>/dev/null; then
+        re_cmd="bash /scripts/pleiades-re.sh"
+    else
+        skip "pleiades-re not found inside container (not yet installed)"
+        return
+    fi
+
+    # 1. Version command
+    local ver
+    ver="$(in_container "$re_cmd version 2>/dev/null")" || true
+    if [[ "$ver" == pleiades-re* ]]; then
+        pass "pleiades-re version: $ver"
+    else
+        fail "pleiades-re version command failed (got: '$ver')"
+        return
+    fi
+
+    # 2. Stage 1: analyze maia_crypto without LLM — report must contain expected sections
+    local sample_bin="/usr/local/bin/maia_crypto"
+    if ! in_container "test -x '$sample_bin'" &>/dev/null; then
+        sample_bin="/usr/bin/file"
+    fi
+
+    local report
+    report="$(in_container "$re_cmd analyze '$sample_bin' --format=markdown 2>/dev/null")" || true
+
+    if echo "$report" | grep -q "Pleiades Team RE Report"; then
+        pass "pleiades-re analyze: report header present"
+    else
+        fail "pleiades-re analyze: report missing 'Pleiades Team RE Report' header"
+    fi
+
+    if echo "$report" | grep -q "Stage 1: Decompiled Output"; then
+        pass "pleiades-re analyze: Stage 1 section present"
+    else
+        fail "pleiades-re analyze: Stage 1 section missing"
+    fi
+
+    if echo "$report" | grep -q "Stage 3: Type Recovery"; then
+        pass "pleiades-re analyze: Stage 3 section present"
+    else
+        fail "pleiades-re analyze: Stage 3 section missing"
+    fi
+
+    # 3. Capability file registered
+    if in_container "test -f /run/pleiades/capabilities/pleiades_re.cap" &>/dev/null; then
+        pass "pleiades_re.cap capability registered"
+    else
+        fail "pleiades_re.cap not written — register_re_capability() may have failed"
+    fi
+
+    # 4. LLM stage integration — only if llama-cli + pleiades-llm are present
+    if ! in_container "test -x /usr/local/bin/llama-cli && test -x /usr/local/bin/pleiades-llm" &>/dev/null; then
+        skip "RE pipeline LLM stage (pleiades-llm or llama-cli not installed)"
+        return
+    fi
+
+    local llm_report
+    llm_report="$(in_container "USE_LLM=1 $re_cmd analyze '$sample_bin' --llm 2>/dev/null")" || true
+    if echo "$llm_report" | grep -q "Stage 2: LLM Analysis"; then
+        pass "pleiades-re --llm: Stage 2 section present"
+    else
+        fail "pleiades-re --llm: Stage 2 LLM section missing in report"
+    fi
+}
+
 # ── subtask 5c: Maia crypto round-trip ─────────────────────────────────────
 
 test_maia_crypto() {
