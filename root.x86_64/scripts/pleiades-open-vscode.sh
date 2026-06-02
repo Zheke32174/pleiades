@@ -1,22 +1,40 @@
 #!/bin/bash
-# Launch VS Code Insiders with pleiades workspace from WSL
-# Run this from WSL to open the pleiades ecosystem workspace in VS Code Insiders
+# Launch VS Code with the pleiades workspace from WSL
+# Run this from WSL to open the pleiades ecosystem workspace in VS Code.
 
-WORKSPACE="/mnt/c/Users/Fixxia/AppData/Roaming/pleiades-workspace/pleiades-ecosystem.code-workspace"
-VSCODE="/mnt/c/Users/Fixxia/AppData/Local/Programs/Microsoft VS Code Insiders/bin/code-insiders"
+_detect_win_user() {
+    cmd.exe /c echo %USERNAME% 2>/dev/null | tr -d '\r' || echo ""
+}
+_detect_vscode_bin() {
+    local win_user; win_user="$(_detect_win_user)"
+    local candidates=(
+        "${PLEIADES_VSCODE_BIN:-}"
+        "/mnt/c/Users/${win_user}/AppData/Local/Programs/Microsoft VS Code Insiders/bin/code-insiders"
+        "/mnt/c/Users/${win_user}/AppData/Local/Programs/Microsoft VS Code/bin/code"
+        "$(command -v code-insiders 2>/dev/null || true)"
+        "$(command -v code 2>/dev/null || true)"
+    )
+    for c in "${candidates[@]}"; do
+        [[ -n "$c" && -x "$c" ]] && { echo "$c"; return; }
+    done
+    echo ""
+}
 
-if [[ -f "$VSCODE" ]]; then
-    if [[ -f "$WORKSPACE" ]]; then
-        echo "Opening $WORKSPACE in VS Code Insiders..."
-        "$VSCODE" "$WORKSPACE" --new-window
-        echo "VS Code launched. Close this terminal or press Ctrl+C to return."
-    else
-        echo "Error: Workspace not found at $WORKSPACE"
-        echo "Run pleiades-vscode-bridge.sh setup first to generate it."
-        exit 1
-    fi
+WIN_USER="$(_detect_win_user)"
+VSCODE="$(_detect_vscode_bin)"
+WORKSPACE="${PLEIADES_VSCODE_WORKSPACE:-/mnt/c/Users/${WIN_USER}/AppData/Roaming/pleiades-workspace/pleiades-ecosystem.code-workspace}"
+
+if [[ -z "$VSCODE" ]]; then
+    echo "Error: VS Code not found. Install VS Code or set PLEIADES_VSCODE_BIN to its path."
+    exit 1
+fi
+
+if [[ -f "$WORKSPACE" ]]; then
+    echo "Opening $WORKSPACE in VS Code..."
+    "$VSCODE" "$WORKSPACE" --new-window
+    echo "VS Code launched."
 else
-    echo "Error: VS Code Insiders not found at $VSCODE"
-    echo "Install VS Code Insiders or update the path in this script."
+    echo "Workspace not found at $WORKSPACE"
+    echo "Run pleiades-vscode-bridge.sh setup first to generate it, or set PLEIADES_VSCODE_WORKSPACE."
     exit 1
 fi

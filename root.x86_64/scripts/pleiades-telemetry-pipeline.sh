@@ -5,7 +5,7 @@
 # Aggregates logs from all pleiades ecosystem components, enriches them with
 # container context, and forwards them to:
 #   - /var/log/pleiades/aggregated/ (rotated, compressed)
-#   - /host/mnt/c/Users/Fixxia/AppData/Roaming/pleiades-logs/ (Windows bridge)
+#   - /host/mnt/c/Users/<WIN_USER>/AppData/Roaming/pleiades-logs/ (Windows bridge, WSL only)
 #   - journald (structured metadata)
 #
 # Provides a real-time dashboard that can be tailed with:
@@ -15,7 +15,13 @@
 set -euo pipefail
 
 AGG_DIR="/var/log/pleiades/aggregated"
-WIN_BRIDGE="/host/mnt/c/Users/Fixxia/AppData/Roaming/pleiades-logs"
+# Derive Windows bridge path from current user if on WSL; no-op otherwise
+if grep -qi microsoft /proc/version 2>/dev/null; then
+    _win_user="$(cmd.exe /c echo %USERNAME% 2>/dev/null | tr -d '\r' || true)"
+    WIN_BRIDGE="${WIN_BRIDGE:-/host/mnt/c/Users/${_win_user}/AppData/Roaming/pleiades-logs}"
+else
+    WIN_BRIDGE="${WIN_BRIDGE:-}"
+fi
 MAX_LOG_AGE_HOURS=72
 CLEAN_INTERVAL=3600  # clean up old logs every hour
 
@@ -86,8 +92,8 @@ main() {
     log "telemetry pipeline starting"
     mkdir -p "$AGG_DIR"
     
-    # Try to create Windows bridge directory
-    mkdir -p "$WIN_BRIDGE" 2>/dev/null || log "warn: cannot create Windows bridge (host may not be mounted)"
+    # Try to create Windows bridge directory (WSL only; skipped if WIN_BRIDGE is unset)
+    [[ -n "${WIN_BRIDGE:-}" ]] && { mkdir -p "$WIN_BRIDGE" 2>/dev/null || log "warn: cannot create Windows bridge (host may not be mounted)"; }
     
     local cycle=0
     while true; do
