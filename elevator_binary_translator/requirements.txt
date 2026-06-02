@@ -1,7 +1,0 @@
-# Core dependencies
-capstone>=4.0.2        # x86-64 disassembler (multi-architecture)
-keystone-engine>=0.9.2 # AArch64 assembler (optional — text output works without it)
-
-# For the walkthrough notebook
-jupyter>=1.0.0
-notebook>=6.0.0
