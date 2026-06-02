@@ -8,6 +8,9 @@
 #   QEMU               QEMU project                GPL-2.0+    https://www.qemu.org
 #                      NOTE: QEMU is GPL-2.0+. Installed as a binary; no source vendored here.
 set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"
+PLEIADES_REPO_ROOT="${PLEIADES_REPO_ROOT:-$(dirname "$PLEIADES_CONTAINER_ROOT")}"
 
 
 register_pleiades-swarm_capability() {
@@ -324,9 +327,9 @@ event() { printf '%s\n' "$1" >> "$FIFO" 2>/dev/null || true; }
 install_alien_bsd() {
     local src
     for candidate in \
-        /workspaces/gentoo/alien-bsd \
-        "$(dirname "$0")/../../../alien-bsd" \
-        "$(dirname "$0")/../../alien-bsd"; do
+        "${PLEIADES_REPO_ROOT}/alien-bsd" \
+        "${SCRIPT_DIR}/../../alien-bsd" \
+        "${SCRIPT_DIR}/../../../alien-bsd"; do
         [[ -f "$candidate" ]] && { src="$candidate"; break; }
     done
 

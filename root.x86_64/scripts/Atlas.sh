@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"
+PLEIADES_REPO_ROOT="${PLEIADES_REPO_ROOT:-$(dirname "$PLEIADES_CONTAINER_ROOT")}"
 
 
 register_pleiades-swarm_capability() {
@@ -885,11 +888,11 @@ SERVICE
 build_pleiades-swarm_substrate() {
     mkdir -p /etc/pleiades /run/pleiades/{requests,decisions,actions,results,capabilities,state,alien/inbox,alien/outbox} /var/lib/pleiades-team/pleiades-swarm
     touch /run/pleiades/pleiades-nexus_fifo
-    if [[ ! -e /opt/brl && -d /workspaces/gentoo/root.x86_64/opt/brl ]]; then
-        ln -s /workspaces/gentoo/root.x86_64/opt/brl /opt/brl 2>/dev/null || true
+    if [[ ! -e /opt/brl && -d "${PLEIADES_CONTAINER_ROOT}/opt/brl" ]]; then
+        ln -s "${PLEIADES_CONTAINER_ROOT}/opt/brl" /opt/brl 2>/dev/null || true
     fi
-    if [[ ! -e /strat && -d /workspaces/gentoo/root.x86_64/strat ]]; then
-        ln -s /workspaces/gentoo/root.x86_64/strat /strat 2>/dev/null || true
+    if [[ ! -e /strat && -d "${PLEIADES_CONTAINER_ROOT}/strat" ]]; then
+        ln -s "${PLEIADES_CONTAINER_ROOT}/strat" /strat 2>/dev/null || true
     fi
     if [[ -x /opt/brl/bin/brl ]]; then
         ln -sf /opt/brl/bin/brl /usr/local/bin/brl 2>/dev/null || true

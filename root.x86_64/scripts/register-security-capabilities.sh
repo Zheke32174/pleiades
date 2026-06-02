@@ -2,9 +2,12 @@
 # register-security-capabilities.sh — register all 32 security baseline tools
 # Task #20: Wire security tools into Pleiades Team capability registry
 set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"
+PLEIADES_REPO_ROOT="${PLEIADES_REPO_ROOT:-$(dirname "$PLEIADES_CONTAINER_ROOT")}"
 LOG_TAG="sec-caps"; log() { printf '[%s] %s\n' "$LOG_TAG" "$*" >&2; }
 CAP_DIR="/run/pleiades/capabilities"
-BASELINE="/workspaces/gentoo/security-baseline.json"
+BASELINE="${PLEIADES_REPO_ROOT}/security-baseline.json"
 mkdir -p "$CAP_DIR"
 
 [[ -f "$BASELINE" ]] || { log "ERROR: $BASELINE not found — run task #17 first"; exit 1; }

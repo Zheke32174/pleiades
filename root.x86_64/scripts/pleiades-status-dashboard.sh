@@ -2,7 +2,9 @@
 # Quick pleiades ecosystem status from host
 # Usage: pleiades-status.sh [--watch]
 
-PID_FILE="/workspaces/gentoo/root.x86_64/run/pleiades/container_pid"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"
+PID_FILE="${PLEIADES_CONTAINER_ROOT}/run/pleiades/container_pid"
 if [[ -f "$PID_FILE" ]]; then
     PID=$(cat "$PID_FILE")
 else

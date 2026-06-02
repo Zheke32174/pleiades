@@ -1486,7 +1486,7 @@ SCRIPT_ID_MAP["PLEIADES_REBIRTH_ID"]="Merope.sh"
 SCRIPT_ID_MAP["PLEIADES_NEXUS_ID"]="Atlas.sh"
 
 PURPLE_SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PURPLE_SEARCH_DIRS=("$PURPLE_SELF_DIR" "$SCRIPT_DIR" "/scripts" "/workspaces/gentoo/root.x86_64/scripts" ".")
+PURPLE_SEARCH_DIRS=("$PURPLE_SELF_DIR" "$SCRIPT_DIR" "/scripts" "${PLEIADES_CONTAINER_ROOT:-/}/scripts" ".")
 
 find_script_files() {
     local -n result=$1

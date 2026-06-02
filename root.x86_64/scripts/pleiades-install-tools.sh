@@ -5,10 +5,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/pleiades-operator.sh" || exit 1
-LOG_TAG="zheke32174"; log() { printf '[%s] %s\n' "$LOG_TAG" "$*" >&2; }
+LOG_TAG="${PLEIADES_REPO_OWNER:-pleiades}"; log() { printf '[%s] %s\n' "$LOG_TAG" "$*" >&2; }
 BASE="https://github.com/${PLEIADES_REPO_OWNER}"
-EXT="/workspaces/gentoo/external/zheke32174"
-TOOLS="/workspaces/gentoo/tools"
+EXT="${PLEIADES_REPO_ROOT}/external/${PLEIADES_REPO_OWNER}"
+TOOLS="${PLEIADES_REPO_ROOT}/tools"
 CAP_DIR="/run/pleiades/capabilities"
 mkdir -p "$EXT" "$TOOLS" "$CAP_DIR"
 
@@ -26,7 +26,7 @@ done
 # Merge alien fork improvements into local alien-bsd
 if [[ -d "$EXT/alien" ]]; then
     log "Diffing alien fork vs local alien-bsd"
-    diff "$EXT/alien/alien-bsd" /workspaces/gentoo/alien-bsd 2>/dev/null \
+    diff "$EXT/alien/alien-bsd" "${PLEIADES_REPO_ROOT}/alien-bsd" 2>/dev/null \
         >> "$EXT/MERGE_LOG.md" || true
     log "Diff written to MERGE_LOG.md (review and apply manually)"
 fi

@@ -9,13 +9,14 @@
 #                 NOTE: QEMU is GPL-2.0+. This script installs the binary via apt or download.
 #                 No QEMU source is vendored here.
 set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 LOG_TAG="cross-isa"
 log()   { printf '[%s] %s\n' "$LOG_TAG" "$*" >&2; }
 die()   { log "ERROR: $*"; exit 1; }
 
 HOST_ARCH=$(uname -m)
-CONTAINER_ROOT="${CONTAINER_ROOT:-/workspaces/gentoo/root.x86_64}"
+CONTAINER_ROOT="${CONTAINER_ROOT:-${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}}"
 BOX64_VERSION="v0.3.2"
 BOX64_INSTALL="/usr/local/bin/box64"
 QEMU_STATIC_ARM64="/usr/bin/qemu-aarch64-static"

@@ -11,10 +11,28 @@
 # ==============================================================================
 
 set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"
 
-VSCODE_BIN="/mnt/c/Users/Fixxia/AppData/Local/Programs/Microsoft VS Code Insiders/bin/code-insiders"
+# VS Code binary — auto-detect on WSL; override via PLEIADES_VSCODE_BIN env var
+_detect_vscode_bin() {
+    local win_user
+    win_user="$(cmd.exe /c echo %USERNAME% 2>/dev/null | tr -d '\r' || true)"
+    local candidates=(
+        "${PLEIADES_VSCODE_BIN:-}"
+        "/mnt/c/Users/${win_user}/AppData/Local/Programs/Microsoft VS Code Insiders/bin/code-insiders"
+        "/mnt/c/Users/${win_user}/AppData/Local/Programs/Microsoft VS Code/bin/code"
+        "$(command -v code-insiders 2>/dev/null || true)"
+        "$(command -v code 2>/dev/null || true)"
+    )
+    for c in "${candidates[@]}"; do
+        [[ -n "$c" && -x "$c" ]] && { echo "$c"; return; }
+    done
+    echo "code"  # fallback: hope it's on PATH
+}
+VSCODE_BIN="$(_detect_vscode_bin)"
 BRIDGE_DIR="/run/pleiades/vscode-bridge"
-WORKSPACE_DIR="/home/fixxia/vscode-pleiades-workspace"
+WORKSPACE_DIR="${HOME}/vscode-pleiades-workspace"
 SHARED_LOCK="$BRIDGE_DIR/bridge.lock"
 EVENT_FIFO="$BRIDGE_DIR/events.fifo"
 VSCODE_SETTINGS="$WORKSPACE_DIR/.vscode/settings.json"
@@ -31,7 +49,7 @@ generate_workspace() {
     cat > "$VSCODE_SETTINGS" << 'SETTINGS'
 {
     "terminal.integrated.defaultLocation": "editor",
-    "terminal.integrated.cwd": "/workspaces/gentoo/root.x86_64",
+    "terminal.integrated.cwd": "${PLEIADES_CONTAINER_ROOT}",
     "files.exclude": {
         "**/.git": true,
         "**/host/**": true

@@ -16,6 +16,10 @@
 #   PLEIADES_MAIN_REPO      — operator/pleiades  (overridable in conf)
 #   PLEIADES_EVIDENCE_REPO  — operator/pleiades-evidence  (overridable in conf)
 #   PLEIADES_DEAD_DROP_FILE — dead_drop/signal.json  (overridable in conf)
+#   PLEIADES_CONTAINER_ROOT — path to root.x86_64/ (derived from script location)
+#   PLEIADES_REPO_ROOT      — path to pleiades repo root (derived from script location)
+#
+# All path vars are overridable via environment before sourcing.
 #
 # On failure: prints error to stderr and returns 1
 
@@ -49,6 +53,12 @@ ERR
     PLEIADES_MAIN_REPO="${PLEIADES_MAIN_REPO:-${PLEIADES_REPO_OWNER}/pleiades}"
     PLEIADES_EVIDENCE_REPO="${PLEIADES_EVIDENCE_REPO:-${PLEIADES_REPO_OWNER}/pleiades-evidence}"
     PLEIADES_DEAD_DROP_FILE="${PLEIADES_DEAD_DROP_FILE:-dead_drop/signal.json}"
+
+    # 5. Derive filesystem roots from this file's location (scripts/ is inside root.x86_64/)
+    local _self
+    _self="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$_self")}"
+    PLEIADES_REPO_ROOT="${PLEIADES_REPO_ROOT:-$(dirname "$PLEIADES_CONTAINER_ROOT")}"
 }
 
 _pleiades_load_operator

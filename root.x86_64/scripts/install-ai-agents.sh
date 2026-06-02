@@ -9,6 +9,9 @@
 # No source from either project is vendored or modified here.
 # Both are installed from their official upstream sources.
 set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"
+PLEIADES_REPO_ROOT="${PLEIADES_REPO_ROOT:-$(dirname "$PLEIADES_CONTAINER_ROOT")}"
 
 LOG_TAG="ai-agents"
 log() { printf '[%s] %s\n' "$LOG_TAG" "$*" >&2; }
@@ -17,7 +20,7 @@ die() { log "ERROR: $*"; exit 1; }
 CONF_DIR="/etc/pleiades/ai-agents"
 CAP_DIR="/run/pleiades/capabilities"
 PLUGIN_DIR="/run/pleiades/purplectl-plugins"
-TOOLS_DIR="/workspaces/gentoo/tools"
+TOOLS_DIR="${PLEIADES_REPO_ROOT}/tools"
 
 # ---------------------------------------------------------------------------
 # Subtask 1: Install Aider

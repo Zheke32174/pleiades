@@ -12,6 +12,9 @@
 # This script generates wrappers that call these tools; it does not vendor their source.
 # Generated Python uses the fastmcp/fastapi_mcp APIs as documented upstream.
 set -euo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"
+PLEIADES_REPO_ROOT="${PLEIADES_REPO_ROOT:-$(dirname "$PLEIADES_CONTAINER_ROOT")}"
 
 VERSION="1.0.0"
 MCP_OUT="/var/lib/pleiades/mcp-servers"
@@ -133,7 +136,7 @@ PYEOF
     fi
 
     # Step 3: check for existing paper2code output
-    local p2c_dir="/workspaces/gentoo/.paper2code_work"
+    local p2c_dir="${PLEIADES_PAPER2CODE_WORK:-${PLEIADES_REPO_ROOT}/.paper2code_work}"
     local existing; existing=$(find "$p2c_dir" -name "${arxiv_id}*" -type f 2>/dev/null | head -1 || true)
     if [[ -n "$existing" ]]; then
         log "Found paper2code output: $existing"
