@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 # Pleiades devcontainer setup — bootstrap the purple team dev environment
+#
+# Third-party tools installed by this script (not vendored — installed from upstream):
+#   gosec    securego (securego org)  Apache-2.0  https://github.com/securego/gosec
+#   amass    owasp-amass (OWASP)      Apache-2.0  https://github.com/owasp-amass/amass
 set -euo pipefail
 
 echo "=== Pleiades DevContainer Setup ==="

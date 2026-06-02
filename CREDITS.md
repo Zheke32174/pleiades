@@ -63,11 +63,18 @@ Every external project, developer, or organization whose work is used, installed
 | FreeBSD base system | The FreeBSD Project | BSD-2-Clause | https://www.freebsd.org | base.txz downloaded by `Asterope.sh` for BSD stratum | No | No | N/A |
 | pkgsrc | The NetBSD Foundation | BSD-2-Clause | https://pkgsrc.org | bootstrap tarball downloaded by `Asterope.sh` | No | No | N/A |
 
+## Dev Environment Tools
+
+| Project | Author / Org | License | Source URL | Usage | Vendored? | Modified? | Local path |
+|---------|-------------|---------|-----------|-------|-----------|-----------|------------|
+| gosec | securego (securego org) | Apache-2.0 | https://github.com/securego/gosec | installed by `.devcontainer/setup.sh` via `go install` | No | No | N/A |
+| amass | owasp-amass (OWASP) | Apache-2.0 | https://github.com/owasp-amass/amass | installed by `.devcontainer/setup.sh` via `go install` | No | No | N/A |
+
 ## Framework References
 
 | Project | Author / Org | License | Source URL | Usage | Vendored? | Modified? | Local path |
 |---------|-------------|---------|-----------|-------|-----------|-----------|------------|
-| agents-best-practices | DenisSergeevitch | MIT | https://github.com/DenisSergeevitch/agents-best-practices | structural reference for `pleiades-integrate-tools.sh` — no source copied | No | No | N/A |
+| agents-best-practices | DenisSergeevitch | MIT | https://github.com/DenisSergeevitch/agents-best-practices | structural reference for `pleiades-integrate-tools.sh` and `tools/TOOL-FRAMEWORK.md` — no source copied | No | No | N/A |
 
 ---
 

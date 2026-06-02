@@ -130,4 +130,6 @@ Each paper implementation in `tools/` should be:
 
 ## Third-Party Accreditation
 
-See `/workspaces/gentoo/CREDITS.md` for full third-party licensing and attribution.
+See [`../CREDITS.md`](../CREDITS.md) for parent-repo third-party licensing and attribution.
+
+See [`pleiades-factory-stack/CREDITS.md`](https://github.com/Zheke32174/pleiades-factory-stack/blob/main/CREDITS.md) for factory-stack tool attribution.
