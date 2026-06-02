@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # install-cross-isa.sh — install QEMU user-mode + Box64 cross-ISA translation layer
 # Task #15 subtasks: (1) QEMU+binfmt_misc, (2) Box64, (3) Asterope.sh integration
+#
+# Third-party tools installed (not vendored — cloned/downloaded from upstream):
+#   Box64         ptitSeb            MIT        https://github.com/ptitSeb/box64
+#   Wasmtime      Bytecode Alliance  Apache-2.0 https://github.com/bytecodealliance/wasmtime
+#   QEMU          QEMU project       GPL-2.0+   https://www.qemu.org
+#                 NOTE: QEMU is GPL-2.0+. This script installs the binary via apt or download.
+#                 No QEMU source is vendored here.
 set -euo pipefail
 
 LOG_TAG="cross-isa"

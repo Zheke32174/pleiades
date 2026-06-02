@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
-# install-ai-agents.sh — stage Aider + OpenHands as purple team operator-assist tools
+# install-ai-agents.sh — install Aider + OpenHands as operator-assist tools
 # Task #13: Evaluate and stage AI coding agents
+#
+# Third-party tools installed by this script (cloned or pip-installed from upstream):
+#   Aider         paul-gauthier (Paul Gauthier)  Apache-2.0  https://github.com/paul-gauthier/aider
+#   OpenHands     All-Hands-AI                   MIT         https://github.com/All-Hands-AI/OpenHands
+#
+# No source from either project is vendored or modified here.
+# Both are installed from their official upstream sources.
 set -euo pipefail
 
 LOG_TAG="ai-agents"

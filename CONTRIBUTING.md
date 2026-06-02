@@ -7,7 +7,7 @@ Contributions should preserve the defensive, owner-authorized scope of the proje
 1. **Do not add offensive capability** — no stealthier persistence, evasion, or unauthorized access mechanisms.
 2. **Do not add unauthorized-deployment patterns** — all installation should be explicit and owner-authorized.
 3. **Do not include secrets** — no credentials, logs, evidence, private host metadata, or `.env` files.
-4. **Use clear defensive language** — avoid terms like "selfdestruct", "dead drop", "payload", "wipe traces", "persistence" without "owner-authorized" context.
+4. **Use clear defensive language** — see the vocabulary replacement table in the cleanup plan. Prefer "local cleanup", "recovery marker", "plugin/module", "log removal", "owner-authorized service startup" over operational jargon.
 5. **Default to safe behavior** — scripts should default to `--dry-run` or read-only modes.
 6. **Gate destructive operations** — require explicit flags (`--confirm-owned-system`, `--cleanup-local`) for anything irreversible.
 7. **Keep experimental work quarantined** — recovery/cleanup/startup helpers go under `experimental/owner-authorized-recovery/`.

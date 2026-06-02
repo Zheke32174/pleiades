@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 # pleiades-mcp-converters.sh — repo2mcp, paper2mcp, openapi2mcp converters
 # Tasks #22, #23, #24
+#
+# Third-party attributions:
+#   fastmcp          jlowin          MIT   https://github.com/jlowin/fastmcp
+#   fastapi_mcp      tadata-org      MIT   https://github.com/tadata-org/fastapi_mcp
+#   openapi-mcp-codegen cnoe-io      Apache-2.0  https://github.com/cnoe-io/openapi-mcp-codegen
+#   jcodemunch-mcp   jgravelle       MIT   https://github.com/jgravelle/jcodemunch-mcp
+#   paper2code       PrathamLearnsToCode MIT https://github.com/PrathamLearnsToCode/paper2code
+#
+# This script generates wrappers that call these tools; it does not vendor their source.
+# Generated Python uses the fastmcp/fastapi_mcp APIs as documented upstream.
 set -euo pipefail
 
 VERSION="1.0.0"

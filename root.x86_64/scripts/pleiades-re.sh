@@ -8,6 +8,17 @@
 #   pleiades-re analyze <binary> [--format=json|markdown] [--llm] [--type-recovery]
 #   pleiades-re batch <dir> [--ext=.so,.elf] [--output-dir=<dir>]
 #   pleiades-re install-deps
+#
+# Third-party tools called by this script (not vendored — installed separately):
+#   Ghidra        NSA                Apache-2.0   https://github.com/NationalSecurityAgency/ghidra
+#   angr          angr project       BSD-2-Clause https://github.com/angr/angr
+#   remill        Trail of Bits      Apache-2.0   https://github.com/lifting-bits/remill
+#   ddisasm       GrammaTech         AGPL-3.0     https://github.com/GrammaTech/ddisasm
+#                 NOTE: ddisasm is AGPL-3.0. This script only calls the installed binary.
+#                 No ddisasm source is vendored here.
+#   RetroWrite    HexHive (EPFL)     MIT          https://github.com/HexHive/retrowrite
+#   rev.ng        rev.ng Labs        GPL-2.0      https://github.com/revng/revng
+#                 NOTE: rev.ng is GPL-2.0. This script only calls the installed binary.
 set -euo pipefail
 
 FIFO="/run/pleiades/pleiades-nexus_fifo"

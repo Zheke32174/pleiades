@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+# Asterope.sh — BSD compatibility layer, package conversion pipeline, telemetry aggregator
+#
+# Third-party projects used (not vendored — cloned/downloaded from upstream):
+#   qemu-bsd-user-l4b  sobomax (Maksym Sobolyev)  MIT         https://github.com/sobomax/qemu-bsd-user-l4b
+#   FreeBSD base       The FreeBSD Project         BSD-2-Clause https://www.freebsd.org
+#   pkgsrc             The NetBSD Foundation       BSD-2-Clause https://pkgsrc.org
+#   QEMU               QEMU project                GPL-2.0+    https://www.qemu.org
+#                      NOTE: QEMU is GPL-2.0+. Installed as a binary; no source vendored here.
 set -euo pipefail
 
 

@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # install-llm-stack.sh — build llama.cpp + download model + install pleiades-llm
 # Task #18: Deploy quantized local LLM inference stack
+#
+# Third-party projects used (not vendored — cloned/downloaded from upstream):
+#   llama.cpp     ggerganov (Georgi Gerganov)  MIT        https://github.com/ggerganov/llama.cpp
+#   Mistral 7B    Mistral AI                   Apache-2.0 https://huggingface.co/mistralai/Mistral-7B-v0.1
+#   (GGUF quant)  TheBloke                     Apache-2.0 https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.3-GGUF
+#
+# llama.cpp is cloned from upstream and compiled locally. No source is vendored here.
 set -euo pipefail
 
 LOG_TAG="llm-stack"
