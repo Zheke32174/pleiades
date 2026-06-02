@@ -150,10 +150,10 @@ nc_unix_send() {
         printf '%s\n' "$msg" | nc -U "$sock" -w 1 2>/dev/null || true
     fi
 }
-signal_ready() { mkdir -p /run/pleiades/ready; touch "/run/pleiades/ready/$1"; }
+signal_ready() { mkdir -p /var/lib/pleiades/ready; touch "/var/lib/pleiades/ready/$1"; }
 wait_for()     {
     local name="$1" timeout="${2:-90}" elapsed=0
-    while [[ ! -f "/run/pleiades/ready/$name" ]]; do
+    while [[ ! -f "/var/lib/pleiades/ready/$name" ]]; do
         (( elapsed >= timeout )) && { logger -t pleiades "WARN: timeout waiting for $name"; return 0; }
         sleep 2; (( elapsed += 2 ))
     done
@@ -427,19 +427,19 @@ import (
     "syscall"
 )
 
-var pleiades-nexusFifo *os.File
+var pleiadesNexusFifo *os.File
 
 func init() {
     var err error
-    pleiades-nexusFifo, err = os.OpenFile("/run/pleiades/pleiades-nexus_fifo", os.O_WRONLY|os.O_APPEND|syscall.O_NONBLOCK, 0666)
+    pleiadesNexusFifo, err = os.OpenFile("/run/pleiades/pleiades-nexus_fifo", os.O_WRONLY|os.O_APPEND|syscall.O_NONBLOCK, 0666)
     if err != nil {
-        pleiades-nexusFifo = nil
+        pleiadesNexusFifo = nil
     }
 }
 
 func report(msg string) {
-    if pleiades-nexusFifo != nil {
-        fmt.Fprintln(pleiades-nexusFifo, msg)
+    if pleiadesNexusFifo != nil {
+        fmt.Fprintln(pleiadesNexusFifo, msg)
     }
 }
 
@@ -699,3 +699,33 @@ INST
 }
 
 main
+# --- MAIA EVENT HOOK ---
+_maia_hook() {
+    [[ -S "/run/maia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/maia.sock 2>/dev/null || nc -U /run/maia.sock -w 1 2>/dev/null) || true
+}
+# --- END MAIA EVENT HOOK ---
+# --- MAIA EVENT HOOK ---
+_maia_hook() {
+    [[ -S "/run/maia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/maia.sock 2>/dev/null || nc -U /run/maia.sock -w 1 2>/dev/null) || true
+}
+# --- END MAIA EVENT HOOK ---
+# --- MAIA EVENT HOOK ---
+_maia_hook() {
+    [[ -S "/run/maia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/maia.sock 2>/dev/null || nc -U /run/maia.sock -w 1 2>/dev/null) || true
+}
+# --- END MAIA EVENT HOOK ---
+# --- MAIA EVENT HOOK ---
+_maia_hook() {
+    [[ -S "/run/maia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/maia.sock 2>/dev/null || nc -U /run/maia.sock -w 1 2>/dev/null) || true
+}
+# --- END MAIA EVENT HOOK ---
+# --- MAIA EVENT HOOK ---
+_maia_hook() {
+    [[ -S "/run/maia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/maia.sock 2>/dev/null || nc -U /run/maia.sock -w 1 2>/dev/null) || true
+}
+# --- END MAIA EVENT HOOK ---
+# --- MAIA EVENT HOOK ---
+_maia_hook() {
+    [[ -S "/run/maia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/maia.sock 2>/dev/null || nc -U /run/maia.sock -w 1 2>/dev/null) || true
+}
+# --- END MAIA EVENT HOOK ---

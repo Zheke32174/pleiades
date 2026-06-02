@@ -151,10 +151,10 @@ nc_unix_send() {
         printf '%s\n' "$msg" | nc -U "$sock" -w 1 2>/dev/null || true
     fi
 }
-signal_ready() { mkdir -p /run/pleiades/ready; touch "/run/pleiades/ready/$1"; }
+signal_ready() { mkdir -p /var/lib/pleiades/ready; touch "/var/lib/pleiades/ready/$1"; }
 wait_for()     {
     local name="$1" timeout="${2:-90}" elapsed=0
-    while [[ ! -f "/run/pleiades/ready/$name" ]]; do
+    while [[ ! -f "/var/lib/pleiades/ready/$name" ]]; do
         (( elapsed >= timeout )) && { logger -t pleiades "WARN: timeout waiting for $name"; return 0; }
         sleep 2; (( elapsed += 2 ))
     done
@@ -391,7 +391,7 @@ import (
 const fakeState = "/etc/imtherealsparticus"
 const runDir = "/run/pleiades"
 
-func reportToPleiades Nexus(msg string) {
+func reportToPleiadesNexus(msg string) {
     f, err := os.OpenFile(runDir+"/pleiades-nexus_fifo", os.O_WRONLY|os.O_APPEND|syscall.O_NONBLOCK, 0666)
     if err == nil {
         defer f.Close()
@@ -441,7 +441,7 @@ func isUnderAttack() bool {
     return false
 }
 
-func isPleiades RebirthActive() bool {
+func isPleiadesRebirthActive() bool {
     _, err := os.Stat(runDir + "/pleiades-rebirth_active")
     return err == nil
 }
@@ -455,7 +455,7 @@ func createFakeEnvironment() {
     syscall.Mkfifo(runDir+"/fake/control", 0666)
     // Simulate CPU load to frustrate attacker (background)
     go func() { for { time.Sleep(1 * time.Second) } }()
-    reportToPleiades Nexus("FAKE_ENVIRONMENT_CREATED")
+    reportToPleiadesNexus("FAKE_ENVIRONMENT_CREATED")
 }
 
 func main() {
@@ -477,8 +477,8 @@ func main() {
                 }
                 time.Sleep(2 * time.Second)
             }
-            reportToPleiades Nexus("FAKE_DISARMED_ATTACKER_WON")
-            if isPleiades RebirthActive() {
+            reportToPleiadesNexus("FAKE_DISARMED_ATTACKER_WON")
+            if isPleiadesRebirthActive() {
                 os.Exit(0)
             }
             // Trigger Lich pleiades-rebirth
@@ -560,7 +560,7 @@ function log(msg) {
     appendFileSync(LOG_FILE, `${ts} - ${msg}\n`);
 }
 
-function reportToPleiades Nexus(msg) {
+function reportToPleiadesNexus(msg) {
     try {
         appendFileSync("/run/pleiades/pleiades-nexus_fifo", msg + "\n");
     } catch(e) {}
@@ -569,7 +569,7 @@ function reportToPleiades Nexus(msg) {
 async function kernelTrap(ip) {
     await execAsync(`ip route add ${ip} via 127.0.0.1 dev lo 2>/dev/null`);
     log(`Kernel trap set for ${ip}`);
-    reportToPleiades Nexus(`KERNEL_TRAP|${ip}`);
+    reportToPleiadesNexus(`KERNEL_TRAP|${ip}`);
 }
 
 async function harvestCredentials() {
@@ -580,7 +580,7 @@ async function harvestCredentials() {
             const lines = content.split('\n');
             for (const line of lines) {
                 if (line.includes("password") || line.includes("Unexpected SSH")) {
-                    reportToPleiades Nexus(`HARVESTED|${line}`);
+                    reportToPleiadesNexus(`HARVESTED|${line}`);
                 }
             }
         }
@@ -590,13 +590,13 @@ async function harvestCredentials() {
 async function feedFalseInfo() {
     if (existsSync(PLEIADES_REBIRTH_FLAG)) {
         const fakeIP = `10.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}.${Math.floor(Math.random()*256)}`;
-        reportToPleiades Nexus(`FAKE_NETWORK|${fakeIP}`);
+        reportToPleiadesNexus(`FAKE_NETWORK|${fakeIP}`);
     }
 }
 
 async function main() {
     log("Lich resurrected (omniversal)");
-    reportToPleiades Nexus("LICH_RESURRECTED");
+    reportToPleiadesNexus("LICH_RESURRECTED");
     writeFileSync(TRAP_FILE, "active");
     while (true) {
         const { stdout } = await execAsync('conntrack -E -p tcp --state NEW 2>/dev/null | grep -oP "src=\\K[0-9.]+" | head -1');
