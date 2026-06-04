@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # pleiades-mcp-converters.sh — repo2mcp, paper2mcp, openapi2mcp converters
 # Tasks #22, #23, #24
 #
@@ -11,14 +13,14 @@
 #
 # This script generates wrappers that call these tools; it does not vendor their source.
 # Generated Python uses the fastmcp/fastapi_mcp APIs as documented upstream.
-set -euo pipefail
+set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"
 PLEIADES_REPO_ROOT="${PLEIADES_REPO_ROOT:-$(dirname "$PLEIADES_CONTAINER_ROOT")}"
 
 VERSION="1.0.0"
 MCP_OUT="/var/lib/pleiades/mcp-servers"
-LOG_FILE="/var/log/pleiades/mcp-converters.log"
+LOG_FILE="${PLEIADES_LOG_DIR}/mcp-converters.log"
 mkdir -p "$MCP_OUT" "$(dirname "$LOG_FILE")" 2>/dev/null || true
 
 log() { printf '[%s] [mcp-converters] %s\n' "$(date -u +%H:%M:%S)" "$*" | tee -a "$LOG_FILE" >&2; }

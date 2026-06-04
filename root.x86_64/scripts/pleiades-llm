@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # pleiades-llm — thin wrapper around llama-cli for Pleiades RE and fuzz workflows
-set -euo pipefail
+set -uo pipefail
 
 CONF="${PURPLE_LLM_CONF:-/etc/pleiades/llm.conf}"
 [[ -f "$CONF" ]] || { echo "pleiades-llm: config not found at $CONF" >&2; exit 1; }

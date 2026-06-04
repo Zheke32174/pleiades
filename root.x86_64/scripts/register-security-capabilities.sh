@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # register-security-capabilities.sh — register all 32 security baseline tools
 # Task #20: Wire security tools into Pleiades Team capability registry
-set -euo pipefail
+set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"
 PLEIADES_REPO_ROOT="${PLEIADES_REPO_ROOT:-$(dirname "$PLEIADES_CONTAINER_ROOT")}"
 LOG_TAG="sec-caps"; log() { printf '[%s] %s\n' "$LOG_TAG" "$*" >&2; }
-CAP_DIR="/run/pleiades/capabilities"
+CAP_DIR="${PLEIADES_RUN_DIR}/capabilities"
 BASELINE="${PLEIADES_REPO_ROOT}/security-baseline.json"
 mkdir -p "$CAP_DIR"
 
@@ -70,7 +72,7 @@ print(f"Registered {registered} capability files in {cap_dir}")
 PYEOF
 
 # purplectl domain shortcuts
-PURPLECTL_PLUGIN="/run/pleiades/purplectl-plugins/security-tools.sh"
+PURPLECTL_PLUGIN="${PLEIADES_RUN_DIR}/purplectl-plugins/security-tools.sh"
 mkdir -p "$(dirname "$PURPLECTL_PLUGIN")"
 cat > "$PURPLECTL_PLUGIN" << 'PLUGIN'
 #!/usr/bin/env bash

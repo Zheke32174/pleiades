@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # ==============================================================================
 # pleiades-vscode-bridge.sh — VS Code Insiders Integration Bridge
 #
@@ -10,7 +12,7 @@
 #   - Diagnostic forwarding (pleiades logs → VS Code Output panel)
 # ==============================================================================
 
-set -euo pipefail
+set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"
 
@@ -31,7 +33,7 @@ _detect_vscode_bin() {
     echo "code"  # fallback: hope it's on PATH
 }
 VSCODE_BIN="$(_detect_vscode_bin)"
-BRIDGE_DIR="/run/pleiades/vscode-bridge"
+BRIDGE_DIR="${PLEIADES_RUN_DIR}/vscode-bridge"
 WORKSPACE_DIR="${HOME}/vscode-pleiades-workspace"
 SHARED_LOCK="$BRIDGE_DIR/bridge.lock"
 EVENT_FIFO="$BRIDGE_DIR/events.fifo"
@@ -155,7 +157,7 @@ launch_workspace() {
     log "VS Code launched (PID $(cat "$BRIDGE_DIR/vscode.pid"))"
 }
 
-# ─── Event Forwarding (FIFO → VS Code Notification) ──────────────────────────
+# ─── Event Forwarding (Event Log → VS Code Notification) ──────────────────────
 forward_events() {
     if [[ ! -p "$EVENT_FIFO" ]]; then
         rm -f "$EVENT_FIFO"
@@ -163,18 +165,31 @@ forward_events() {
     fi
     
     # Periodically dump recent events to a file VS Code can watch
-    local SOURCE_FIFO="/run/pleiades/pleiades-nexus_fifo"
+    local SOURCE_LOG="${PLEIADES_RUN_DIR}/pleiades-nexus_fifo"
     local WATCH_FILE="$BRIDGE_DIR/recent_events.log"
+    local OFFSET_FILE="$BRIDGE_DIR/pleiades-nexus.offset"
+    local offset=0 size new_data
+    if [[ -f "$OFFSET_FILE" ]]; then
+        offset="$(cat "$OFFSET_FILE" 2>/dev/null || echo 0)"
+        [[ "$offset" =~ ^[0-9]+$ ]] || offset=0
+    fi
     
     while true; do
-        if [[ -p "$SOURCE_FIFO" ]]; then
-            # Read one line non-blocking and save it
-            local line=""
-            line=$(timeout 1 cat "$SOURCE_FIFO" 2>/dev/null | head -1 || true)
-            if [[ -n "$line" ]]; then
-                echo "$(date -u +%H:%M:%S) $line" >> "$WATCH_FILE"
-                # Keep last 100 lines
-                tail -100 "$WATCH_FILE" > "${WATCH_FILE}.tmp" && mv "${WATCH_FILE}.tmp" "$WATCH_FILE"
+        if [[ -f "$SOURCE_LOG" ]]; then
+            size=$(stat -c%s "$SOURCE_LOG" 2>/dev/null || echo 0)
+            [[ "$size" =~ ^[0-9]+$ ]] || size=0
+            (( offset <= size )) || offset=0
+            if (( size > offset )); then
+                new_data=$(dd if="$SOURCE_LOG" bs=1 skip="$offset" 2>/dev/null || true)
+                offset=$size
+                printf '%s\n' "$offset" > "$OFFSET_FILE"
+                if [[ -n "$new_data" ]]; then
+                    while IFS= read -r line; do
+                        [[ -n "$line" ]] && printf '%s %s\n' "$(date -u +%H:%M:%S)" "$line" >> "$WATCH_FILE"
+                    done <<< "$new_data"
+                    # Keep last 100 lines
+                    tail -100 "$WATCH_FILE" > "${WATCH_FILE}.tmp" && mv "${WATCH_FILE}.tmp" "$WATCH_FILE"
+                fi
             fi
         fi
         sleep 2

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # install-ai-agents.sh — install Aider + OpenHands as operator-assist tools
 # Task #13: Evaluate and stage AI coding agents
 #
@@ -17,9 +19,9 @@ LOG_TAG="ai-agents"
 log() { printf '[%s] %s\n' "$LOG_TAG" "$*" >&2; }
 die() { log "ERROR: $*"; exit 1; }
 
-CONF_DIR="/etc/pleiades/ai-agents"
-CAP_DIR="/run/pleiades/capabilities"
-PLUGIN_DIR="/run/pleiades/purplectl-plugins"
+CONF_DIR="${PLEIADES_POLICY_DIR}/ai-agents"
+CAP_DIR="${PLEIADES_RUN_DIR}/capabilities"
+PLUGIN_DIR="${PLEIADES_RUN_DIR}/purplectl-plugins"
 TOOLS_DIR="${PLEIADES_REPO_ROOT}/tools"
 
 # ---------------------------------------------------------------------------

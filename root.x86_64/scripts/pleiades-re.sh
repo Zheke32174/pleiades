@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # pleiades-re.sh — Pleiades Team Binary Reverse Engineering Pipeline
 #
 # Pipeline: binary → decompile (radare2/ghidra) → LLM refine → type recovery → report
@@ -19,14 +21,14 @@
 #   RetroWrite    HexHive (EPFL)     MIT          https://github.com/HexHive/retrowrite
 #   rev.ng        rev.ng Labs        GPL-2.0      https://github.com/revng/revng
 #                 NOTE: rev.ng is GPL-2.0. This script only calls the installed binary.
-set -euo pipefail
+set -uo pipefail
 
-FIFO="/run/pleiades/pleiades-nexus_fifo"
+FIFO="${PLEIADES_RUN_DIR}/pleiades-nexus_fifo"
 STATE_DIR="/var/lib/pleiades-team/re"
 REPORT_DIR="${PURPLE_RE_REPORT_DIR:-$STATE_DIR/reports}"
 LOCK_FILE="/run/pleiades-re.lock"
 LLM_BIN="/usr/local/bin/pleiades-llm"
-LOG_FILE="/var/log/pleiades/re.log"
+LOG_FILE="${PLEIADES_LOG_DIR}/re.log"
 VERSION="1.0.0"
 
 mkdir -p "$STATE_DIR" "$REPORT_DIR" "$(dirname "$LOG_FILE")" 2>/dev/null || true
@@ -325,7 +327,7 @@ cmd_install_deps() {
 
 # ─── Integration with pleiades-forensic-scanner.sh ─────────────────────────────
 register_re_capability() {
-    local cap_dir="/run/pleiades/capabilities"
+    local cap_dir="${PLEIADES_RUN_DIR}/capabilities"
     mkdir -p "$cap_dir" 2>/dev/null || true
     {
         echo "schema=pleiades-pleiades-swarm-capability-v1"

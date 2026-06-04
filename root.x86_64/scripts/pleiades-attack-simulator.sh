@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # ==============================================================================
 # pleiades-attack-simulator.sh — Red Team Attack Simulation Suite
 #
@@ -15,17 +17,17 @@
 # Exit codes: 0 = all detected, 1 = any missed
 # ==============================================================================
 
-set -euo pipefail
+set -uo pipefail
 
-SIM_LOG="/var/log/pleiades/attack-sim.log"
-SCORE_FILE="/run/pleiades/forensic_score"
-ANOMALY_FILE="/run/pleiades/forensic_anomalies"
-FIFO="/run/pleiades/pleiades-nexus_fifo"
+SIM_LOG="${PLEIADES_LOG_DIR}/attack-sim.log"
+SCORE_FILE="${PLEIADES_RUN_DIR}/forensic_score"
+ANOMALY_FILE="${PLEIADES_RUN_DIR}/forensic_anomalies"
+FIFO="${PLEIADES_RUN_DIR}/pleiades-nexus_fifo"
 DETECTED=0
 MISSED=0
 TOTAL=0
 
-log()    { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$SIM_LOG"; }
+log()    { log_json "INFO" "attack-sim" "$*"; }
 event()  { printf '%s\n' "$1" >> "$FIFO" 2>/dev/null || true; }
 
 setup() {

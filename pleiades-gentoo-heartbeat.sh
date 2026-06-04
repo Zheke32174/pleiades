@@ -14,7 +14,7 @@ SERVICES=(
   taygete-omniversal.service
   alcyone-omniversal.service
   pleiades-rebirth-omniversal.service
-  pleiades-atlas-omniversal.service
+  atlas-omniversal.service
   celaeno-omniversal.service
   electra-omniversal.service
   pleiades-nexus-omniversal.service
@@ -56,6 +56,7 @@ log() {
 write_status() {
     {
         printf 'updated_utc=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        printf 'status=running\n'
         printf 'root=%s\n' "$ROOT"
         printf 'tmux_session=%s\n' "$TMUX_SESSION"
         printf 'container_pid=%s\n' "${CONTAINER_PID:-absent}"
@@ -402,6 +403,10 @@ check_container_services() {
     local svc state
     ensure_windows_bridge_monitor_unit
     for svc in "${SERVICES[@]}"; do
+        if ! inside systemctl cat "$svc" >/dev/null 2>&1; then
+            log "SERVICE_SKIPPED|$svc|unit-missing"
+            continue
+        fi
         state="$(inside systemctl is-active "$svc" 2>/dev/null || true)"
         case "$state" in
             active)
@@ -430,6 +435,73 @@ check_container_ready_paths() {
         || log "WINDOWS_BRIDGE_DEGRADED|windows-path-not-detected"
 }
 
+check_bridge_health() {
+    local healthy=0 name state data_ok check_cmd
+
+    # proc bridge
+    name="proc"
+    check_cmd="test -r /host/proc/1/status"
+    state="$(bridge_state "$check_cmd")"
+    if [[ "$state" == "mounted" ]]; then
+        if inside bash -lc 'head -3 /host/proc/1/status 2>/dev/null | grep -q "Name:"'; then
+            data_ok="yes"; healthy=$((healthy + 1))
+        else
+            data_ok="degraded"
+        fi
+    else
+        data_ok="n/a"
+    fi
+    log "BRIDGE_HEALTH|name=$name|state=$state|data_consistency=$data_ok"
+
+    # sys bridge
+    name="sys"
+    check_cmd="test -r /host/sys/kernel/uevent_seqnum"
+    state="$(bridge_state "$check_cmd")"
+    if [[ "$state" == "mounted" ]]; then
+        if inside bash -lc 'test -n "$(cat /host/sys/kernel/uevent_seqnum 2>/dev/null)"'; then
+            data_ok="yes"; healthy=$((healthy + 1))
+        else
+            data_ok="degraded"
+        fi
+    else
+        data_ok="n/a"
+    fi
+    log "BRIDGE_HEALTH|name=$name|state=$state|data_consistency=$data_ok"
+
+    # run bridge
+    name="run"
+    check_cmd="test -e /host/run/systemd"
+    state="$(bridge_state "$check_cmd")"
+    if [[ "$state" == "mounted" ]]; then
+        if inside bash -lc 'ls /host/run/systemd/private 2>/dev/null | head -1 | grep -q .'; then
+            data_ok="yes"; healthy=$((healthy + 1))
+        else
+            data_ok="degraded"
+        fi
+    else
+        data_ok="n/a"
+    fi
+    log "BRIDGE_HEALTH|name=$name|state=$state|data_consistency=$data_ok"
+
+    # windows c: bridge
+    name="windows c:"
+    check_cmd="test -e /host/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+    state="$(bridge_state "$check_cmd")"
+    if [[ "$state" == "mounted" ]]; then
+        if inside bash -lc 'test -x /host/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'; then
+            data_ok="yes"; healthy=$((healthy + 1))
+        else
+            data_ok="degraded"
+        fi
+    else
+        data_ok="n/a"
+    fi
+    log "BRIDGE_HEALTH|name=$name|state=$state|data_consistency=$data_ok"
+
+    printf '%d\n' "$healthy"
+    return 0
+}
+
 main() {
     local result="ok"
     ensure_container || result="container-error"
@@ -445,6 +517,7 @@ main() {
     fi
     if [[ "${result}" == "ok" ]]; then
         check_container_ready_paths || true
+        check_bridge_health >/dev/null 2>&1 || true
         archive_container_telemetry || true
         check_container_services || true
     fi

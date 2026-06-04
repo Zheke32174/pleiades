@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # pleiades-fuzz.sh — Pleiades Team fuzzing pipeline
 # Stage 1: static analysis → Stage 2: LLM harness gen → Stage 3: AFL++ fuzz
 # Stage 4: crash validation → Stage 5: LLM patch proposal
 # Task #16: Implement vulnerability discovery + fuzzing loop
-set -euo pipefail
+set -uo pipefail
 
 VERSION="1.0.0"
-LOG_FILE="/var/log/pleiades/fuzz.log"
+LOG_FILE="${PLEIADES_LOG_DIR}/fuzz.log"
 FUZZ_STATE="/var/lib/pleiades/fuzz-campaigns"
 LLM_BIN="/usr/local/bin/pleiades-llm"
-FIFO="/run/pleiades/pleiades-nexus_fifo"
+FIFO="${PLEIADES_RUN_DIR}/pleiades-nexus_fifo"
 
 mkdir -p "$(dirname "$LOG_FILE")" 2>/dev/null || true
 
