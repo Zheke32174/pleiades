@@ -133,6 +133,16 @@ These things look wrong but are intentional. Do not "fix" them.
 
 ## Recently Changed
 
+### 2026-06-02 (B1-B8 infrastructure regression alignment)
+- **pleiades-regression-lib.sh**: tightened B3 so the owner-helper check now fails on any non-loopback `:18080` listener, even if `127.0.0.1:18080` is also present. This closes the mixed-bind exposure gap in the decoy port test.
+- **pleiades-regression-lib.sh**: tightened B7 so host-bridge validation now performs real reads (`head -c 1`) against `/host/proc/1/status` and `/host/sys/kernel/uevent_seqnum` instead of relying on permission-bit checks alone.
+
+### 2026-06-02 (regression harness host-side refresh + backup validation)
+- **pleiades-regression.sh**: hardened `container_up()` fallback so `nsenter` uses the inner container init PID when `machinectl` is unavailable, instead of probing the outer `systemd-nspawn` wrapper.
+- **pleiades-regression-lib.sh**: B13 now refreshes host heartbeat state once by running `pleiades-gentoo-heartbeat.sh` when the status file is missing, then re-checks freshness and reports refresh failures explicitly. B14 now wraps backup dry-run with a 20s timeout so hung archive validation fails clearly instead of stalling the suite.
+- **pleiades-gentoo-heartbeat.sh**: fixed the Atlas service watchlist entry back to `atlas-omniversal.service`, matching the deployed service name tracked elsewhere in this suite.
+- **pleiades-backup.sh**: optimized `--dry-run` archive validation to inspect the first tar header block directly, including `.tar.gz` archives, instead of scanning the full archive. This keeps backup validation fast on multi-GB `rootfs-backup-*.tar.gz` files.
+
 ### 2026-06-02 (DR test + polyglot identifier fixes)
 - **Disaster recovery test (Task #26) completed**: fresh stage3 rootfs → Maia deployment → full stack → PASS=34 FAIL=0 SKIP=1 (skip is `/host/sys` WSL limitation only).
 - **Root cause found**: polyglot code generators in 4 scripts emitted Go/Rust/JS identifiers with hyphens or spaces, which are illegal in those languages. Fixed in commit `136b2f8`.
@@ -368,3 +378,4 @@ Tasks 5, 6, 7, 8 need no container and have no task dependencies. Any agent can 
 | 2026-05-29 | Claude | Created pleiades-regression.sh (main harness: syntax, systemd, ports, concurrency cap) and pleiades-regression-lib.sh (advanced: recon replay, broker deny matrix, host-bridge, Celaeno, Maia crypto). Created OPERATOR_RUNBOOK.md. Marked tasks 5 and 6 done. Both scripts pass bash -n. |
 | 2026-05-29 | Claude | Code review of all 8 scripts. Fixed: lm-sensors was NOT a no-op in emerge path in 7/8 scripts (active pkgs+= line preceded dead no-op, contradicting PLEIADES_STATE.md). Fixed Merope.sh stale comment (Alcyone port 2222→2224). All 8 scripts pass bash -n. |
 | 2026-05-29 | Claude | Octopus ↔ Task Master integration for Claude: created /workspaces/gentoo/tm-context.sh (reads tasks.json via jq, outputs pending/in-progress task summary). Added SessionStart hook to ~/.claude/settings.json so TM context auto-injects at every session start. No auth issues — reads tasks.json directly, bypasses task-master CLI. |
+| 2026-06-04 | Codex | Ran three regression rounds and brought the live container to `PASS=71 FAIL=0 SKIP=2` (`llama-cli`/LLM stage remain optional skips). Fixed VS Code bridge event forwarding for regular-file telemetry, refreshed stale heartbeat checks, restored Atlas/Electra expected service units, installed forensic scanner scripts where Atlas expects them, fixed the backup dry-run timeout, and repaired the infinite backup/horizon timer crashes. |
