@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # ==============================================================================
 # pleiades-forensic-extensions.sh — Extended forensic checks
 #
@@ -9,9 +11,9 @@
 
 set -uo pipefail
 
-SCORE_FILE="${1:-/run/pleiades/forensic_score}"
-ANOMALY_FILE="${2:-/run/pleiades/forensic_anomalies}"
-FIFO="/run/pleiades/pleiades-nexus_fifo"
+SCORE_FILE="${1:-${PLEIADES_RUN_DIR}/forensic_score}"
+ANOMALY_FILE="${2:-${PLEIADES_RUN_DIR}/forensic_anomalies}"
+FIFO="${PLEIADES_RUN_DIR}/pleiades-nexus_fifo"
 SCORE=0
 ANOMALIES=()
 

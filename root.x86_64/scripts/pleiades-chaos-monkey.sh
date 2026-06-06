@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # ==============================================================================
 # pleiades-chaos-monkey.sh — Resilience & Stress Testing Framework
 # 
@@ -15,7 +17,7 @@
 # Exit codes: 0 = all passed, 1 = any failure
 # ==============================================================================
 
-set -euo pipefail
+set -uo pipefail
 
 PURPLE_SERVICES=(
     taygete-omniversal.service
@@ -33,9 +35,9 @@ PURPLE_SERVICES=(
 PASS=0
 FAIL=0
 SKIP=0
-TEST_LOG="/var/log/pleiades/chaos-test.log"
+TEST_LOG="${PLEIADES_LOG_DIR}/chaos-test.log"
 
-log()   { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$TEST_LOG"; }
+log()   { log_json "INFO" "chaos-monkey" "$*"; }
 pass()  { PASS=$((PASS+1)); log "PASS: $1"; }
 fail()  { FAIL=$((FAIL+1)); log "FAIL: $1"; }
 skip()  { SKIP=$((SKIP+1)); log "SKIP: $1"; }
@@ -77,7 +79,7 @@ test_crash_recovery() {
 
 # ─── Test 2: FIFO Bus Resilience ──────────────────────────────────────────────
 test_fifo_resilience() {
-    local fifo="/run/pleiades/pleiades-nexus_fifo"
+    local fifo="${PLEIADES_RUN_DIR}/pleiades-nexus_fifo"
     log "TEST: fifo_resilience"
     
     [[ -e "$fifo" ]] || { fail "FIFO $fifo not found (expected regular file)"; return; }
@@ -149,7 +151,7 @@ test_memory_pressure() {
     
     # Check if forensic scanner detected it
     local score=0
-    [[ -f /run/pleiades/forensic_score ]] && score=$(cat /run/pleiades/forensic_score 2>/dev/null || echo 0)
+    [[ -f ${PLEIADES_RUN_DIR}/forensic_score ]] && score=$(cat ${PLEIADES_RUN_DIR}/forensic_score 2>/dev/null || echo 0)
     
     kill "$stress_pid" 2>/dev/null || true
     
@@ -175,7 +177,7 @@ test_mount_integrity() {
     done
     
     # Check /run/pleiades exists and has expected structure
-    if [[ -d /run/pleiades && -f /run/pleiades/pleiades-nexus_fifo ]]; then
+    if [[ -d /run/pleiades && -f ${PLEIADES_RUN_DIR}/pleiades-nexus_fifo ]]; then
         pass "mount_integrity: /run/pleiades is present with FIFO"
     else
         fail "mount_integrity: /run/pleiades missing or incomplete"

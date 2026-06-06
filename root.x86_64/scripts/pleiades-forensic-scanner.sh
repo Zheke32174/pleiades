@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Source configuration and shared library
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
+# Source pleiades-common.sh for shared helpers (log_json, apply_sensitivity, etc.)
+source /usr/local/lib/pleiades-common.sh 2>/dev/null || source "$(dirname "$0")/pleiades-common.sh" 2>/dev/null || true
 # ==============================================================================
 # pleiades-forensic-scanner.sh — Pleiades Team Forensic & Heuristic Scanner
 # 
@@ -10,27 +14,27 @@
 #   - Filesystem integrity snapshot
 #   - Zero-day adaptation: adjusts thresholds based on observed patterns
 #
-# Integrates with the pleiades event bus (/run/pleiades/pleiades-nexus_fifo)
+# Integrates with the pleiades event bus (${PLEIADES_RUN_DIR}/pleiades-nexus_fifo)
 # Reports to Atlas threat scoring via FORENSIC_OBSERVATION events
 # Logs to syslog/journald for observability
 # ==============================================================================
 
-set -euo pipefail
+set -uo pipefail
 
-FIFO="/run/pleiades/pleiades-nexus_fifo"
+FIFO="${PLEIADES_RUN_DIR}/pleiades-nexus_fifo"
 STATE_DIR="/var/lib/pleiades-team/forensic"
 PROFILE_DIR="$STATE_DIR/profiles"
 SNAPSHOT_DIR="$STATE_DIR/snapshots"
 THRESHOLD_FILE="$STATE_DIR/thresholds"
 BASELINE_FILE="$STATE_DIR/baseline"
 ADAPTIVE_RULES="$STATE_DIR/adaptive_rules"
-SCORE_FILE="/run/pleiades/forensic_score"
-ANOMALY_FILE="/run/pleiades/forensic_anomalies"
+SCORE_FILE="${PLEIADES_RUN_DIR}/forensic_score"
+ANOMALY_FILE="${PLEIADES_RUN_DIR}/forensic_anomalies"
 BASE_INTERVAL=${FORENSIC_INTERVAL:-60}  # seconds between main cycles
 
 mkdir -p "$STATE_DIR" "$PROFILE_DIR" "$SNAPSHOT_DIR"
 
-log()   { local msg="[$(date -u +%H:%M:%S)] [$$] $*"; echo "$msg" >> /var/log/pleiades/forensic-scanner.log; echo "$msg"; }
+log()   { local msg="[$(date -u +%H:%M:%S)] [$$] $*"; echo "$msg" >> ${PLEIADES_LOG_DIR}/forensic-scanner.log; echo "$msg"; }
 event() { printf '%s\n' "$1" >> "$FIFO" 2>/dev/null || true; }
 
 # ─── Initialize or load adaptive thresholds ───────────────────────────────────
@@ -157,6 +161,8 @@ check_anomalies() {
         [[ $cpu_pct -gt 100 ]] && cpu_pct=100
     fi
     local cpu_threshold="${THRESHOLDS[cpu_usage_pct_threshold]:-90}"
+    local cpu_sensitivity="${THRESHOLDS[cpu_usage_pct_sensitivity]:-1.0}"
+    cpu_threshold=$(apply_sensitivity "$cpu_threshold" "$cpu_sensitivity")
     if [[ $cpu_pct -gt $cpu_threshold ]]; then
         local score=$(( (cpu_pct - cpu_threshold) * 2 ))
         [[ $score -lt 5 ]] && score=5
@@ -193,6 +199,8 @@ check_anomalies() {
     local mem_now
     mem_now=$(free | awk '/^Mem:/ {printf "%d", $3/$2 * 100}' 2>/dev/null || echo 0)
     local mem_threshold="${THRESHOLDS[memory_usage_pct_threshold]:-95}"
+    local mem_sensitivity="${THRESHOLDS[memory_usage_pct_sensitivity]:-1.0}"
+    mem_threshold=$(apply_sensitivity "$mem_threshold" "$mem_sensitivity")
     if [[ $mem_now -gt $mem_threshold ]]; then
         local score=$(( (mem_now - mem_threshold) * 3 ))
         [[ $score -lt 10 ]] && score=10
@@ -205,6 +213,8 @@ check_anomalies() {
     local proc_now
     proc_now=$(ps -e 2>/dev/null | wc -l || echo 0)
     local proc_threshold="${THRESHOLDS[proc_count_threshold]:-500}"
+    local proc_sensitivity="${THRESHOLDS[proc_count_sensitivity]:-1.0}"
+    proc_threshold=$(apply_sensitivity "$proc_threshold" "$proc_sensitivity")
     if [[ $proc_now -gt $proc_threshold ]]; then
         local score=$(( (proc_now - proc_threshold) / 10 ))
         [[ $score -lt 5 ]] && score=5
@@ -234,6 +244,8 @@ check_anomalies() {
     local conn_now
     conn_now=$(ss -tun 2>/dev/null | tail -n +2 | wc -l || netstat -tun 2>/dev/null | tail -n +3 | wc -l || echo 0)
     local conn_threshold="${THRESHOLDS[net_conn_count_threshold]:-200}"
+    local conn_sensitivity="${THRESHOLDS[net_conn_count_sensitivity]:-1.0}"
+    conn_threshold=$(apply_sensitivity "$conn_threshold" "$conn_sensitivity")
     if [[ $conn_now -gt $conn_threshold ]]; then
         local score=$(( (conn_now - conn_threshold) / 10 ))
         [[ $score -lt 5 ]] && score=5
@@ -401,7 +413,7 @@ main() {
     event "FORENSIC_SCANNER_READY|baseline=established|interval=${BASE_INTERVAL}"
     
     # Generate capability
-    mkdir -p /run/pleiades/capabilities
+    mkdir -p ${PLEIADES_RUN_DIR}/capabilities
     cat > /run/pleiades/capabilities/forensic_scanner.cap << 'CAP'
 schema=pleiades-pleiades-swarm-capability-v1
 component=forensic_scanner
