@@ -1,163 +1,24 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
-# --- MAIA EVENT HOOK ---
-_maia_hook() {
-    [[ -S "/run/maia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/maia.sock 2>/dev/null || nc -U /run/maia.sock -w 1 2>/dev/null) || true
-}
+# Source shared library
+source /usr/local/lib/pleiades-common.sh 2>/dev/null || source "$(dirname "$0")/pleiades-common.sh"
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
+
 # --- END MAIA EVENT HOOK ---
-
-
-register_pleiades-swarm_capability() {
-    local component="$1" domain="$2" capabilities="$3"
-    local run_dir="/run/pleiades"
-    local cap_dir="$run_dir/capabilities"
-    local state_dir="$run_dir/state"
-    local policy_dir="/etc/pleiades"
-    local alien_dir="$run_dir/alien"
-    mkdir -p "$cap_dir" "$state_dir" "$run_dir/requests" "$run_dir/decisions" "$run_dir/actions" "$run_dir/results" "$alien_dir/inbox" "$alien_dir/outbox" "$policy_dir" /var/lib/pleiades-team/pleiades-swarm 2>/dev/null || true
-    touch "$run_dir/pleiades-nexus_fifo" 2>/dev/null || true
-    if [[ ! -f "$policy_dir/pleiades-swarm-policy.json" ]]; then
-        cat > "$policy_dir/pleiades-swarm-policy.json" <<'POLICY'
-{
-  "schema": "pleiades-pleiades-swarm-policy-v1",
-  "mode": "owner-authorized-defensive",
-  "default_request_decision": "deny",
-  "allowed_request_classes": ["status", "health", "capabilities", "evidence-list", "brl-status", "strat-list", "alien-hint"],
-  "denied_request_classes": ["shell", "exec", "install", "network-change", "firewall-change", "script-modify", "credential-access", "lateral-movement"],
-  "alien_sidecar": {"enabled": false, "authority": "advisory-only", "may_request": true, "may_act": false},
-  "audit": {"append_only_events": true, "owner_visible": true}
-}
-POLICY
-    fi
-    {
-        echo "schema=pleiades-pleiades-swarm-capability-v1"
-        echo "component=$component"
-        echo "domain=$domain"
-        echo "capabilities=$capabilities"
-        echo "authority=policy-gated"
-        echo "ai_sidecar_required=no"
-        echo "updated_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    } > "$cap_dir/$component.cap" 2>/dev/null || true
-    {
-        echo "schema=pleiades-pleiades-swarm-state-v1"
-        echo "component=$component"
-        echo "status=registered"
-        echo "updated_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    } > "$state_dir/$component.state" 2>/dev/null || true
-    printf 'PLEIADES_SWARM_CAPABILITY|%s|%s|%s
-' "$component" "$domain" "$capabilities" >> "$run_dir/pleiades-nexus_fifo" 2>/dev/null || true
-}
 
 # ------------------------------------------------------------
 # Curl-based Go and Rust installers — never use emerge for these
 # ------------------------------------------------------------
-ensure_go() {
-    command -v go &>/dev/null && return 0
-    local arch; arch=$(uname -m)
-    local goarch="amd64"; [[ "$arch" == "aarch64" ]] && goarch="arm64"
-    curl -fsSL "https://go.dev/dl/go1.22.5.linux-${goarch}.tar.gz" -o /tmp/_go.tar.gz || return 1
-    tar -C /usr/local -xzf /tmp/_go.tar.gz && rm -f /tmp/_go.tar.gz
-    ln -sf /usr/local/go/bin/go /usr/local/bin/go
-    ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
-    export PATH="/usr/local/go/bin:$PATH"
-}
-
-ensure_rust() {
-    command -v rustc &>/dev/null && return 0
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --no-modify-path
-    local cargo="$HOME/.cargo/bin"
-    ln -sf "${cargo}/rustc" /usr/local/bin/rustc 2>/dev/null || true
-    ln -sf "${cargo}/cargo" /usr/local/bin/cargo 2>/dev/null || true
-    export PATH="${cargo}:$PATH"
-}
 
 # ------------------------------------------------------------
 # Package manager shim — works on Gentoo, Debian, RHEL, Arch, Alpine, FreeBSD
 # ------------------------------------------------------------
-pkg_install() {
-    local pkgs=()
-    for p in "$@"; do
-        case "$p" in
-            golang) ensure_go; continue ;;
-            rustc)  ensure_rust; continue ;;
-            bun)    continue ;;
-            lm-sensors) continue ;;
-        esac
-        if command -v emerge &>/dev/null; then
-            case "$p" in
-                openbsd-netcat|nc) pkgs+=("net-analyzer/openbsd-netcat") ;;
-                screen) pkgs+=("app-misc/screen") ;;
-                bc) pkgs+=("sys-devel/bc") ;;
-                lm-sensors) : ;;
-                parted) pkgs+=("sys-block/parted") ;;
-                socat) pkgs+=("net-misc/socat") ;;
-                conntrack) pkgs+=("net-firewall/conntrack-tools") ;;
-                golang) : ;;
-                bun) : ;;
-                lm-sensors) : ;;
-                rustc) : ;;
-                curl) pkgs+=("net-misc/curl") ;;
-                git) pkgs+=("dev-vcs/git") ;;
-                openssl) pkgs+=("dev-libs/openssl") ;;
-                traceroute) pkgs+=("net-analyzer/traceroute") ;;
-                sshpass) pkgs+=("net-misc/sshpass") ;;
-                *) pkgs+=("$p") ;;
-            esac
-        else
-            pkgs+=("$p")
-        fi
-    done
-
-    if command -v emerge &>/dev/null; then
-        emerge --quiet --noreplace "${pkgs[@]}"
-    elif command -v apt-get &>/dev/null; then
-        local apt_pkgs=()
-        for p in "${pkgs[@]}"; do
-            case "$p" in
-                openbsd-netcat) apt_pkgs+=("netcat-openbsd") ;;
-                bind-tools) apt_pkgs+=("dnsutils") ;;
-                iproute2|net-tools|tcpdump|conntrack|lsof|curl|openssl|jq|procps|sysstat|tar|gzip|coreutils|screen|bc|traceroute|socat|nodejs) apt_pkgs+=("$p") ;;
-                *) apt_pkgs+=("$p") ;;
-            esac
-        done
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${apt_pkgs[@]}" || {
-            apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${apt_pkgs[@]}"
-        }
-    elif command -v apk &>/dev/null; then
-        apk add --quiet "${pkgs[@]}"
-    elif command -v pkg &>/dev/null; then
-        pkg install -y -q "${pkgs[@]}"
-    elif command -v dnf &>/dev/null; then
-        dnf install -y -q "${pkgs[@]}"
-    elif command -v yum &>/dev/null; then
-        yum install -y -q "${pkgs[@]}"
-    elif command -v pacman &>/dev/null; then
-        pacman -S --noconfirm --needed "${pkgs[@]}"
-    else
-        echo "WARN: no supported package manager; skipping install of: ${pkgs[*]}" >&2
-    fi
-}
 
 # ----------------------------------------------------------------
 # Shared helpers: socket compat, load-order coordination
 # ----------------------------------------------------------------
-nc_unix_send() {
-    local sock="$1" msg="$2"
-    if command -v socat &>/dev/null; then
-        printf '%s\n' "$msg" | socat - "UNIX-CONNECT:$sock" 2>/dev/null || true
-    else
-        printf '%s\n' "$msg" | nc -U "$sock" -w 1 2>/dev/null || true
-    fi
-}
-signal_ready() { mkdir -p /var/lib/pleiades/ready; touch "/var/lib/pleiades/ready/$1"; }
-wait_for()     {
-    local name="$1" timeout="${2:-90}" elapsed=0
-    while [[ ! -f "/var/lib/pleiades/ready/$name" ]]; do
-        (( elapsed >= timeout )) && { logger -t pleiades "WARN: timeout waiting for $name"; return 0; }
-        sleep 2; (( elapsed += 2 ))
-    done
-}
 
 # ------------------------------------------------------------
 # Runtime service manager detection
@@ -165,90 +26,6 @@ wait_for()     {
 # In WSL-backed nspawn containers, /proc/version says WSL even when
 # systemd is fully available inside the container.
 # ------------------------------------------------------------
-systemd_usable() {
-    command -v systemctl &>/dev/null || return 1
-    [[ -d /run/systemd/system ]] || return 1
-    local state
-    state=$(systemctl is-system-running 2>/dev/null || true)
-    case "$state" in
-        running|degraded|starting|initializing) return 0 ;;
-        *) return 1 ;;
-    esac
-}
-
-container_context() {
-    if command -v systemd-detect-virt &>/dev/null; then
-        systemd-detect-virt --container 2>/dev/null || true
-        return 0
-    fi
-    awk -F/ '/docker|lxc|kubepods|machine.slice|systemd-nspawn/ {print $NF; found=1} END {exit found?0:1}' /proc/1/cgroup 2>/dev/null || true
-}
-
-
-host_bridge_capability_report() {
-    local component="${1:-unknown}"
-    local state_file="${PURPLE_HOST_BRIDGE_STATE:-/run/pleiades/host_bridge_capabilities}"
-    local owner_copy="${PURPLE_HOST_BRIDGE_OWNER_COPY:-/var/lib/.maia/host_bridge_capabilities}"
-    local tmp="${state_file}.$$"
-    local container="none"
-    local host_proc="absent"
-    local host_root="absent"
-    local host_systemd="absent"
-    local host_container_socket="absent"
-    local windows_host_files="absent"
-    local mode="container-sentinel"
-
-    mkdir -p /run/pleiades /var/lib/.maia 2>/dev/null || true
-
-    container=$(container_context 2>/dev/null | head -1)
-    [[ -z "$container" ]] && container="none"
-
-    for p in /host/proc /mnt/host/proc /run/host/proc /hostfs/proc; do
-        if [[ -r "$p/1/status" ]]; then host_proc="$p"; break; fi
-    done
-
-    for p in /host /mnt/host /run/host /hostfs; do
-        if [[ -r "$p/etc/os-release" ]] || [[ -d "$p/Windows/System32" ]]; then host_root="$p"; break; fi
-    done
-
-    for p in /host/run/systemd/private /mnt/host/run/systemd/private /run/host/run/systemd/private /hostfs/run/systemd/private; do
-        if [[ -S "$p" ]]; then host_systemd="$p"; break; fi
-    done
-
-    for p in /var/run/docker.sock /run/docker.sock /host/var/run/docker.sock /mnt/host/var/run/docker.sock /run/host/var/run/docker.sock; do
-        if [[ -S "$p" ]]; then host_container_socket="$p"; break; fi
-    done
-
-    if [[ -d /mnt/c/Windows/System32 ]]; then
-        windows_host_files="/mnt/c"
-    fi
-
-    if [[ "$host_proc" != "absent" ]] || [[ "$host_root" != "absent" ]] || [[ "$host_systemd" != "absent" ]] || [[ "$host_container_socket" != "absent" ]] || [[ "$windows_host_files" != "absent" ]]; then
-        mode="host-bridge"
-    fi
-
-    {
-        echo "schema=pleiades-host-bridge-v1"
-        echo "component=$component"
-        echo "updated_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-        echo "runtime_env=${ENV:-unknown}"
-        echo "container_context=$container"
-        echo "systemd_usable=$(systemd_usable && echo yes || echo no)"
-        echo "mode=$mode"
-        echo "host_proc=$host_proc"
-        echo "host_root=$host_root"
-        echo "host_systemd=$host_systemd"
-        echo "host_container_socket=$host_container_socket"
-        echo "windows_host_files=$windows_host_files"
-        echo "owner_visible=yes"
-        echo "attacker_decoy_profile=enabled"
-    } > "$tmp" 2>/dev/null && mv "$tmp" "$state_file" 2>/dev/null || true
-
-    cp "$state_file" "$owner_copy" 2>/dev/null || true
-    chmod 0644 "$state_file" "$owner_copy" 2>/dev/null || true
-    printf 'HOST_BRIDGE_MODE|%s|%s|%s\n' "$component" "$mode" "$container" >> /run/pleiades/pleiades-nexus_fifo 2>/dev/null || true
-}
-
 
 # PLEIADES_REBIRTH_ID
 # ==================================================================
@@ -290,7 +67,6 @@ fi
 
 DECOY_SSH_PORT="${DECOY_SSH_PORT:-2223}"   # distinct from Alcyone's honeypot on 2224
 
-
 # ------------------------------------------------------------
 # 1. Environment‑specific resource limits
 # ------------------------------------------------------------
@@ -322,39 +98,10 @@ BEACON_INTERVAL=7200
 # ------------------------------------------------------------
 # 2. Anti‑BGP hijack detection
 # ------------------------------------------------------------
-bgp_hijack_detected() {
-    local cache="/run/pleiades/asn_baseline"
-    local my_ip asn
-    my_ip=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null) || return 1
-    asn=$(curl -s --max-time 5 "https://api.bgpview.io/ip/${my_ip}" \
-        2>/dev/null | grep -o '"asn":[0-9]*' | head -1 | grep -o '[0-9]*')
-    [[ -z "$asn" ]] && return 1
-    if [[ ! -f "$cache" ]]; then
-        echo "$asn" > "$cache"; return 1
-    fi
-    [[ "$(cat "$cache")" != "$asn" ]]
-}
 
 # ------------------------------------------------------------
 # 3. Thermal/side‑channel anomaly detection
 # ------------------------------------------------------------
-thermal_anomaly() {
-    local temp=0
-    local paths=("/host/sys/class/thermal/thermal_zone0/temp" "/sys/class/thermal/thermal_zone0/temp" "/host/sys/class/thermal/thermal_zone1/temp" "/sys/class/thermal/thermal_zone1/temp")
-    for p in "${paths[@]}"; do
-        if [[ -f "$p" ]]; then
-            temp=$(cat "$p"); temp=$((temp / 1000)); break
-        fi
-    done
-    if [[ $temp -eq 0 ]] && command -v sensors &>/dev/null; then
-        temp=$(sensors | grep -oP 'Package id 0: \+\K[0-9]+' | head -1)
-    fi
-    local load=$(uptime | awk -F'load ameropege:' '{print $2}' | cut -d',' -f1 | tr -d ' ')
-    if [[ $temp -gt 85 ]] && (( $(echo "$load < 2.0" | bc -l) )); then
-        return 0
-    fi
-    return 1
-}
 
 # ------------------------------------------------------------
 # 4. Build Go pleiades-rebirth state keeper (encrypted snapshot)
@@ -526,7 +273,7 @@ check_escrow_signal() {
 while true; do
     signal=$(check_escrow_signal)
     if [[ "$signal" == *"RESURRECT"* ]]; then
-        logger -t pleiades-rebirth "Received resurrect signal – restoring Singularity"
+        log_json "EVENT" "pleiades-rebirth" "Received resurrect signal – restoring Singularity"
         report_to_pleiades-nexus "RESURRECT_SIGNAL_RECEIVED"
         touch "$RUN_DIR/pleiades-rebirth_needed"
         _maia_hook "PLEIADES_REBIRTH_NEEDED"
@@ -652,13 +399,13 @@ monitor_threats() {
     while true; do
         if bgp_hijack_detected; then
             logger -t pleiades-rebirth "BGP hijack detected – activating pleiades-rebirth"
-            ( echo "BGP_HIJACK" >> /run/pleiades/pleiades-nexus_fifo & )
-touch /run/pleiades/pleiades-rebirth_needed
+            ( echo "BGP_HIJACK" >> ${PLEIADES_RUN_DIR}/pleiades-nexus_fifo & )
+touch ${PLEIADES_RUN_DIR}/pleiades-rebirth_needed
             _maia_hook "PLEIADES_REBIRTH_NEEDED"
         fi
         if thermal_anomaly; then
             logger -t pleiades-rebirth "Thermal anomaly detected – possible side‑channel"
-            ( echo "THERMAL_ANOMALY" >> /run/pleiades/pleiades-nexus_fifo & )
+            ( echo "THERMAL_ANOMALY" >> ${PLEIADES_RUN_DIR}/pleiades-nexus_fifo & )
 # Reduce CPU usage
             cpulimit -l 10 -p $$ 2>/dev/null || true
         fi
@@ -699,33 +446,9 @@ INST
 }
 
 main
-# --- MAIA EVENT HOOK ---
-_maia_hook() {
-    [[ -S "/run/maia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/maia.sock 2>/dev/null || nc -U /run/maia.sock -w 1 2>/dev/null) || true
-}
 # --- END MAIA EVENT HOOK ---
-# --- MAIA EVENT HOOK ---
-_maia_hook() {
-    [[ -S "/run/maia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/maia.sock 2>/dev/null || nc -U /run/maia.sock -w 1 2>/dev/null) || true
-}
 # --- END MAIA EVENT HOOK ---
-# --- MAIA EVENT HOOK ---
-_maia_hook() {
-    [[ -S "/run/maia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/maia.sock 2>/dev/null || nc -U /run/maia.sock -w 1 2>/dev/null) || true
-}
 # --- END MAIA EVENT HOOK ---
-# --- MAIA EVENT HOOK ---
-_maia_hook() {
-    [[ -S "/run/maia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/maia.sock 2>/dev/null || nc -U /run/maia.sock -w 1 2>/dev/null) || true
-}
 # --- END MAIA EVENT HOOK ---
-# --- MAIA EVENT HOOK ---
-_maia_hook() {
-    [[ -S "/run/maia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/maia.sock 2>/dev/null || nc -U /run/maia.sock -w 1 2>/dev/null) || true
-}
 # --- END MAIA EVENT HOOK ---
-# --- MAIA EVENT HOOK ---
-_maia_hook() {
-    [[ -S "/run/maia.sock" ]] && printf '%s\n' "$1" | (socat - UNIX-CONNECT:/run/maia.sock 2>/dev/null || nc -U /run/maia.sock -w 1 2>/dev/null) || true
-}
 # --- END MAIA EVENT HOOK ---
