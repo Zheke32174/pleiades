@@ -1,16 +1,18 @@
 #!/bin/bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # pleiades-setup.sh — First-run operator setup.
 #
 # Discovers or prompts for the operator's GitHub identity, creates the
 # evidence and dead-drop repos if they don't exist, and writes
-# /etc/pleiades/operator.conf so all other Pleiades scripts work
+# ${PLEIADES_POLICY_DIR}/operator.conf so all other Pleiades scripts work
 # without any hardcoded usernames.
 #
 # Usage:
 #   bash pleiades-setup.sh            # interactive
 #   bash pleiades-setup.sh --dry-run  # show what would be written
 
-set -euo pipefail
+set -uo pipefail
 
 CONF_DIR="/etc/pleiades"
 CONF_FILE="$CONF_DIR/operator.conf"
@@ -96,7 +98,7 @@ if command -v gh &>/dev/null; then
 fi
 
 # ----------------------------------------------------------------
-# 5. Write /etc/pleiades/operator.conf
+# 5. Write ${PLEIADES_POLICY_DIR}/operator.conf
 # ----------------------------------------------------------------
 CONF_CONTENT="# Pleiades operator configuration — written by pleiades-setup
 # Edit to override any value. Do not commit this file to git.
