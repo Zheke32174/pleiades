@@ -1,0 +1,5 @@
+# Arxiv Anchor: 2603.04412 (Eq. 7) - Structural Unification
+packages:
+  - "/substrate/mind/.gemini/extensions/*"
+  - "/substrate/mind/.claude/plugins/underhall/*"
+  - "/substrate/mind/.claude/mcp-servers/underhall/*"

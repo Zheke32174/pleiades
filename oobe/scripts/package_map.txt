@@ -1,0 +1,22 @@
+# Arxiv Anchor: 2603.04412 (Eq. 7) - Structural Mapping
+/substrate/mind/.gemini/extensions/helloagents/package.json
+/substrate/mind/.gemini/extensions/skill-porter/package.json
+/substrate/mind/.gemini/extensions/desktop-commander/package.json
+/substrate/mind/.gemini/extensions/opencode-shell-strategy/package.json
+/substrate/mind/.gemini/extensions/gemini-cli-jules/mcp-server/package.json
+/substrate/mind/.gemini/extensions/mcp-local-memory/package.json
+/substrate/mind/.gemini/extensions/gemini-swarm/package.json
+/substrate/mind/.gemini/extensions/chrome-devtools-mcp/package.json
+/substrate/mind/.gemini/extensions/gemini-cli-security/mcp-server/package.json
+/substrate/mind/.gemini/extensions/mcp-server-browserbase/package.json
+/substrate/mind/.gemini/extensions/context7/package.json
+/substrate/mind/.gemini/extensions/mcp-toolbox-for-databases/.hugo/package.json
+/substrate/mind/.gemini/extensions/self-command/package.json
+/substrate/mind/.gemini/extensions/github/ui/package.json
+/substrate/mind/.gemini/extensions/swarm-tools/package.json
+/substrate/mind/.gemini/extensions/copilot-mcp/package.json
+/substrate/mind/.claude/plugins/underhall/claude-mem/package.json
+/substrate/mind/.claude/plugins/underhall/ArgusBot/package.json
+/substrate/mind/.claude/plugins/underhall/everything-claude-code/package.json
+/substrate/mind/.claude/plugins/underhall/claude-octopus/package.json
+/substrate/mind/.claude/plugins/underhall/claude-task-master/package.json
