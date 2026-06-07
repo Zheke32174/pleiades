@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # pleiades-install-tools.sh — clone and integrate operator repos
 # Task #12
 set -euo pipefail
@@ -9,7 +11,7 @@ LOG_TAG="${PLEIADES_REPO_OWNER:-pleiades}"; log() { printf '[%s] %s\n' "$LOG_TAG
 BASE="https://github.com/${PLEIADES_REPO_OWNER}"
 EXT="${PLEIADES_REPO_ROOT}/external/${PLEIADES_REPO_OWNER}"
 TOOLS="${PLEIADES_REPO_ROOT}/tools"
-CAP_DIR="/run/pleiades/capabilities"
+CAP_DIR="${PLEIADES_RUN_DIR}/capabilities"
 mkdir -p "$EXT" "$TOOLS" "$CAP_DIR"
 
 clone_or_update() {

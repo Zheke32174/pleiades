@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # ==============================================================================
 # pleiades-quick-check.sh — Fast auxiliary scanner (15s cycle)
 #
@@ -13,18 +15,18 @@
 # Reports via FIFO event bus.
 # ==============================================================================
 
-set -euo pipefail
+set -uo pipefail
 
-SCORE_FILE="/run/pleiades/forensic_score"
-ANOMALY_FILE="/run/pleiades/forensic_anomalies"
-FIFO="/run/pleiades/pleiades-nexus_fifo"
+SCORE_FILE="${PLEIADES_RUN_DIR}/forensic_score"
+ANOMALY_FILE="${PLEIADES_RUN_DIR}/forensic_anomalies"
+FIFO="${PLEIADES_RUN_DIR}/pleiades-nexus_fifo"
 STATE_DIR="/var/lib/pleiades-team/forensic"
 INTERVAL=15
 
 mkdir -p "$STATE_DIR"
 
 event()  { printf '%s\n' "$1" >> "$FIFO" 2>/dev/null || true; }
-log()    { echo "[$(date -u +%H:%M:%S)] [quick] $*" >> /var/log/pleiades/quick-check.log; }
+log()    { log_json "INFO" "quick" "$*"; }
 
 score_incr() {
     local amount=$1 msg="$2"
@@ -38,12 +40,12 @@ score_incr() {
 
 # ─── 1. Auth failure detection ──────────────────────────────────────────────────
 check_auth_journal() {
-    local auth_counter="/run/pleiades/auth_fail_count"
+    local auth_counter="${PLEIADES_RUN_DIR}/auth_fail_count"
     local count=0
     
     # Read any auth alerts from the decisions directory
-    if [[ -d "/run/pleiades/decisions" ]]; then
-        count=$(find /run/pleiades/decisions -name "*.auth_alert" 2>/dev/null | wc -l)
+    if [[ -d "${PLEIADES_RUN_DIR}/decisions" ]]; then
+        count=$(find ${PLEIADES_RUN_DIR}/decisions -name "*.auth_alert" 2>/dev/null | wc -l)
     fi
     
     # Write to the counter file for the main scanner
@@ -86,14 +88,17 @@ check_mem_spawn() {
 
 # ─── 4. FIFO health check ──────────────────────────────────────────────────────
 check_fifo_health() {
+    # NOTE: FIFO is a REGULAR file (Trap 3 in AGENTS.md), not a named pipe
     local fifo_size=0
-    [[ -p "$FIFO" ]] && fifo_size=$(stat -c%s "$FIFO" 2>/dev/null || echo 0)
+    if [[ -f "$FIFO" ]]; then
+        fifo_size=$(stat -c%s "$FIFO" 2>/dev/null || echo 0)
+    fi
     
     if [[ "$fifo_size" -gt 10240 ]]; then
         score_incr 15 "FIFO_BACKLOG|size=${fifo_size}"
     fi
     
-    # Check if we can write to FIFO
+    # Check if we can write to FIFO (append test on regular file)
     if ! printf '' >> "$FIFO" 2>/dev/null; then
         score_incr 30 "FIFO_BROKEN|cannot_write"
     fi

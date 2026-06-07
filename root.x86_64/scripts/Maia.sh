@@ -1,170 +1,14 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
-# Resolve operator identity (gh auth -> /etc/pleiades/operator.conf -> env)
+# Resolve operator identity (gh auth -> ${PLEIADES_POLICY_DIR}/operator.conf -> env)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=pleiades-operator.sh
 source "${SCRIPT_DIR}/pleiades-operator.sh" 2>/dev/null || true  # non-fatal: TOKEN from ESP is the primary auth on rehydration
-
-
-register_pleiades-swarm_capability() {
-    local component="$1" domain="$2" capabilities="$3"
-    local run_dir="/run/pleiades"
-    local cap_dir="$run_dir/capabilities"
-    local state_dir="$run_dir/state"
-    local policy_dir="/etc/pleiades"
-    local alien_dir="$run_dir/alien"
-    mkdir -p "$cap_dir" "$state_dir" "$run_dir/requests" "$run_dir/decisions" "$run_dir/actions" "$run_dir/results" "$alien_dir/inbox" "$alien_dir/outbox" "$policy_dir" /var/lib/pleiades-team/pleiades-swarm 2>/dev/null || true
-    touch "$run_dir/pleiades-nexus_fifo" 2>/dev/null || true
-    if [[ ! -f "$policy_dir/pleiades-swarm-policy.json" ]]; then
-        cat > "$policy_dir/pleiades-swarm-policy.json" <<'POLICY'
-{
-  "schema": "pleiades-pleiades-swarm-policy-v1",
-  "mode": "owner-authorized-defensive",
-  "default_request_decision": "deny",
-  "allowed_request_classes": ["status", "health", "capabilities", "evidence-list", "brl-status", "strat-list", "alien-hint"],
-  "denied_request_classes": ["shell", "exec", "install", "network-change", "firewall-change", "script-modify", "credential-access", "lateral-movement"],
-  "alien_sidecar": {"enabled": false, "authority": "advisory-only", "may_request": true, "may_act": false},
-  "audit": {"append_only_events": true, "owner_visible": true}
-}
-POLICY
-    fi
-    {
-        echo "schema=pleiades-pleiades-swarm-capability-v1"
-        echo "component=$component"
-        echo "domain=$domain"
-        echo "capabilities=$capabilities"
-        echo "authority=policy-gated"
-        echo "ai_sidecar_required=no"
-        echo "updated_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    } > "$cap_dir/$component.cap" 2>/dev/null || true
-    {
-        echo "schema=pleiades-pleiades-swarm-state-v1"
-        echo "component=$component"
-        echo "status=registered"
-        echo "updated_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    } > "$state_dir/$component.state" 2>/dev/null || true
-    printf 'PLEIADES_SWARM_CAPABILITY|%s|%s|%s
-' "$component" "$domain" "$capabilities" >> "$run_dir/pleiades-nexus_fifo" 2>/dev/null || true
-}
-
-# ------------------------------------------------------------
-# Curl-based Go and Rust installers — never use emerge for these
-# ------------------------------------------------------------
-ensure_go() {
-    command -v go &>/dev/null && return 0
-    local arch; arch=$(uname -m)
-    local goarch="amd64"; [[ "$arch" == "aarch64" ]] && goarch="arm64"
-    curl -fsSL "https://go.dev/dl/go1.22.5.linux-${goarch}.tar.gz" -o /tmp/_go.tar.gz || return 1
-    tar -C /usr/local -xzf /tmp/_go.tar.gz && rm -f /tmp/_go.tar.gz
-    ln -sf /usr/local/go/bin/go /usr/local/bin/go
-    ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
-    export PATH="/usr/local/go/bin:$PATH"
-}
-
-ensure_rust() {
-    command -v rustc &>/dev/null && return 0
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --no-modify-path
-    local cargo="$HOME/.cargo/bin"
-    ln -sf "${cargo}/rustc" /usr/local/bin/rustc 2>/dev/null || true
-    ln -sf "${cargo}/cargo" /usr/local/bin/cargo 2>/dev/null || true
-    export PATH="${cargo}:$PATH"
-}
-
-# ------------------------------------------------------------
-# Package manager shim — works on Gentoo, Debian, RHEL, Arch, Alpine, FreeBSD, macOS
-# ------------------------------------------------------------
-pkg_install() {
-    local pkgs=()
-    for p in "$@"; do
-        case "$p" in
-            golang) ensure_go; continue ;;
-            rustc)  ensure_rust; continue ;;
-            bun)    continue ;;
-            lm-sensors) continue ;;
-        esac
-        if command -v emerge &>/dev/null; then
-            case "$p" in
-                openbsd-netcat|nc) pkgs+=("net-analyzer/openbsd-netcat") ;;
-                screen) pkgs+=("app-misc/screen") ;;
-                bc) pkgs+=("sys-devel/bc") ;;
-                lm-sensors) : ;;
-                parted) pkgs+=("sys-block/parted") ;;
-                socat) pkgs+=("net-misc/socat") ;;
-                conntrack) pkgs+=("net-firewall/conntrack-tools") ;;
-                bun) : ;;
-                rustc) : ;;
-                curl) pkgs+=("net-misc/curl") ;;
-                git) pkgs+=("dev-vcs/git") ;;
-                openssl) pkgs+=("dev-libs/openssl") ;;
-                traceroute) pkgs+=("net-analyzer/traceroute") ;;
-                sshpass) pkgs+=("net-misc/sshpass") ;;
-                avahi) pkgs+=("net-dns/avahi") ;;
-                *) pkgs+=("$p") ;;
-            esac
-        elif command -v brew &>/dev/null; then
-            pkgs+=("$p")
-        else
-            pkgs+=("$p")
-        fi
-    done
-
-    [[ ${#pkgs[@]} -eq 0 ]] && return 0
-
-    if command -v emerge &>/dev/null; then
-        emerge --quiet --noreplace "${pkgs[@]}"
-    elif command -v brew &>/dev/null; then
-        brew install "${pkgs[@]}" 2>/dev/null || true
-    elif command -v apt-get &>/dev/null; then
-        local apt_pkgs=()
-        for p in "${pkgs[@]}"; do
-            case "$p" in
-                openbsd-netcat) apt_pkgs+=("netcat-openbsd") ;;
-                bind-tools) apt_pkgs+=("dnsutils") ;;
-                iproute2|net-tools|tcpdump|conntrack|lsof|curl|openssl|jq|procps|sysstat|tar|gzip|coreutils|screen|bc|traceroute|socat|nodejs) apt_pkgs+=("$p") ;;
-                *) apt_pkgs+=("$p") ;;
-            esac
-        done
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${apt_pkgs[@]}" || {
-            apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${apt_pkgs[@]}"
-        }
-    elif command -v apk &>/dev/null; then
-        apk add --quiet "${pkgs[@]}"
-    elif command -v pkg &>/dev/null; then
-        pkg install -y -q "${pkgs[@]}"
-    elif command -v dnf &>/dev/null; then
-        dnf install -y -q "${pkgs[@]}"
-    elif command -v yum &>/dev/null; then
-        yum install -y -q "${pkgs[@]}"
-    elif command -v pacman &>/dev/null; then
-        pacman -S --noconfirm --needed "${pkgs[@]}"
-    else
-        echo "WARN: no supported package manager; skipping install of: $*" >&2
-    fi
-}
-
-# ------------------------------------------------------------
-# Thermal/side-channel anomaly detection
-# ------------------------------------------------------------
-thermal_anomaly() {
-    local temp=0
-    local paths=("/host/sys/class/thermal/thermal_zone0/temp" "/sys/class/thermal/thermal_zone0/temp" \
-                 "/host/sys/class/thermal/thermal_zone1/temp" "/sys/class/thermal/thermal_zone1/temp")
-    for p in "${paths[@]}"; do
-        if [[ -f "$p" ]]; then
-            temp=$(cat "$p"); temp=$((temp / 1000)); break
-        fi
-    done
-    if [[ $temp -eq 0 ]] && command -v sensors &>/dev/null; then
-        temp=$(sensors | grep -oP 'Package id 0: \+\K[0-9]+' | head -1)
-    fi
-    local load
-    load=$(uptime | awk -F'load ameropege:' '{print $2}' | cut -d',' -f1 | tr -d ' ')
-    if [[ $temp -gt 85 ]] && (( $(echo "$load < 2.0" | bc -l) )); then
-        return 0
-    fi
-    return 1
-}
+# Source shared library
+source /usr/local/lib/pleiades-common.sh 2>/dev/null || source "$(dirname "$0")/pleiades-common.sh"
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 
 # ------------------------------------------------------------
 # Build maia_crypto: Ed25519 keygen/sign/verify + AES-GCM + owner escrow signal probe
@@ -630,7 +474,7 @@ container_context() {
 
 host_bridge_capability_report() {
     local component="${1:-unknown}"
-    local state_file="${PURPLE_HOST_BRIDGE_STATE:-/run/pleiades/host_bridge_capabilities}"
+    local state_file="${PURPLE_HOST_BRIDGE_STATE:-${PLEIADES_RUN_DIR}/host_bridge_capabilities}"
     local owner_copy="${PURPLE_HOST_BRIDGE_OWNER_COPY:-/var/lib/.maia/host_bridge_capabilities}"
     local tmp="${state_file}.$$"
     local container="none"
@@ -689,7 +533,7 @@ host_bridge_capability_report() {
 
     cp "$state_file" "$owner_copy" 2>/dev/null || true
     chmod 0644 "$state_file" "$owner_copy" 2>/dev/null || true
-    printf 'HOST_BRIDGE_MODE|%s|%s|%s\n' "$component" "$mode" "$container" >> /run/pleiades/pleiades-nexus_fifo 2>/dev/null || true
+    printf 'HOST_BRIDGE_MODE|%s|%s|%s\n' "$component" "$mode" "$container" >> ${PLEIADES_RUN_DIR}/pleiades-nexus_fifo 2>/dev/null || true
 }
 
 # ------------------------------------------------------------
@@ -977,7 +821,7 @@ PK_FILE="$SELF_DIR/pubkey.hex"
 MAIA_DIR="/var/lib/.maia"
 LOG_TAG="maia-rehydrate"
 
-log() { logger -t "$LOG_TAG" "$*"; echo "[rehydrate] $*"; }
+log() { log_json "INFO" "$LOG_TAG" "$*"; }
 
 # === SAFETY CHECK — stay hidden if system is compromised ===
 
@@ -1190,7 +1034,7 @@ REHYD
     chmod +x "$efi_dir/rehydrate.sh"
     echo "$efi_dir" > /var/lib/.maia/efi_location
     echo "[efi] Bundle persisted to ESP: $efi_dir"
-    logger -t maia "EFI bundle written to ESP: $efi_dir"
+    log_json "INFO" "maia" "EFI bundle written to ESP: $efi_dir"
 
     # Install systemd service for auto-rehydration (non-WSL only)
     if [[ "$sys_type" == "bare-metal" ]] || [[ "$sys_type" == "vm" ]]; then
@@ -1237,7 +1081,7 @@ owner_escrow_persist() {
         maia_crypto pubkey > "$out.pubkey.hex" 2>/dev/null || true
     fi
 
-    logger -t maia "Owner escrow bundle written: $out"
+    log_json "INFO" "maia" "Owner escrow bundle written: $out"
     echo "[maia] Owner escrow bundle written: $out"
     return 0
 }
@@ -1315,8 +1159,8 @@ probe_escrow_signals() {
     local source; source=$(echo "$result" | grep "^SOURCE=" | cut -d= -f2-)
     echo "Owner escrow signal signal received from $source: $message"
     if [[ "$message" == *"RESURRECT"* ]]; then
-        echo "RESURRECT_SIGNAL_RECEIVED" >> /run/pleiades/pleiades-nexus_fifo 2>/dev/null || true
-        touch /run/pleiades/pleiades-rebirth_needed 2>/dev/null || true
+        echo "RESURRECT_SIGNAL_RECEIVED" >> ${PLEIADES_RUN_DIR}/pleiades-nexus_fifo 2>/dev/null || true
+        touch ${PLEIADES_RUN_DIR}/pleiades-rebirth_needed 2>/dev/null || true
     fi
     echo "$message"
 }
@@ -1360,7 +1204,7 @@ assess_hostility() {
 }
 
 bgp_hijack_detected() {
-    local cache="/run/pleiades/asn_baseline"
+    local cache="${PLEIADES_RUN_DIR}/asn_baseline"
     local my_ip asn
     my_ip=$(curl -s --max-time 5 https://api.ipify.org 2>/dev/null) || return 1
     asn=$(curl -s --max-time 5 "https://api.bgpview.io/ip/${my_ip}" 2>/dev/null \
@@ -1377,7 +1221,7 @@ bgp_hijack_detected() {
 # ------------------------------------------------------------
 enter_dormancy() {
     local reason="${1:-unspecified}"
-    logger -t maia "DORMANCY ACTIVATED — reason: $reason"
+    log_json "EVENT" "maia" "DORMANCY ACTIVATED — reason: $reason"
     echo "[maia] Entering dormancy: $reason"
 
     # Signal all purple screens to quit
@@ -1398,18 +1242,18 @@ enter_dormancy() {
     mkdir -p "$bundle_dir"
     cp -a /var/lib/.maia "$bundle_dir/" 2>/dev/null || true
     mkdir -p "$bundle_dir/purple_run"
-    cp /run/pleiades/* "$bundle_dir/pleiades_run/" 2>/dev/null || true
+    cp ${PLEIADES_RUN_DIR}/* "$bundle_dir/pleiades_run/" 2>/dev/null || true
     tar -czf "$bundle_dir/state.tar.gz" -C "$bundle_dir" .maia purple_run 2>/dev/null || true
 
     # Persist sealed evidence/recovery state to owner escrow
     owner_escrow_persist "$bundle_dir/state.tar.gz" "MAIA_DORMANT:reason=$reason" || \
-        logger -t maia "WARN: owner escrow persistence failed"
+        log_json "WARN" "maia" "WARN: owner escrow persistence failed"
 
     # Preserve runtime state after sealing evidence
     chmod -R go-rwx "$bundle_dir" 2>/dev/null || true
     rm -rf "$bundle_dir"
 
-    logger -t maia "DORMANCY COMPLETE"
+    log_json "EVENT" "maia" "DORMANCY COMPLETE"
 }
 
 # ------------------------------------------------------------
@@ -1426,11 +1270,11 @@ monitor_for_safe_mode() {
         if [[ $score -ge 7 ]]; then
             if [[ $hostile_since -eq 0 ]]; then
                 hostile_since=$(date +%s)
-                logger -t maia "HIGH HOSTILITY detected (score=$score) — monitoring"
+                log_json "WARN" "maia" "HIGH HOSTILITY detected (score=$score) — monitoring"
             else
                 local elapsed=$(( $(date +%s) - hostile_since ))
                 if [[ $elapsed -ge 600 ]]; then
-                    logger -t maia "Sustained hostility ${elapsed}s — entering dormancy"
+                    log_json "WARN" "maia" "Sustained hostility ${elapsed}s — entering dormancy"
                     enter_dormancy "sustained_high_hostility_score=${score}"
                     return
                 fi

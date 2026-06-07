@@ -1,10 +1,12 @@
 #!/bin/bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # Quick pleiades ecosystem status from host
 # Usage: pleiades-status.sh [--watch]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"
-PID_FILE="${PLEIADES_CONTAINER_ROOT}/run/pleiades/container_pid"
+PID_FILE="${PLEIADES_CONTAINER_ROOT}${PLEIADES_RUN_DIR}/container_pid"
 if [[ -f "$PID_FILE" ]]; then
     PID=$(cat "$PID_FILE")
 else
@@ -26,16 +28,16 @@ sudo nsenter -t $PID -m -u -i -n -p -- systemctl list-units --type=service --sta
 
 echo ""
 echo "--- Forensic Score ---"
-SCORE=$(sudo nsenter -t $PID -m -u -i -n -p -- cat /run/pleiades/forensic_score 2>/dev/null || echo "N/A")
+SCORE=$(sudo nsenter -t $PID -m -u -i -n -p -- cat ${PLEIADES_RUN_DIR}/forensic_score 2>/dev/null || echo "N/A")
 echo "  Score: $SCORE"
 
 echo ""
 echo "--- Anomalies ---"
-sudo nsenter -t $PID -m -u -i -n -p -- cat /run/pleiades/forensic_anomalies 2>/dev/null || echo "  None detected"
+sudo nsenter -t $PID -m -u -i -n -p -- cat ${PLEIADES_RUN_DIR}/forensic_anomalies 2>/dev/null || echo "  None detected"
 
 echo ""
 echo "--- Telemetry Log (last 5) ---"
-sudo nsenter -t $PID -m -u -i -n -p -- tail -5 /var/log/pleiades/telemetry-pipeline.log 2>/dev/null || echo "  N/A"
+sudo nsenter -t $PID -m -u -i -n -p -- tail -5 ${PLEIADES_LOG_DIR}/telemetry-pipeline.log 2>/dev/null || echo "  N/A"
 
 echo ""
 echo "--- Baseline ---"
@@ -49,9 +51,9 @@ if [[ "$1" == "--watch" ]]; then
     echo ""
     echo "Watching forensic score (Ctrl+C to exit)..."
     while true; do
-        SCORE=$(sudo nsenter -t $PID -m -u -i -n -p -- cat /run/pleiades/forensic_score 2>/dev/null || echo "?")
-        ANOMALIES=$(sudo nsenter -t $PID -m -u -i -n -p -- cat /run/pleiades/forensic_anomalies 2>/dev/null || echo "none")
-        echo "[$(date +%H:%M:%S)] Score: $SCORE | Anomalies: $ANOMALIES"
+        SCORE=$(sudo nsenter -t $PID -m -u -i -n -p -- cat ${PLEIADES_RUN_DIR}/forensic_score 2>/dev/null || echo "?")
+        ANOMALIES=$(sudo nsenter -t $PID -m -u -i -n -p -- cat ${PLEIADES_RUN_DIR}/forensic_anomalies 2>/dev/null || echo "none")
+        log_json "INFO" "dashboard" "Score: $SCORE | Anomalies: $ANOMALIES"
         sleep 10
     done
 fi

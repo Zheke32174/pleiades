@@ -7,255 +7,15 @@
 #   pkgsrc             The NetBSD Foundation       BSD-2-Clause https://pkgsrc.org
 #   QEMU               QEMU project                GPL-2.0+    https://www.qemu.org
 #                      NOTE: QEMU is GPL-2.0+. Installed as a binary; no source vendored here.
-set -euo pipefail
+set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"
 PLEIADES_REPO_ROOT="${PLEIADES_REPO_ROOT:-$(dirname "$PLEIADES_CONTAINER_ROOT")}"
+# Source shared library
+source /usr/local/lib/pleiades-common.sh 2>/dev/null || source "$(dirname "$0")/pleiades-common.sh"
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 
-
-register_pleiades-swarm_capability() {
-    local component="$1" domain="$2" capabilities="$3"
-    local run_dir="/run/pleiades"
-    local cap_dir="$run_dir/capabilities"
-    local state_dir="$run_dir/state"
-    local policy_dir="/etc/pleiades"
-    local alien_dir="$run_dir/alien"
-    mkdir -p "$cap_dir" "$state_dir" "$run_dir/requests" "$run_dir/decisions" "$run_dir/actions" "$run_dir/results" "$alien_dir/inbox" "$alien_dir/outbox" "$policy_dir" /var/lib/pleiades-team/pleiades-swarm 2>/dev/null || true
-    touch "$run_dir/pleiades-nexus_fifo" 2>/dev/null || true
-    if [[ ! -f "$policy_dir/pleiades-swarm-policy.json" ]]; then
-        cat > "$policy_dir/pleiades-swarm-policy.json" <<'POLICY'
-{
-  "schema": "pleiades-pleiades-swarm-policy-v1",
-  "mode": "owner-authorized-defensive",
-  "default_request_decision": "deny",
-  "allowed_request_classes": ["status", "health", "capabilities", "evidence-list", "brl-status", "strat-list", "alien-hint"],
-  "denied_request_classes": ["shell", "exec", "install", "network-change", "firewall-change", "script-modify", "credential-access", "lateral-movement"],
-  "alien_sidecar": {"enabled": false, "authority": "advisory-only", "may_request": true, "may_act": false},
-  "audit": {"append_only_events": true, "owner_visible": true}
-}
-POLICY
-    fi
-    {
-        echo "schema=pleiades-pleiades-swarm-capability-v1"
-        echo "component=$component"
-        echo "domain=$domain"
-        echo "capabilities=$capabilities"
-        echo "authority=policy-gated"
-        echo "ai_sidecar_required=no"
-        echo "updated_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    } > "$cap_dir/$component.cap" 2>/dev/null || true
-    {
-        echo "schema=pleiades-pleiades-swarm-state-v1"
-        echo "component=$component"
-        echo "status=registered"
-        echo "updated_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    } > "$state_dir/$component.state" 2>/dev/null || true
-    printf 'PLEIADES_SWARM_CAPABILITY|%s|%s|%s\n' "$component" "$domain" "$capabilities" >> "$run_dir/pleiades-nexus_fifo" 2>/dev/null || true
-}
-
-# ------------------------------------------------------------
-# Curl-based Go and Rust installers — never use emerge for these
-# ------------------------------------------------------------
-ensure_go() {
-    command -v go &>/dev/null && return 0
-    local arch; arch=$(uname -m)
-    local goarch="amd64"; [[ "$arch" == "aarch64" ]] && goarch="arm64"
-    curl -fsSL "https://go.dev/dl/go1.22.5.linux-${goarch}.tar.gz" -o /tmp/_go.tar.gz || return 1
-    tar -C /usr/local -xzf /tmp/_go.tar.gz && rm -f /tmp/_go.tar.gz
-    ln -sf /usr/local/go/bin/go /usr/local/bin/go
-    ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
-    export PATH="/usr/local/go/bin:$PATH"
-}
-
-ensure_rust() {
-    command -v rustc &>/dev/null && return 0
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --no-modify-path
-    local cargo="$HOME/.cargo/bin"
-    ln -sf "${cargo}/rustc" /usr/local/bin/rustc 2>/dev/null || true
-    ln -sf "${cargo}/cargo" /usr/local/bin/cargo 2>/dev/null || true
-    export PATH="${cargo}:$PATH"
-}
-
-# ------------------------------------------------------------
-# Package manager shim — works on Gentoo, Debian, RHEL, Arch, Alpine, FreeBSD
-# ------------------------------------------------------------
-pkg_install() {
-    local pkgs=()
-    for p in "$@"; do
-        case "$p" in
-            golang) ensure_go; continue ;;
-            rustc)  ensure_rust; continue ;;
-            bun)    continue ;;
-            lm-sensors) continue ;;
-        esac
-        if command -v emerge &>/dev/null; then
-            case "$p" in
-                openbsd-netcat|nc) pkgs+=("net-analyzer/openbsd-netcat") ;;
-                screen) pkgs+=("app-misc/screen") ;;
-                bc) pkgs+=("sys-devel/bc") ;;
-                lm-sensors) : ;;
-                parted) pkgs+=("sys-block/parted") ;;
-                socat) pkgs+=("net-misc/socat") ;;
-                conntrack) pkgs+=("net-firewall/conntrack-tools") ;;
-                golang) : ;;
-                bun) : ;;
-                rustc) : ;;
-                curl) pkgs+=("net-misc/curl") ;;
-                git) pkgs+=("dev-vcs/git") ;;
-                openssl) pkgs+=("dev-libs/openssl") ;;
-                python3) pkgs+=("dev-lang/python") ;;
-                xz) pkgs+=("app-arch/xz-utils") ;;
-                *) pkgs+=("$p") ;;
-            esac
-        else
-            pkgs+=("$p")
-        fi
-    done
-
-    if command -v emerge &>/dev/null; then
-        [[ ${#pkgs[@]} -gt 0 ]] && emerge --quiet --noreplace "${pkgs[@]}"
-    elif command -v apt-get &>/dev/null; then
-        local apt_pkgs=()
-        for p in "${pkgs[@]}"; do
-            case "$p" in
-                openbsd-netcat) apt_pkgs+=("netcat-openbsd") ;;
-                bind-tools) apt_pkgs+=("dnsutils") ;;
-                *) apt_pkgs+=("$p") ;;
-            esac
-        done
-        [[ ${#apt_pkgs[@]} -gt 0 ]] && {
-            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${apt_pkgs[@]}" || {
-                apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${apt_pkgs[@]}"
-            }
-        }
-    elif command -v apk &>/dev/null; then
-        [[ ${#pkgs[@]} -gt 0 ]] && apk add --quiet "${pkgs[@]}"
-    elif command -v pkg &>/dev/null; then
-        [[ ${#pkgs[@]} -gt 0 ]] && pkg install -y -q "${pkgs[@]}"
-    elif command -v dnf &>/dev/null; then
-        [[ ${#pkgs[@]} -gt 0 ]] && dnf install -y -q "${pkgs[@]}"
-    elif command -v pacman &>/dev/null; then
-        [[ ${#pkgs[@]} -gt 0 ]] && pacman -S --noconfirm --needed "${pkgs[@]}"
-    else
-        echo "WARN: no supported package manager; skipping install of: ${pkgs[*]}" >&2
-    fi
-}
-
-# ----------------------------------------------------------------
-# Shared helpers: socket compat, load-order coordination
-# ----------------------------------------------------------------
-nc_unix_send() {
-    local sock="$1" msg="$2"
-    if command -v socat &>/dev/null; then
-        printf '%s\n' "$msg" | socat - "UNIX-CONNECT:$sock" 2>/dev/null || true
-    else
-        printf '%s\n' "$msg" | nc -U "$sock" -w 1 2>/dev/null || true
-    fi
-}
-signal_ready() { mkdir -p /var/lib/pleiades/ready; touch "/var/lib/pleiades/ready/$1"; }
-wait_for()     {
-    local name="$1" timeout="${2:-90}" elapsed=0
-    while [[ ! -f "/var/lib/pleiades/ready/$name" ]]; do
-        (( elapsed >= timeout )) && { logger -t pleiades "WARN: timeout waiting for $name"; return 0; }
-        sleep 2; (( elapsed += 2 ))
-    done
-}
-
-# ------------------------------------------------------------
-# Runtime service manager detection
-# ------------------------------------------------------------
-systemd_usable() {
-    command -v systemctl &>/dev/null || return 1
-    [[ -d /run/systemd/system ]] || return 1
-    local state
-    state=$(systemctl is-system-running 2>/dev/null || true)
-    case "$state" in
-        running|degraded|starting|initializing) return 0 ;;
-        *) return 1 ;;
-    esac
-}
-
-container_context() {
-    if command -v systemd-detect-virt &>/dev/null; then
-        systemd-detect-virt --container 2>/dev/null || true
-        return 0
-    fi
-    awk -F/ '/docker|lxc|kubepods|machine.slice|systemd-nspawn/ {print $NF; found=1} END {exit found?0:1}' /proc/1/cgroup 2>/dev/null || true
-}
-
-host_bridge_capability_report() {
-    local component="${1:-unknown}"
-    local state_file="${PURPLE_HOST_BRIDGE_STATE:-/run/pleiades/host_bridge_capabilities}"
-    local owner_copy="${PURPLE_HOST_BRIDGE_OWNER_COPY:-/var/lib/.maia/host_bridge_capabilities}"
-    local tmp="${state_file}.$$"
-    local container="none"
-    local host_proc="absent"
-    local host_root="absent"
-    local host_systemd="absent"
-    local host_container_socket="absent"
-    local windows_host_files="absent"
-    local mode="container-sentinel"
-
-    mkdir -p /run/pleiades /var/lib/.maia 2>/dev/null || true
-
-    container=$(container_context 2>/dev/null | head -1)
-    [[ -z "$container" ]] && container="none"
-
-    for p in /host/proc /mnt/host/proc /run/host/proc /hostfs/proc; do
-        if [[ -r "$p/1/status" ]]; then host_proc="$p"; break; fi
-    done
-    for p in /host /mnt/host /run/host /hostfs; do
-        if [[ -r "$p/etc/os-release" ]] || [[ -d "$p/Windows/System32" ]]; then host_root="$p"; break; fi
-    done
-    for p in /host/run/systemd/private /mnt/host/run/systemd/private; do
-        if [[ -S "$p" ]]; then host_systemd="$p"; break; fi
-    done
-    for p in /var/run/docker.sock /run/docker.sock /host/var/run/docker.sock; do
-        if [[ -S "$p" ]]; then host_container_socket="$p"; break; fi
-    done
-    [[ -d /mnt/c/Windows/System32 ]] && windows_host_files="/mnt/c"
-
-    if [[ "$host_proc" != "absent" ]] || [[ "$host_root" != "absent" ]] || [[ "$host_systemd" != "absent" ]] || [[ "$host_container_socket" != "absent" ]] || [[ "$windows_host_files" != "absent" ]]; then
-        mode="host-bridge"
-    fi
-
-    {
-        echo "schema=pleiades-host-bridge-v1"
-        echo "component=$component"
-        echo "updated_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-        echo "runtime_env=${ENV:-unknown}"
-        echo "container_context=$container"
-        echo "systemd_usable=$(systemd_usable && echo yes || echo no)"
-        echo "mode=$mode"
-        echo "host_proc=$host_proc"
-        echo "host_root=$host_root"
-        echo "host_systemd=$host_systemd"
-        echo "host_container_socket=$host_container_socket"
-        echo "windows_host_files=$windows_host_files"
-        echo "owner_visible=yes"
-        echo "attacker_decoy_profile=enabled"
-    } > "$tmp" 2>/dev/null && mv "$tmp" "$state_file" 2>/dev/null || true
-
-    cp "$state_file" "$owner_copy" 2>/dev/null || true
-    chmod 0644 "$state_file" "$owner_copy" 2>/dev/null || true
-    printf 'HOST_BRIDGE_MODE|%s|%s|%s\n' "$component" "$mode" "$container" >> /run/pleiades/pleiades-nexus_fifo 2>/dev/null || true
-}
-
-ensure_bun() {
-    command -v bun &>/dev/null && return 0
-    pkg_install bun 2>/dev/null || true; command -v bun &>/dev/null && return 0
-    if command -v curl &>/dev/null; then
-        curl -fsSL https://bun.sh/install | bash 2>/dev/null || true
-    fi
-    pkg_install nodejs 2>/dev/null || true
-    if command -v node &>/dev/null; then
-        printf '#!/bin/bash\nexec node "$@"\n' > /usr/local/bin/bun
-        chmod +x /usr/local/bin/bun
-        echo "WARN: using node as bun shim" >&2
-        return 0
-    fi
-    return 1
-}
 
 # ASTEROPE_ID
 # ==================================================================
@@ -310,15 +70,15 @@ BSD_BASE_URL="https://download.freebsd.org/releases/${BSD_ARCH}/${BSD_RELEASE}/b
 PKGSRC_DIR="${PKGSRC_DIR:-/opt/pkg}"
 PKGSRC_BOOTSTRAP_URL="https://cdn.NetBSD.org/pub/pkgsrc/current/pkgsrc.tar.gz"
 BSD_USER_REPO="https://github.com/sobomax/qemu-bsd-user-l4b"
-CONVERT_INBOX="/run/pleiades/bsd-convert/inbox"
-CONVERT_OUTBOX="/run/pleiades/bsd-convert/outbox"
+CONVERT_INBOX="${PLEIADES_RUN_DIR}/bsd-convert/inbox"
+CONVERT_OUTBOX="${PLEIADES_RUN_DIR}/bsd-convert/outbox"
 ALIEN_BSD_BIN="/usr/local/bin/alien-bsd"
-BSD_STATE_FILE="/run/pleiades/bsd_compat_state"
-FIFO="/run/pleiades/pleiades-nexus_fifo"
+BSD_STATE_FILE="${PLEIADES_RUN_DIR}/bsd_compat_state"
+FIFO="${PLEIADES_RUN_DIR}/pleiades-nexus_fifo"
 
 mkdir -p "$CONVERT_INBOX" "$CONVERT_OUTBOX" /var/log/pleiades /var/lib/pleiades-team/bsd 2>/dev/null || true
 
-log()   { echo "[$(date -u +%H:%M:%S)] [asterope] $*" | tee -a /var/log/pleiades/asterope.log; }
+log()   { log_json "INFO" "asterope" "$*"; }
 event() { printf '%s\n' "$1" >> "$FIFO" 2>/dev/null || true; }
 
 # ------------------------------------------------------------
@@ -848,7 +608,7 @@ UNIT
 # ------------------------------------------------------------
 wire_purplectl_asterope() {
     # Register asterope status handler in /run/pleiades so purplectl can find it
-    local plugin_dir="/run/pleiades/purplectl-plugins"
+    local plugin_dir="${PLEIADES_RUN_DIR}/purplectl-plugins"
     mkdir -p "$plugin_dir"
     cat > "$plugin_dir/asterope.sh" <<'PLUGEOF'
 #!/usr/bin/env bash
@@ -894,7 +654,7 @@ main() {
         echo "ai_sidecar_required=no"
         echo "updated_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         echo "status=active"
-    } > /run/pleiades/capabilities/asterope_placeholder.cap 2>/dev/null || true
+    } > ${PLEIADES_RUN_DIR}/capabilities/asterope_placeholder.cap 2>/dev/null || true
 
     log "Step 1/6: installing alien-bsd"
     install_alien_bsd || true

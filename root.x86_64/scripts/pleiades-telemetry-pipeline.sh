@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # ==============================================================================
 # pleiades-telemetry-pipeline.sh — Log Aggregation & Forwarding Pipeline
 #
 # Aggregates logs from all pleiades ecosystem components, enriches them with
 # container context, and forwards them to:
-#   - /var/log/pleiades/aggregated/ (rotated, compressed)
+#   - ${PLEIADES_LOG_DIR}/aggregated/ (rotated, compressed)
 #   - /host/mnt/c/Users/<WIN_USER>/AppData/Roaming/pleiades-logs/ (Windows bridge, WSL only)
 #   - journald (structured metadata)
 #
@@ -12,9 +14,9 @@
 #   journalctl -f -t pleiades-telemetry
 # ==============================================================================
 
-set -euo pipefail
+set -uo pipefail
 
-AGG_DIR="/var/log/pleiades/aggregated"
+AGG_DIR="${PLEIADES_LOG_DIR}/aggregated"
 # Derive Windows bridge path from current user if on WSL; no-op otherwise
 if grep -qi microsoft /proc/version 2>/dev/null; then
     _win_user="$(cmd.exe /c echo %USERNAME% 2>/dev/null | tr -d '\r' || true)"
@@ -27,7 +29,7 @@ CLEAN_INTERVAL=3600  # clean up old logs every hour
 
 mkdir -p "$AGG_DIR"
 
-log()  { local msg="[$(date -u +%H:%M:%S)] [$$] $*"; echo "$msg" >> /var/log/pleiades/telemetry-pipeline.log; echo "$msg"; }
+log()  { local msg="[$(date -u +%H:%M:%S)] [$$] $*"; echo "$msg" >> ${PLEIADES_LOG_DIR}/telemetry-pipeline.log; echo "$msg"; }
 
 # ─── Gather component status ──────────────────────────────────────────────────
 gather_component_status() {
@@ -70,11 +72,11 @@ bridge_to_windows() {
         # Copy recent logs
         find "$AGG_DIR" -name '*.gz' -mmin -5 -exec cp {} "$WIN_BRIDGE/" \; 2>/dev/null || true
         # Also copy forensic score + anomalies
-        if [[ -f /run/pleiades/forensic_score ]]; then
-            cp /run/pleiades/forensic_score "$WIN_BRIDGE/forensic_score.live" 2>/dev/null || true
+        if [[ -f ${PLEIADES_RUN_DIR}/forensic_score ]]; then
+            cp ${PLEIADES_RUN_DIR}/forensic_score "$WIN_BRIDGE/forensic_score.live" 2>/dev/null || true
         fi
-        if [[ -f /run/pleiades/forensic_anomalies ]]; then
-            cp /run/pleiades/forensic_anomalies "$WIN_BRIDGE/forensic_anomalies.live" 2>/dev/null || true
+        if [[ -f ${PLEIADES_RUN_DIR}/forensic_anomalies ]]; then
+            cp ${PLEIADES_RUN_DIR}/forensic_anomalies "$WIN_BRIDGE/forensic_anomalies.live" 2>/dev/null || true
         fi
         log "bridge: logs forwarded to $WIN_BRIDGE"
     fi

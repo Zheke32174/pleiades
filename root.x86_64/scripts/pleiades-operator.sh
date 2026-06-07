@@ -1,4 +1,6 @@
 #!/bin/bash
+# Source configuration
+source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # pleiades-operator.sh — Operator identity discovery library.
 # Source this file; do NOT execute it directly.
 #
@@ -7,7 +9,7 @@
 #
 # Resolution order:
 #   1. gh CLI auth  (preferred — whoever ran `gh auth login` IS the operator)
-#   2. /etc/pleiades/operator.conf  (written by pleiades-setup on first install)
+#   2. ${PLEIADES_POLICY_DIR}/operator.conf  (written by pleiades-setup on first install)
 #   3. Environment variables already exported by the caller
 #
 # On success sets:
@@ -24,7 +26,7 @@
 # On failure: prints error to stderr and returns 1
 
 _pleiades_load_operator() {
-    local conf="/etc/pleiades/operator.conf"
+    local conf="${PLEIADES_POLICY_DIR}/operator.conf"
 
     # 1. Auto-discover via gh CLI
     if command -v gh &>/dev/null && gh auth status -h github.com &>/dev/null 2>&1; then
