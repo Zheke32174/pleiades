@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 5fac6684 shell
 # Source configuration
 source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # ==============================================================================

@@ -1,4 +1,5 @@
 #!/bin/bash
+# ryz-compliance: 6a7ed5b1 shell
 # Source configuration
 source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # Quick pleiades ecosystem status from host

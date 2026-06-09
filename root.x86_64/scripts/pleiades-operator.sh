@@ -1,4 +1,5 @@
 #!/bin/bash
+# ryz-compliance: fff160e9 shell
 # Source configuration
 source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # pleiades-operator.sh — Operator identity discovery library.

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 162f10c5 shell
 set -uo pipefail
 
 # Resolve operator identity (gh auth -> ${PLEIADES_POLICY_DIR}/operator.conf -> env)
@@ -66,8 +67,12 @@ func cmdKeygen() {
 		fmt.Fprintf(os.Stderr, "keygen: %v\n", err)
 		os.Exit(1)
 	}
-	os.WriteFile(privKeyPath, []byte(hex.EncodeToString(priv)), 0600)
-	os.WriteFile(pubKeyPath, []byte(hex.EncodeToString(pub)), 0644)
+	if err := os.WriteFile(privKeyPath, []byte(hex.EncodeToString(priv)), 0600); err != nil {
+		fmt.Fprintf(os.Stderr, "write privkey: %v\n", err); os.Exit(1)
+	}
+	if err := os.WriteFile(pubKeyPath, []byte(hex.EncodeToString(pub)), 0644); err != nil {
+		fmt.Fprintf(os.Stderr, "write pubkey: %v\n", err); os.Exit(1)
+	}
 	fp := sha256.Sum256(pub)
 	fmt.Printf("keypair generated\npubkey: %s\nfingerprint: %s\n",
 		hex.EncodeToString(pub), hex.EncodeToString(fp[:8]))
@@ -149,10 +154,20 @@ func cmdEncrypt(keyHex, inPath, outPath string) {
 	if err != nil {
 		os.Exit(1)
 	}
-	block, _ := aes.NewCipher(keyBytes)
-	gcm, _ := cipher.NewGCM(block)
+	block, err := aes.NewCipher(keyBytes)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "aes.NewCipher failed: %v\n", err)
+		os.Exit(1)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "cipher.NewGCM failed: %v\n", err)
+		os.Exit(1)
+	}
 	nonce := make([]byte, gcm.NonceSize())
-	io.ReadFull(rand.Reader, nonce)
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		fmt.Fprintf(os.Stderr, "nonce generation failed: %v\n", err); os.Exit(1)
+	}
 	ct := gcm.Seal(nonce, nonce, plaintext, nil)
 	os.WriteFile(outPath, ct, 0600)
 }
@@ -166,8 +181,16 @@ func cmdDecrypt(keyHex, inPath, outPath string) {
 	if err != nil {
 		os.Exit(1)
 	}
-	block, _ := aes.NewCipher(keyBytes)
-	gcm, _ := cipher.NewGCM(block)
+	block, err := aes.NewCipher(keyBytes)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "aes.NewCipher failed: %v\n", err)
+		os.Exit(1)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "cipher.NewGCM failed: %v\n", err)
+		os.Exit(1)
+	}
 	ns := gcm.NonceSize()
 	if len(ciphertext) < ns {
 		os.Exit(1)
@@ -1241,9 +1264,9 @@ enter_dormancy() {
     local bundle_dir="/tmp/maia_dormancy_$$"
     mkdir -p "$bundle_dir"
     cp -a /var/lib/.maia "$bundle_dir/" 2>/dev/null || true
-    mkdir -p "$bundle_dir/purple_run"
-    cp ${PLEIADES_RUN_DIR}/* "$bundle_dir/pleiades_run/" 2>/dev/null || true
-    tar -czf "$bundle_dir/state.tar.gz" -C "$bundle_dir" .maia purple_run 2>/dev/null || true
+    mkdir -p "$bundle_dir/pleiades_run"
+    cp "${PLEIADES_RUN_DIR}/"* "$bundle_dir/pleiades_run/" 2>/dev/null || true
+    tar -czf "$bundle_dir/state.tar.gz" -C "$bundle_dir" .maia pleiades_run 2>/dev/null || true
 
     # Persist sealed evidence/recovery state to owner escrow
     owner_escrow_persist "$bundle_dir/state.tar.gz" "MAIA_DORMANT:reason=$reason" || \

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: bf32879e shell
 set -uo pipefail
 #!/usr/bin/env bash
 set -uo pipefail
@@ -114,7 +115,7 @@ var components = []Component{
     {"alcyone",       "alcyone-omniversal",       "alcyone_honeypot", "alcyone_pleiades-swarm",       "/usr/local/sbin/install-alcyone-omniversal.sh",       true},
     {"taygete",     "taygete-omniversal",     "taygete",        "taygete_pleiades-swarm",     "/usr/local/sbin/install-taygete-omniversal.sh",     true},
     {"atlas",          "atlas-omniversal",          "atlas_pleiades-swarm",    "atlas_pleiades-swarm",          "/usr/local/sbin/install-atlas-omniversal.sh",          true},
-    {"electra",        "pleiades-swarm-electra",        "electra",           "electra_daemon",        "/usr/local/sbin/install-pleiades-swarm-electra.sh",        true},
+    {"electra",        "electra-omniversal",            "electra",           "electra_daemon",        "/usr/local/sbin/install-electra-omniversal.sh",            true},
     {"pleiades-rebirth", "pleiades-rebirth-omniversal", "pleiades-rebirth",    "pleiades-rebirth_pleiades-swarm", "/usr/local/sbin/install-pleiades-rebirth-omniversal.sh", false},
     {"pleiades-nexus",    "pleiades-nexus-omniversal",    "pleiades-nexus",       "containment_controller",              "/usr/local/sbin/install-pleiades-nexus-omniversal.sh",    false},
 }
@@ -530,7 +531,7 @@ monitor_threats() {
             log_json "EVENT" "littlejohn" "BGP hijack detected – setting flag"
             touch ${PLEIADES_RUN_DIR}/bgp_hijack
             # Also trigger regeneration pause if needed
-            echo "pause_regeneration" > ${PLEIADES_RUN_DIR}/celaeno_cmd
+            echo "pause_regeneration" >> ${PLEIADES_RUN_DIR}/celaeno_cmd
         fi
         if thermal_anomaly; then
             log_json "EVENT" "littlejohn" "Thermal anomaly detected – setting flag"

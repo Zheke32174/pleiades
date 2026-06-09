@@ -30,6 +30,10 @@
     },
     "postCreateCommand": "chmod +x .devcontainer/setup.sh && bash .devcontainer/setup.sh",
     "remoteUser": "vscode",
+    "containerEnv": {
+        "DEEPSEEK_API_KEY": "${localEnv:DEEPSEEK_API_KEY}",
+        "OC_DEEPSEEK_TIMEOUT": "300"
+    },
     "mounts": [
         "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
     ]

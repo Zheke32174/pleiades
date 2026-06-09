@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: c0f42724 shell
 set -uo pipefail
 # Source shared library
 source /usr/local/lib/pleiades-common.sh 2>/dev/null || source "$(dirname "$0")/pleiades-common.sh"

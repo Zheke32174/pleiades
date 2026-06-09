@@ -1,4 +1,5 @@
 #!/bin/bash
+# ryz-compliance: da287d1e shell
 # Launch VS Code with the pleiades workspace from WSL
 # Run this from WSL to open the pleiades ecosystem workspace in VS Code.
 

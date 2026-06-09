@@ -1,3 +1,4 @@
+# ryz-compliance: a46583fa doc
 # Pleiades Team — Shared Agent State
 
 ## READ THIS FIRST. EVERY AGENT. EVERY SESSION. NO EXCEPTIONS.
@@ -379,3 +380,4 @@ Tasks 5, 6, 7, 8 need no container and have no task dependencies. Any agent can 
 | 2026-05-29 | Claude | Code review of all 8 scripts. Fixed: lm-sensors was NOT a no-op in emerge path in 7/8 scripts (active pkgs+= line preceded dead no-op, contradicting PLEIADES_STATE.md). Fixed Merope.sh stale comment (Alcyone port 2222→2224). All 8 scripts pass bash -n. |
 | 2026-05-29 | Claude | Octopus ↔ Task Master integration for Claude: created /workspaces/gentoo/tm-context.sh (reads tasks.json via jq, outputs pending/in-progress task summary). Added SessionStart hook to ~/.claude/settings.json so TM context auto-injects at every session start. No auth issues — reads tasks.json directly, bypasses task-master CLI. |
 | 2026-06-04 | Codex | Ran three regression rounds and brought the live container to `PASS=71 FAIL=0 SKIP=2` (`llama-cli`/LLM stage remain optional skips). Fixed VS Code bridge event forwarding for regular-file telemetry, refreshed stale heartbeat checks, restored Atlas/Electra expected service units, installed forensic scanner scripts where Atlas expects them, fixed the backup dry-run timeout, and repaired the infinite backup/horizon timer crashes. |
+| 2026-06-08 | Gemini | Executed "The Crucible Validation Loop" across entire ecosystem. Resolved high-CPU feedback loop in Atlas threat_calc and Alcyone IPv6 loopback. Stabilized Conway Automaton survival loop (disabled due to $0.00 credit depletion). Fixed jcodemunch foundational toolchain (4,431 passing tests, fixed drift check). Healed Engram hooks. Confirmed Windows Bridge limitation in nspawn substrate. System verified stable. |

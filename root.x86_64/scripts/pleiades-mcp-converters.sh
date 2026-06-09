@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 2eb862e0 shell
 # Source configuration
 source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # pleiades-mcp-converters.sh — repo2mcp, paper2mcp, openapi2mcp converters

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 9f25f03e shell
 # Source configuration
 source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # register-security-capabilities.sh — register all 32 security baseline tools

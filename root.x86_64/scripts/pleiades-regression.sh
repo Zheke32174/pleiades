@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: ed4b6fb2 shell
 # Source configuration
 source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # Purple-team regression harness — syntax, runtime, broker, and host checks
@@ -14,7 +15,7 @@ FAIL=0
 SKIP=0
 SKIP_CONTAINER="${1:-}"
 
-SCRIPTS=(Maia Taygete Alcyone Electra Celaeno Sterope Merope Atlas)
+SCRIPTS=(Maia Taygete Alcyone Electra Celaeno Sterope Merope Atlas Asterope)
 SERVICE_UNITS=(
     taygete-omniversal.service
     alcyone-omniversal.service

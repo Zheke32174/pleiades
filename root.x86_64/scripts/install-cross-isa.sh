@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 40b49128 shell
 # install-cross-isa.sh — install QEMU user-mode + Box64 cross-ISA translation layer
 # Task #15 subtasks: (1) QEMU+binfmt_misc, (2) Box64, (3) Asterope.sh integration
 #

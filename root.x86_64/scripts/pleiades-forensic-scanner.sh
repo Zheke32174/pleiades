@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 9536e8b9 shell
 # Source configuration and shared library
 source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # Source pleiades-common.sh for shared helpers (log_json, apply_sensitivity, etc.)

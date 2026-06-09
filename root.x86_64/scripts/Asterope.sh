@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 5e8960fd shell
 # Asterope.sh — BSD compatibility layer, package conversion pipeline, telemetry aggregator
 #
 # Third-party projects used (not vendored — cloned/downloaded from upstream):

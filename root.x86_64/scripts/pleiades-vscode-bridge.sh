@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 8263d5b8 shell
 # Source configuration
 source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # ==============================================================================
@@ -139,7 +140,7 @@ TASKS
 
 # ─── VS Code Launch / Status ──────────────────────────────────────────────────
 check_vscode() {
-    if [[ -f "$VSCODE_BIN" ]]; then
+    if [[ -x "$VSCODE_BIN" ]]; then
         local version
         version=$("$VSCODE_BIN" --version 2>/dev/null | head -1)
         echo "VSCODE_AVAILABLE|version=${version}"

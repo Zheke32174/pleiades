@@ -1,3 +1,4 @@
+# ryz-compliance: e4920ba3 doc
 # Pleiades-Team Polyglot Suite Architecture
 
 Last updated: 2026-05-30

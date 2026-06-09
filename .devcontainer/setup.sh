@@ -20,4 +20,26 @@ go install github.com/owasp-amass/amass/v4/...@master 2>/dev/null &
 pip3 install --quiet --user ansible-lint yamllint 2>/dev/null &
 
 wait
+
+# Install opencode (AI fallback via opencode-go/deepseek-v4-pro)
+if ! command -v opencode &>/dev/null; then
+    npm install -g opencode-ai 2>/dev/null || true
+fi
+
+# Install oc-deepseek fallback wrapper
+mkdir -p "$HOME/bin"
+cat > "$HOME/bin/oc-deepseek" << 'WRAPPER_EOF'
+#!/usr/bin/env bash
+# oc-deepseek — fallback to opencode-go/deepseek-v4-pro on rate-limit/quota errors
+# Trigger: primary model (Claude/Gemini) returns 429 or quota-exceeded
+set -uo pipefail
+KEYS_ENV="${HOME}/.config/opencode/keys.env"
+[[ -f "$KEYS_ENV" ]] && source "$KEYS_ENV"
+if [[ -z "${DEEPSEEK_API_KEY:-}" ]]; then
+    echo "ERROR: DEEPSEEK_API_KEY not set. See https://platform.deepseek.com/api_keys" >&2; exit 1
+fi
+exec timeout "${OC_DEEPSEEK_TIMEOUT:-300}" opencode run -m opencode-go/deepseek-v4-pro "$@"
+WRAPPER_EOF
+chmod +x "$HOME/bin/oc-deepseek"
+
 echo "=== Setup Complete ==="

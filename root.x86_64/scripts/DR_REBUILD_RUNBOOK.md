@@ -1,3 +1,4 @@
+# ryz-compliance: 6026e007 doc
 # Disaster Recovery Rebuild Runbook
 # Task #4: Full pleiades-team container from-scratch test
 

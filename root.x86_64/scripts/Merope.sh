@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 38efefc2 shell
 set -uo pipefail
 
 # Source shared library
@@ -286,7 +287,16 @@ while true; do
                 -in "$RESURRECT_DIR/state.tar.gz.enc" \
                 -out /tmp/state.tar.gz \
                 -pass file:"$RESURRECT_DIR/key"
-            tar -xzf /tmp/state.tar.gz -C /
+            RESTORE_TMP=$(mktemp -d /tmp/state_restore_XXXXXX)
+            tar -xzf /tmp/state.tar.gz -C "$RESTORE_TMP"
+            # Validate: only allow expected subdirs, no absolute paths or ..
+            if tar -tzf /tmp/state.tar.gz 2>/dev/null | grep -qE '^\.\.|^/'; then
+                rm -rf "$RESTORE_TMP"
+                report_to_pleiades-nexus "RESTORATION_REJECTED_UNSAFE_TAR"
+            else
+                cp -a "$RESTORE_TMP"/. /
+                rm -rf "$RESTORE_TMP"
+            fi
             for installer in /usr/local/sbin/install-*-omniversal.sh; do
                 [[ -f "$installer" ]] && bash "$installer" &
             done

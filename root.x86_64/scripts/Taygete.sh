@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 1748092e shell
 set -uo pipefail
 
 # Source shared library

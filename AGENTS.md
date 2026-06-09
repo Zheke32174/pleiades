@@ -43,7 +43,22 @@
 - Volatile session state: in-context messages only (NOT in durable files)
 - Skills loaded: agents-best-practices (loaded automatically when agent architecture is discussed)
 - Project skills: pleiades-* skills loaded based on task
+- Global cross-CLI runtime: `/workspaces/gentoo/.agents/`
+  - `memory.jsonl` stores durable provider-neutral memories
+  - `evals.jsonl` stores validation and feedback events
+  - `state.json` stores shared continual-harness state
+  - `skills/*/SKILL.md` stores reusable skills for all agents, not only Claude Code
+  - `skills/*/metadata.json` stores skill lifecycle status and scores
+  - `context.md` is the last rendered task context bundle
+  - `RUNTIME.md` documents the shared contract
+- Cross-CLI runtime commands:
+  - Session start: `python3 agent_context.py render "task" --agent "$AGENT_NAME"`
+  - Durable learning: `python3 agent_context.py remember "fact" --kind design --tag context --source "$AGENT_NAME"`
+  - Validation feedback: `python3 agent_context.py feedback "task" "outcome" --agent "$AGENT_NAME" --tag eval`
+  - Skill lifecycle update: `python3 agent_context.py eval-skills --min-events 1`
+  - Memory cleanup: `python3 agent_context.py compact`
 - Memory locations:
+  - `/workspaces/gentoo/.agents/` — shared across Claude Code, Codex, Gemini, OpenCode, local workers, and MCP tools
   - ~/.codex/rules/ — Codex standing instructions
   - ~/.claude/projects/-/memory/ — Claude Code project memory
   - ~/.gemini/settings.json — Gemini MCP config
@@ -120,4 +135,3 @@ sudo nsenter -t "$CONTAINER_PID" -m -u -i -n -p -- bash -c 'commands'
 | Zheke32174/pleiades-evidence | Private evidence archive |
 | Zheke32174/underhall | Original Arch nspawn install layer |
 | Zheke32174/undercity | Backup/restore tooling |
-

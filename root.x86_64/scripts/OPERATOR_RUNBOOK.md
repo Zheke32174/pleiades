@@ -1,3 +1,4 @@
+# ryz-compliance: ed6ae02a doc
 # Pleiades-Team Operator Runbook
 
 **Audience:** Owner/operator only. Read-only posture by default. No implicit privilege elevation.

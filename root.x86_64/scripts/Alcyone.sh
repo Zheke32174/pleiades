@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 976e4232 shell
 set -uo pipefail
 
 # Source shared library
@@ -111,6 +112,9 @@ func setAttackerIP(ip string) {
 }
 
 func isPrivate(ip string) bool {
+    if ip == "::1" || ip == "localhost" {
+        return true
+    }
     for _, pfx := range []string{"127.", "10.", "192.168.", "172.16.", "172.17.", "172.18.",
         "172.19.", "172.20.", "172.21.", "172.22.", "172.23.", "172.24.",
         "172.25.", "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31."} {
@@ -215,9 +219,12 @@ fn report(msg: &str) {
 }
 
 fn is_private(ip: &str) -> bool {
+    if ip == "::1" || ip == "localhost" {
+        return true
+    }
     ip.starts_with("127.") || ip.starts_with("10.") ||
     ip.starts_with("192.168.") || {
-        let parts: Vec<&str> = ip.split('.').collect();
+        let parts: Vec<&str> = ip.split(".").collect();
         if parts.len() >= 2 {
             if let (Ok(a), Ok(b)) = (parts[0].parse::<u8>(), parts[1].parse::<u8>()) {
                 a == 172 && (16..=31).contains(&b)

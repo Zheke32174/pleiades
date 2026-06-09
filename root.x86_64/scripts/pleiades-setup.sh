@@ -1,4 +1,5 @@
 #!/bin/bash
+# ryz-compliance: cd4a7d70 shell
 # Source configuration
 source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # pleiades-setup.sh — First-run operator setup.

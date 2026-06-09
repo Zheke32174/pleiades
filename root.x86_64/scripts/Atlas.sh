@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 58a75058 shell
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"
@@ -1258,7 +1259,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/containment_controller
+ExecStart=$CONTAINMENT_BIN
 Restart=always
 RestartSec=10
 LimitNOFILE=$MAX_OPEN_FILES

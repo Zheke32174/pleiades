@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 55d6a10a shell
 # Source configuration
 source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # install-llm-stack.sh — build llama.cpp + download model + install pleiades-llm

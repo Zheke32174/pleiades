@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 7b79a67e shell
 # Source configuration
 source /etc/purple/pleiades.conf 2>/dev/null || source "$(dirname "$0")/../etc/purple/pleiades.conf"
 # install-ai-agents.sh — install Aider + OpenHands as operator-assist tools

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# ryz-compliance: 4dd35fa8 shell
 set -uo pipefail
 
 # Source shared library
@@ -217,17 +218,29 @@ func main() {
         var modeStr string
         if score >= 8 {
             modeStr = "AGGRESSIVE"
-            sendCommand("/run/pleiades/taygete.sock", "aggressive")
-            sendCommand("/run/pleiades/alcyone.sock", "active")
-            reportToPleiadesNexus(fmt.Sprintf("ZOD_MODE_AGGRESSIVE|%d", score))
         } else if score >= 2 {
             modeStr = "PASSIVE"
-            sendCommand("/run/pleiades/alcyone.sock", "passive")
-            reportToPleiadesNexus(fmt.Sprintf("ZOD_MODE_PASSIVE|%d", score))
         } else {
             modeStr = "NORMAL"
         }
-        os.WriteFile("/run/pleiades/atlas_mode", []byte(modeStr), 0644)
+
+        currentModeBytes, _ := os.ReadFile("/run/pleiades/atlas_mode")
+        currentMode := string(currentModeBytes)
+        if currentMode != modeStr {
+            if modeStr == "AGGRESSIVE" {
+                sendCommand("/run/pleiades/taygete.sock", "aggressive")
+                sendCommand("/run/pleiades/alcyone.sock", "active")
+                reportToPleiadesNexus(fmt.Sprintf("ZOD_MODE_AGGRESSIVE|%d", score))
+            } else if modeStr == "PASSIVE" {
+                sendCommand("/run/pleiades/alcyone.sock", "passive")
+                reportToPleiadesNexus(fmt.Sprintf("ZOD_MODE_PASSIVE|%d", score))
+            } else if modeStr == "NORMAL" && currentMode != "" {
+                sendCommand("/run/pleiades/taygete.sock", "passive")
+                sendCommand("/run/pleiades/alcyone.sock", "passive")
+                reportToPleiadesNexus("ZOD_MODE_NORMAL")
+            }
+            os.WriteFile("/run/pleiades/atlas_mode", []byte(modeStr), 0644)
+        }
         if pleiadesRebirthNeeded && !containmentTriggered {
             sendCommand("/run/pleiades/taygete.sock", "resurrect")
             sendCommand("/run/pleiades/alcyone.sock", "resurrect")
