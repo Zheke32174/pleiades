@@ -1,0 +1,35 @@
+[Unit]
+Description=Pleiades Factory Operator — HITL-gated task executor
+Documentation=file:///workspaces/gentoo/root.x86_64/scripts/FACTORY_OPERATOR_ARCHITECTURE.md
+After=network.target
+
+[Service]
+Type=simple
+User=fixxia
+WorkingDirectory=/workspaces/gentoo/root.x86_64/scripts
+
+# Run in daemon mode; loop exits cleanly when task queue is empty
+ExecStart=/home/linuxbrew/.linuxbrew/bin/python3 /workspaces/gentoo/root.x86_64/scripts/pleiades-factory-operator-daemon.py
+
+# Crash recovery: restart after 15s, give up after 5 failures in 5 minutes
+Restart=on-failure
+RestartSec=15
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+# State & PID tracking
+PIDFile=/run/pleiades/factory_operator.pid
+RuntimeDirectory=pleiades
+
+# Resource guardrails (don't let the operator consume excessive CPU)
+CPUQuota=20%
+MemoryMax=256M
+
+Environment="PYTHONPATH=/workspaces/gentoo/root.x86_64/scripts"
+Environment="PLEIADES_STATE_FILE=/run/pleiades/PLEIADES_STATE.md"
+Environment="PLEIADES_OUTBOX=/run/pleiades/alien/outbox"
+Environment="PLEIADES_INBOX=/run/pleiades/alien/inbox"
+Environment="TASKMASTER_TASKS=/workspaces/gentoo/.taskmaster/tasks/tasks.json"
+
+[Install]
+WantedBy=multi-user.target
