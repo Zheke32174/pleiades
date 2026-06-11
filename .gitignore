@@ -77,3 +77,50 @@ external/
 # Session planning docs — internal only
 CONSOLIDATED_TRIAGE_*.md
 HANDOFF_NEXT_SESSION.md
+
+# ── 2026-06-11 triage: regenerable research outputs + agent runtime state ─────
+# paper2code reproductions — each contains REPRODUCTION_NOTES.md + core.py.
+# Outputs of the paper2code pipeline (see memory: Paper2Code Pipeline Status);
+# regenerable from arxiv IDs, so they're not source-of-truth.
+paper_*/
+# Description-named paper2code outputs (no shared prefix — listed explicitly).
+/a_case_study_of_llm_for_automated_vulnerability_re/
+/a_framework_for_testing_and_adapting_rest_apis_as_/
+/bmas_blackboard_llm_multi_agent_system/
+/breaking_the_protocol_security_analysis_of_the_mod/
+/continual_harness_a_framework_for_self_evolving_ag/
+/doc2agent_scalable_generation_of_tool_using_agents/
+/efact_external_function_auto_completion_tool/
+/from_raw_experience_to_skill_consumption_a_systema/
+/knowledge_graph_based_repository_level_code_genera/
+/llm_based_multi_agent_blackboard_system_for_inform/
+/lockforge_automating_paper_to_code_for_logic_locki/
+/memflow_intent_driven_memory_orchestration_for_sma/
+/model_context_protocol_threat_modeling_and_analyzi/
+/muse_autoskill_skill_lifecycle_management/
+
+# Agent runtime / scratch state — regenerable, accumulates .bak files.
+/.agents/
+/.codex/
+/.nexus/
+
+# Runtime state JSONs (mirror the container-side horizon_state.json fix).
+**/horizon_state.json
+**/homunculus_instincts.json
+
+# Coverage + scratch archival markers.
+.coverage
+**/SCRATCH_NONALIGNED_ARCHIVE_*.md
+/react_synergizing_reasoning_and_acting_in_language/
+/realbench_a_repo_level_code_generation_benchmark_a/
+/root.x86_64/scripts/doc2agent_eval/
+/semanticforge_repository_level_code_generation_thr/
+/survey_of_specialized_large_language_model/
+/sustaining_ai_safety_control_theoretic_external_im/
+
+# Vault and runtime spool dirs — never commit, even by accident.
+/root.x86_64/scripts/vault/
+/root.x86_64/scripts/nexus_spool/
+/swarmsys_decentralized_swarm_inspired_agents_for_s/
+/toolformer_language_models_can_teach_themselves_to/
+/toward_executable_repository_level_code_generation/
