@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # install-cross-isa.sh — install QEMU user-mode + Box64 cross-ISA translation layer
 # Task #15 subtasks: (1) QEMU+binfmt_misc, (2) Box64, (3) Asterope.sh integration
 #

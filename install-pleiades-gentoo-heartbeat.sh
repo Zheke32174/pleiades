@@ -1,5 +1,9 @@
 #!/bin/bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 set -euo pipefail
+
+# Termux: systemd service installer (not applicable)
+[[ "${PLEIADES_ENV:-}" == "termux" ]] && echo "[install-heartbeat] Termux: no systemd, skipping" && exit 0
 
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_LIB="$SRC_DIR/pleiades-backup.sh"
@@ -20,7 +24,7 @@ BRIDGE_PATH="/etc/systemd/system/pleiades-host-bridges.path"
 WSL_REMOUNT_SERVICE="/etc/systemd/system/wsl-remount-drives.service"
 PROC_MOUNT="/etc/systemd/system/workspaces-gentoo-root.x86_64-host-proc.mount"
 SYS_MOUNT="/etc/systemd/system/workspaces-gentoo-root.x86_64-host-sys.mount"
-ROOT="${PURPLE_GENTOO_ROOT:-/workspaces/gentoo/root.x86_64}"
+ROOT="${PURPLE_GENTOO_ROOT:-${PLEIADES_ROOT:-${HOME}/pleiades}/rootfs}"
 
 if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
     exec sudo -E "$0" "$@"
@@ -80,7 +84,7 @@ POLICY_EOF
 cat > "$SERVICE" << SERVICE_EOF
 [Unit]
 Description=Purple Gentoo deployment-layer heartbeat
-Documentation=file:///workspaces/gentoo/pleiades-gentoo-heartbeat.sh
+Documentation=file://${ROOT}/../pleiades-gentoo-heartbeat.sh
 After=network-online.target
 Wants=network-online.target
 
@@ -112,7 +116,7 @@ TIMER_EOF
 cat > "$HOST_SENSOR_SERVICE" << SERVICE_EOF
 [Unit]
 Description=Purple host process sensor
-Documentation=file:///workspaces/gentoo/pleiades-host-process-sensor.sh
+Documentation=file://${ROOT}/../pleiades-host-process-sensor.sh
 After=network-online.target
 Wants=network-online.target
 
@@ -144,7 +148,7 @@ TIMER_EOF
 cat > "$PROC_MOUNT" << MOUNT_EOF
 [Unit]
 Description=Purple Host Bridge — /proc (read-only)
-Documentation=file:///workspaces/gentoo/pleiades-ensure-host-bridges.sh
+Documentation=file://${ROOT}/../pleiades-ensure-host-bridges.sh
 DefaultDependencies=no
 Before=pleiades-host-bridges.service pleiades-gentoo-heartbeat.service local-fs.target
 
@@ -161,7 +165,7 @@ MOUNT_EOF
 cat > "$SYS_MOUNT" << MOUNT_EOF
 [Unit]
 Description=Purple Host Bridge — /sys (read-only)
-Documentation=file:///workspaces/gentoo/pleiades-ensure-host-bridges.sh
+Documentation=file://${ROOT}/../pleiades-ensure-host-bridges.sh
 DefaultDependencies=no
 Before=pleiades-host-bridges.service pleiades-gentoo-heartbeat.service local-fs.target
 
@@ -178,7 +182,7 @@ MOUNT_EOF
 cat > "$BRIDGE_SERVICE" << SERVICE_EOF
 [Unit]
 Description=Purple Gentoo nspawn host bridge mounts
-Documentation=file:///workspaces/gentoo/pleiades-ensure-host-bridges.sh
+Documentation=file://${ROOT}/../pleiades-ensure-host-bridges.sh
 DefaultDependencies=no
 After=local-fs.target wsl-remount-drives.service
 After=workspaces-gentoo-root.x86_64-host-proc.mount workspaces-gentoo-root.x86_64-host-sys.mount

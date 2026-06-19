@@ -1,4 +1,5 @@
 #!/bin/bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # pleiades-ensure-host-bridges.sh
 # Mounts the four host-bridge bind points used by the Gentoo nspawn container.
 # Idempotent: skips already-mounted targets.
@@ -6,7 +7,10 @@
 
 set -euo pipefail
 
-ROOT="${PLEIADES_GENTOO_ROOT:-/workspaces/gentoo/root.x86_64}"
+# Termux: this script manages systemd-nspawn host bridges (not applicable)
+[[ "${PLEIADES_ENV:-}" == "termux" ]] && echo "[pleiades-bridges] Termux: no systemd-nspawn, skipping" && exit 0
+
+ROOT="${PLEIADES_GENTOO_ROOT:-${PLEIADES_ROOT:-${HOME}/pleiades}/rootfs}"
 LOG=/var/log/pleiades-gentoo-heartbeat.log
 
 _log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) PLEIADES_BRIDGES|$*" | tee -a "$LOG" 2>/dev/null || true; }

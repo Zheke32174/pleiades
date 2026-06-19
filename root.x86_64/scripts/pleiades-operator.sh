@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/data/data/com.termux/files/usr/bin/bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # pleiades-operator.sh — Operator identity discovery library.
 # Source this file; do NOT execute it directly.
 #

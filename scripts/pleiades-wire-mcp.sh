@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/data/data/com.termux/files/usr/bin/bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # pleiades-wire-mcp.sh — Wire shared MCP config into all agent CLIs
 set -euo pipefail
 
-MCP_SOURCE="/workspaces/gentoo/pleiades-mcp-config.json"
+PLEIADES_ROOT="${PLEIADES_ROOT:-${HOME}/pleiades}"
+MCP_SOURCE="${PLEIADES_CONFIG:-${PLEIADES_ROOT}/config}/pleiades-mcp-config.json"
 echo "=== Wiring Pleiades MCP across all CLIs ==="
 
 # Each CLI has a different config location and format

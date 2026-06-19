@@ -1,13 +1,18 @@
 #!/bin/bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # Launch the pleiades-team QEMU test VM.
 # Serial console only (nographic). Ctrl+A X to exit QEMU.
 set -euo pipefail
 
-QCOW_IMG="/workspaces/gentoo/pleiades-test.qcow2"
+# Termux: QEMU VM runner (requires x86_64 host)
+[[ "${PLEIADES_ENV:-}" == "termux" ]] && echo "[run-vm] Termux: QEMU VM requires x86_64 host, skipping" && exit 0
+
+PLEIADES_ROOT="${PLEIADES_ROOT:-${HOME}/pleiades}"
+QCOW_IMG="${PLEIADES_ROOT}/pleiades-test.qcow2"
 VMLINUZ=$(ls /boot/vmlinuz-* 2>/dev/null | sort -V | tail -1)
 INITRD=$(ls /boot/initrd.img-* 2>/dev/null | sort -V | tail -1)
 
-[[ ! -f "$QCOW_IMG" ]] && { echo "ERROR: No image. Run: sudo bash /workspaces/gentoo/build-pleiades-vm.sh"; exit 1; }
+[[ ! -f "$QCOW_IMG" ]] && { echo "ERROR: No image. Run: sudo bash ${PLEIADES_ROOT}/build-pleiades-vm.sh"; exit 1; }
 [[ -z "$VMLINUZ" ]] && { echo "ERROR: No kernel in /boot"; exit 1; }
 
 echo "[*] Booting $QCOW_IMG"

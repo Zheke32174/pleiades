@@ -1,7 +1,8 @@
-#!/bin/bash
+#!/data/data/com.termux/files/usr/bin/bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 set -euo pipefail
 
-ROOT="${PLEIADES_GENTOO_PROJECT_ROOT:-/workspaces/gentoo}"
+ROOT="${PLEIADES_GENTOO_PROJECT_ROOT:-${PLEIADES_ROOT:-${HOME}/pleiades}}"
 TOOLS_ROOT="${PLEIADES_FACTORY_TOOLS_ROOT:-$ROOT/tools}"
 MANIFEST="${PLEIADES_FACTORY_TOOL_MANIFEST:-$ROOT/.octo/factory/toolchain.json}"
 

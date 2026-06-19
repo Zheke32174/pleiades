@@ -21,7 +21,8 @@ source "${SCRIPT_DIR}/pleiades-operator.sh" 2>/dev/null || true
 # ------------------------------------------------------------
 # Config
 # ------------------------------------------------------------
-CONTAINER_ROOT="/workspaces/gentoo/root.x86_64"
+PLEIADES_ROOT="${PLEIADES_ROOT:-${HOME}/pleiades}"
+CONTAINER_ROOT="${PLEIADES_ROOT}/rootfs"
 CONTAINER_NAME="pleiades"
 HOST_WRAPPER="/usr/local/sbin/pleiades-container-watcher"
 SERVICE_NAME="pleiades-container-watcher"
@@ -96,9 +97,8 @@ write_wrapper() {
 # pleiades-container-watcher — host wrapper that starts the Pleiades nspawn container.
 # Managed by pleiades-container-watcher.service. Do not delete.
 
-CONTAINER_ROOT="/workspaces/gentoo/root.x86_64"
-STOP_TOKEN="/var/lib/.maia/owner_stop"
-LOG_TAG="pleiades-container-watcher"
+PLEIADES_ROOT="\${PLEIADES_ROOT:-\${HOME}/pleiades}"
+CONTAINER_ROOT="\${PLEIADES_ROOT}/rootfs"
 
 # Owner escape hatch: if a valid signed STOP token exists, do not start
 if [[ -f "$STOP_TOKEN" ]] && command -v maia_crypto &>/dev/null; then

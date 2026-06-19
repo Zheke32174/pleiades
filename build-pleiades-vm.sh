@@ -1,4 +1,5 @@
 #!/bin/bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # Builds a bootable QEMU image from the existing Gentoo nspawn root.
 # Run as root or with sudo. Takes ~5-10 min (rsync of ~5.7GB).
 set -euo pipefail
@@ -12,9 +13,13 @@ cleanup() {
 trap cleanup EXIT
 
 
-NSPAWN_ROOT="/workspaces/gentoo/root.x86_64"
-RAW_IMG="/workspaces/gentoo/pleiades-test.raw"
-QCOW_IMG="/workspaces/gentoo/pleiades-test.qcow2"
+# Termux: QEMU VM builder (requires x86_64 host kernel)
+[[ "${PLEIADES_ENV:-}" == "termux" ]] && echo "[build-vm] Termux: QEMU VM builder requires x86_64 host, skipping" && exit 0
+
+PLEIADES_ROOT="${PLEIADES_ROOT:-${HOME}/pleiades}"
+NSPAWN_ROOT="${PLEIADES_ROOT}/rootfs"
+RAW_IMG="${PLEIADES_ROOT}/pleiades-test.raw"
+QCOW_IMG="${PLEIADES_ROOT}/pleiades-test.qcow2"
 MOUNT="/tmp/pleiades-qemu-mount"
 SIZE="22G"
 
@@ -74,7 +79,7 @@ ln -sf /lib/systemd/system/getty@.service \
 
 # Bind scripts directory at /pleiades-scripts in the VM
 cp -r "$NSPAWN_ROOT/../scripts" "$MOUNT/pleiades-scripts" 2>/dev/null || \
-  cp -r /workspaces/gentoo/root.x86_64/scripts "$MOUNT/pleiades-scripts"
+  cp -r "${NSPAWN_ROOT}/scripts" "$MOUNT/pleiades-scripts"
 
 # Make sure root can log in without password
 sed -i 's/^root:[^:]*:/root::/' "$MOUNT/etc/shadow" 2>/dev/null || true

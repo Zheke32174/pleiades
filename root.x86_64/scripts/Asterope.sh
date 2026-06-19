@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # Asterope.sh — BSD compatibility layer, package conversion pipeline, telemetry aggregator
 #
 # Third-party projects used (not vendored — cloned/downloaded from upstream):

@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLEIADES_CONTAINER_ROOT="${PLEIADES_CONTAINER_ROOT:-$(dirname "$SCRIPT_DIR")}"

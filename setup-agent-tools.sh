@@ -1,15 +1,17 @@
-#!/bin/bash
+#!/data/data/com.termux/files/usr/bin/bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # setup-agent-tools.sh — Run once (as yourself, not as Claude) to wire up
 # RTK + JCodeMunch auto-hooks into Claude Code's settings.json.
 # Claude cannot self-modify these files; you must run this.
 #
-# Usage: bash /workspaces/gentoo/setup-agent-tools.sh
-#   or in Claude Code prompt: ! bash /workspaces/gentoo/setup-agent-tools.sh
+# Usage: bash ${PLEIADES_ROOT:-${HOME}/pleiades}/env/../setup-agent-tools.sh
+#   or in agent prompt: ! bash setup-agent-tools.sh
 
 set -euo pipefail
 
 CLAUDE_SETTINGS="$HOME/.claude/settings.json"
-JCM_DIR="/workspaces/gentoo/tools/jcodemunch-mcp"
+PLEIADES_ROOT="${PLEIADES_ROOT:-${HOME}/pleiades}"
+JCM_DIR="${JCODEMUNCH_HOME:-${PLEIADES_ROOT}/tools/jcodemunch-mcp}"
 RTK_HOOK="$HOME/.local/bin/rtk-bash-hook.py"
 
 echo "=== Pleiades Agent Tool Setup ==="

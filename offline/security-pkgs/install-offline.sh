@@ -3,7 +3,7 @@
 # Task #21
 set -euo pipefail
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-CONTAINER="${CONTAINER_ROOT:-/workspaces/gentoo/root.x86_64}"
+CONTAINER="${CONTAINER_ROOT:-${PLEIADES_ROOT:-${HOME}/pleiades}/rootfs}"
 BINPKG_DIR="$CONTAINER/var/cache/binpkgs"
 log() { printf '[offline-install] %s\n' "$*" >&2; }
 

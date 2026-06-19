@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # Advanced test library for pleiades-regression.sh
 # Source this file from the main harness — do not run directly.
 # Requires: pass(), fail(), skip(), in_container(), container_up(), CONTAINER_PID

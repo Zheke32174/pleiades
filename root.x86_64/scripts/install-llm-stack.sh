@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # install-llm-stack.sh — build llama.cpp + download model + install pleiades-llm
 # Task #18: Deploy quantized local LLM inference stack
 #

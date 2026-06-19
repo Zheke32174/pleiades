@@ -1,10 +1,11 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # Task Master context bridge — outputs pending/in-progress task summary for Codex session injection.
 # Called by SessionStart hook in ~/.codex/hooks.json.
 # This intentionally reads tasks.json directly; the task-master CLI can be slow
 # or block on host-bridge I/O, and session startup must stay bounded.
 
-TASKS_FILE="/workspaces/gentoo/.taskmaster/tasks/tasks.json"
+TASKS_FILE="${PLEIADES_TASKS_FILE:-${PLEIADES_ROOT:-${HOME}/pleiades}/data/tasks/tasks.json}"
 
 [[ ! -f "$TASKS_FILE" ]] && exit 0
 

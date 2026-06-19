@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/data/data/com.termux/files/usr/bin/bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # Launch VS Code with the pleiades workspace from WSL
 # Run this from WSL to open the pleiades ecosystem workspace in VS Code.
 

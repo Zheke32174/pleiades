@@ -1,4 +1,5 @@
 #!/bin/bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 set -euo pipefail
 
 RUN_DIR="${PLEIADES_HOST_CAPSULE_RUN:-/run/pleiades-host-capsule}"

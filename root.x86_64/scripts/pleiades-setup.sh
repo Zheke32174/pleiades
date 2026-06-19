@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/data/data/com.termux/files/usr/bin/bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # pleiades-setup.sh — First-run operator setup.
 #
 # Discovers or prompts for the operator's GitHub identity, creates the

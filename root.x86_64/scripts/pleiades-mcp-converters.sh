@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # pleiades-mcp-converters.sh — repo2mcp, paper2mcp, openapi2mcp converters
 # Tasks #22, #23, #24
 #

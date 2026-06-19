@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # Shared backup helper for Pleiades project scripts and CLI harnesses.
 # Usage: source this file, then call pleiades_backup_file /path/to/file [reason]
 
@@ -10,7 +11,7 @@ pleiades_backup_agent() {
 }
 
 pleiades_backup_manifest_dir() {
-    printf '%s' "${PLEIADES_BACKUP_MANIFEST_DIR:-/workspaces/gentoo/.pleiades-backups}"
+    printf '%s' "${PLEIADES_BACKUP_MANIFEST_DIR:-${PLEIADES_ROOT:-${HOME}/pleiades}/data/backup-manifest}"
 }
 
 pleiades_backup_file() {

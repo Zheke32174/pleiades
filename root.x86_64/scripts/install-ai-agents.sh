@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # install-ai-agents.sh — install Aider + OpenHands as operator-assist tools
 # Task #13: Evaluate and stage AI coding agents
 #

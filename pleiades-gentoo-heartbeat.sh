@@ -1,14 +1,18 @@
 #!/bin/bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 set -euo pipefail
 
-ROOT="${PLEIADES_GENTOO_ROOT:-/workspaces/gentoo/root.x86_64}"
+# Termux: this is a systemd-nspawn container heartbeat manager (not applicable)
+[[ "${PLEIADES_ENV:-}" == "termux" ]] && echo "[pleiades-heartbeat] Termux: no systemd-nspawn, skipping" && exit 0
+
+ROOT="${PLEIADES_GENTOO_ROOT:-${PLEIADES_ROOT:-${HOME}/pleiades}/rootfs}"
 TMUX_SESSION="${PLEIADES_GENTOO_TMUX_SESSION:-gentoo}"
 TMUX_SOCKET="${PLEIADES_GENTOO_TMUX_SOCKET:-pleiades-gentoo}"
 LOG="${PLEIADES_GENTOO_HEARTBEAT_LOG:-/var/log/pleiades-gentoo-heartbeat.log}"
 STATUS="${PLEIADES_GENTOO_HEARTBEAT_STATUS:-/run/pleiades-gentoo-heartbeat/status}"
 LOCK="/run/pleiades-gentoo-heartbeat/lock"
 HOSTNAME="${PLEIADES_GENTOO_HOSTNAME:-gentoo-codespace}"
-UNDERHALL="${PLEIADES_GENTOO_UNDERHALL:-/workspaces/underhall}"
+UNDERHALL="${PLEIADES_GENTOO_UNDERHALL:-${PLEIADES_ROOT:-${HOME}/pleiades}/underhall}"
 
 SERVICES=(
   taygete-omniversal.service

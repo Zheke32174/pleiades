@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # pleiades-integrate-tools.sh — Wire all registered tools into every agent CLI
 # Based on: agents-best-practices framework
 set -uo pipefail

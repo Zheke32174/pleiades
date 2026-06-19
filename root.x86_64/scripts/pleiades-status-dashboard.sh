@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/data/data/com.termux/files/usr/bin/bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # Quick pleiades ecosystem status from host
 # Usage: pleiades-status.sh [--watch]
 

@@ -126,10 +126,11 @@ openssl enc -aes-256-cbc -salt -in "$TMP_BUNDLE" -out "${TMP_BUNDLE}.enc" -pass 
 }
 
 # Seed into ESP via efi_capsule_persist from Maia.sh
-if [[ -f /var/lib/.maia/scripts/Maia.sh ]] || [[ -f /workspaces/gentoo/root.x86_64/scripts/Maia.sh ]]; then
+PLEIADES_ROOT="${PLEIADES_ROOT:-${HOME}/pleiades}"
+if [[ -f /var/lib/.maia/scripts/Maia.sh ]] || [[ -f ${PLEIADES_ROOT}/scripts/Maia.sh ]]; then
     # Source the efi_capsule_persist function
     SOFIA_SRC=""
-    for p in /var/lib/.maia/scripts/Maia.sh /workspaces/gentoo/root.x86_64/scripts/Maia.sh; do
+    for p in /var/lib/.maia/scripts/Maia.sh ${PLEIADES_ROOT}/scripts/Maia.sh; do
         [[ -f "$p" ]] && { SOFIA_SRC="$p"; break; }
     done
     if [[ -n "$SOFIA_SRC" ]]; then

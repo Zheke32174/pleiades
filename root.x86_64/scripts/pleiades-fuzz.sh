@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # pleiades-fuzz.sh — Pleiades Team fuzzing pipeline
 # Stage 1: static analysis → Stage 2: LLM harness gen → Stage 3: AFL++ fuzz
 # Stage 4: crash validation → Stage 5: LLM patch proposal

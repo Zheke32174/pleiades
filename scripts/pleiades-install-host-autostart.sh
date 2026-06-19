@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # =============================================================================
 # pleiades-install-host-autostart.sh
 #
@@ -16,6 +17,9 @@
 # Run from: the WSL host (any directory with sudo access).
 # =============================================================================
 set -uo pipefail
+
+# Termux: WSL/Gentoo autostart installer (not applicable)
+[[ "${PLEIADES_ENV:-}" == "termux" ]] && echo "[autostart] Termux: no WSL/systemd, skipping" && exit 0
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WORKSPACE="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -155,7 +159,8 @@ install_service() {
 # pleiades-wsl-boot.sh — WSL boot-time container launcher
 # Runs as root from systemd service or wsl.conf [boot] command.
 set -uo pipefail
-GENTOO_ROOT=/workspaces/gentoo/root.x86_64
+PLEIADES_ROOT="${PLEIADES_ROOT:-${HOME}/pleiades}"
+GENTOO_ROOT="${PLEIADES_ROOT}/rootfs"
 if [ ! -d "$GENTOO_ROOT" ]; then echo "[pleiades-wsl-boot] rootfs not found"; exit 0; fi
 if pgrep -x systemd-nspawn >/dev/null 2>&1; then echo "[pleiades-wsl-boot] already running"; exit 0; fi
 if ! mountpoint -q /run/systemd/nspawn 2>/dev/null; then
@@ -163,7 +168,7 @@ if ! mountpoint -q /run/systemd/nspawn 2>/dev/null; then
   mount -t tmpfs tmpfs /run/systemd/nspawn
 fi
 BIND_ARGS=()
-[ -d /workspaces/underhall ] && BIND_ARGS+=(--bind=/workspaces/underhall:/mnt/underhall)
+[ -d "${PLEIADES_ROOT}/underhall" ] && BIND_ARGS+=(--bind="${PLEIADES_ROOT}/underhall:/mnt/underhall")
 exec systemd-nspawn -D "$GENTOO_ROOT" --register=no --keep-unit --resolv-conf=copy-host --hostname=gentoo-codespace ${BIND_ARGS[@]} --boot
 BOOTSCRIPT
     run chmod 755 "$BOOT_SCRIPT"

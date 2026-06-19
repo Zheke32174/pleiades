@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # register-security-capabilities.sh — register all 32 security baseline tools
 # Task #20: Wire security tools into Pleiades Team capability registry
 set -euo pipefail

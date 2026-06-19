@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/data/data/com.termux/files/usr/bin/env bash
+source "${PLEIADES_TERMUX_LIB:-}" 2>/dev/null || true
 # pleiades-re.sh — Pleiades Team Binary Reverse Engineering Pipeline
 #
 # Pipeline: binary → decompile (radare2/ghidra) → LLM refine → type recovery → report
