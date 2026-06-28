@@ -16,6 +16,8 @@ GENESIS=0000000000000000000000000000000000000000000000000000000000000000
 # events). Mounted at /host/win by the container boot if C:\pleiades exists.
 WIN_SPOOL=/host/win/spool/windows-events.log
 WIN_CURSOR="$NEXDIR/windows.cursor"
+NET_SPOOL=/host/win/spool/netwatch.log
+NET_CURSOR="$NEXDIR/netwatch.cursor"
 
 # --- Nexus sealing: drain the spool into the hash-chained, signed ledger ----
 nexus_seal() {
@@ -70,6 +72,20 @@ windows_ingest() {
     log_info "windows: ingested $((total-cur)) event(s) from bridge"
 }
 
+# --- Netwatch ingest: pull network-layer MITM anomalies into the Nexus --------
+windows_net_ingest() {
+    [ -r "$NET_SPOOL" ] || return 0
+    local cur=0; [ -f "$NET_CURSOR" ] && cur="$(cat "$NET_CURSOR" 2>/dev/null || echo 0)"
+    local total; total="$(wc -l < "$NET_SPOOL" 2>/dev/null || echo 0)"
+    [ "$total" -le "$cur" ] && return 0
+    tail -n +"$((cur+1))" "$NET_SPOOL" | while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        nexus_emit net_event "$line"
+    done
+    echo "$total" > "$NET_CURSOR"
+    log_info "netwatch: ingested $((total-cur)) event(s) from bridge"
+}
+
 do_init() {
     log_info "Maia init — establishing trust root"
     if ! require maia-crypto init; then
@@ -93,8 +109,9 @@ do_checkpoint() {
     sig="$(maia-crypto sign "$cp")" || { status_set "$AGENT" degraded "sign_failed"; nexus_emit maia_degraded "reason=sign"; exit 1; }
     status_set "$AGENT" ok ""
     nexus_emit maia_checkpoint "key=$fp ts=$ts load=$(host_load) sig=${sig:0:16}"
-    # Pull any new Windows/AD events from the bridge, then seal everything queued.
+    # Pull any new Windows/AD + network-layer events from the bridge, then seal.
     windows_ingest
+    windows_net_ingest
     nexus_seal
 }
 

@@ -13,7 +13,7 @@ LEDGER=/var/lib/maia/nexus/ledger
 WINDOW="${STEROPE_WINDOW:-3600}"      # score events from the last hour
 
 do_score() {
-    local now cutoff score=0 fl=0 dh=0 ra=0 sa=0 ev
+    local now cutoff score=0 fl=0 dh=0 ra=0 sa=0 ne=0 ev
     now=$(date +%s); cutoff=$((now - WINDOW))
     [ -f "$LEDGER" ] || { status_set "$AGENT" ok ""; nexus_emit threat_score "score=0 mode=NORMAL note=no_ledger"; echo "sterope: no ledger"; return 0; }
     while IFS='|' read -r seq ts prev eb64 hash sig; do
@@ -26,6 +26,9 @@ do_score() {
             *decoy_hit*)     dh=$((dh+1)); score=$((score+5)) ;;
             *recon_anomaly*) ra=$((ra+1)); score=$((score+6)) ;;
             *swarm_alert*)   sa=$((sa+1)); score=$((score+4)) ;;
+            *gateway_mac_change*) ne=$((ne+1)); score=$((score+10)) ;;  # likely active MITM
+            *arp_conflict*)       ne=$((ne+1)); score=$((score+8))  ;;
+            *dns_change*)         ne=$((ne+1)); score=$((score+5))  ;;
         esac
     done < "$LEDGER"
 
@@ -35,8 +38,8 @@ do_score() {
     echo "$mode" > /run/pleiades/threat_mode 2>/dev/null
 
     status_set "$AGENT" ok ""
-    nexus_emit threat_score "score=$score mode=$mode failed_logon=$fl decoy=$dh anomaly=$ra alert=$sa window=${WINDOW}s"
-    echo "sterope: score=$score mode=$mode (fl=$fl decoy=$dh anomaly=$ra alert=$sa)"
+    nexus_emit threat_score "score=$score mode=$mode failed_logon=$fl decoy=$dh anomaly=$ra alert=$sa net=$ne window=${WINDOW}s"
+    echo "sterope: score=$score mode=$mode (fl=$fl decoy=$dh anomaly=$ra alert=$sa net=$ne)"
 }
 
 case "${1:-score}" in
