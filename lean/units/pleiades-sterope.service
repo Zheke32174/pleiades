@@ -1,0 +1,18 @@
+[Unit]
+Description=Pleiades Sterope — defensive threat scoring (observe-only)
+After=pleiades-maia.service
+OnFailure=pleiades-celaeno-alert@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/sterope-score.sh score
+
+RuntimeDirectory=pleiades
+RuntimeDirectoryPreserve=yes
+
+# Reads the ledger; writes ONLY /run/pleiades. No host writes, no key, no actions.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/run/pleiades

@@ -1,0 +1,17 @@
+[Unit]
+Description=Pleiades Maia checkpoint cadence — slow, jittered, coalesced
+
+[Timer]
+# First proof 5 min after boot, then every 15 min.
+OnBootSec=5min
+OnUnitActiveSec=15min
+# Anti-thundering-herd: spread firing across a 5 min window so agents never
+# wake in lockstep. Generous accuracy lets systemd batch this with other
+# wakeups (power/CPU friendly). This is the cadence discipline, centralized.
+RandomizedDelaySec=5min
+AccuracySec=2min
+# No catch-up storms after the container was asleep.
+Persistent=false
+
+[Install]
+WantedBy=timers.target

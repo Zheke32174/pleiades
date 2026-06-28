@@ -1,0 +1,12 @@
+[Unit]
+Description=Pleiades Taygete — SSH honeypot listener (:2222)
+
+[Socket]
+ListenStream=2222
+Accept=yes
+# Bound the fan-out so a connection flood can't run away (systemd enforces).
+MaxConnections=32
+MaxConnectionsPerSource=8
+
+[Install]
+WantedBy=sockets.target

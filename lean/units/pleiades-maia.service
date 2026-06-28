@@ -1,0 +1,26 @@
+[Unit]
+Description=Pleiades Maia Overseer — trust root (oneshot init, no polling)
+Documentation=https://github.com/Zheke32174/pleiades
+After=network.target
+OnFailure=pleiades-celaeno-alert@%n.service
+
+[Service]
+# Oneshot: establish the trust root once, then stay "active" with zero running
+# process. Liveness is systemd's job; periodic proof is the checkpoint timer's.
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/maia-overseer.sh init
+
+RuntimeDirectory=pleiades
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=yes
+StateDirectory=maia
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/maia /run/pleiades
+
+[Install]
+WantedBy=multi-user.target

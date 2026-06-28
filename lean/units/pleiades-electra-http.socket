@@ -1,0 +1,11 @@
+[Unit]
+Description=Pleiades Electra — decoy HTTP admin (:8088)
+
+[Socket]
+ListenStream=8088
+Accept=yes
+MaxConnections=32
+MaxConnectionsPerSource=8
+
+[Install]
+WantedBy=sockets.target

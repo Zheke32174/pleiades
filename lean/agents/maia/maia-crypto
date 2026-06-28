@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# maia-crypto — the Pleiades trust root. Ed25519 via openssl (no Go toolchain).
+# Replaces the old Go `maia_crypto`; same role, minimal + auditable.
+#
+#   maia-crypto init                 create keypair if absent (priv 0600)
+#   maia-crypto fingerprint          sha256 of the public key (key id)
+#   maia-crypto pubkey               print the PEM public key
+#   maia-crypto sign   <file>        -> base64 detached signature on stdout
+#   maia-crypto verify <file> <sig>  exit 0 iff sig (base64) is valid
+set -euo pipefail
+
+KEYDIR="${MAIA_KEYDIR:-/var/lib/maia/keys}"
+PRIV="$KEYDIR/ed25519.priv.pem"
+PUB="$KEYDIR/ed25519.pub.pem"
+
+die() { echo "maia-crypto: $*" >&2; exit 1; }
+command -v openssl >/dev/null || die "openssl not found"
+
+cmd_init() {
+    mkdir -p "$KEYDIR"; chmod 700 "$KEYDIR"
+    if [[ -f "$PRIV" && -f "$PUB" ]]; then return 0; fi
+    ( umask 077; openssl genpkey -algorithm ED25519 -out "$PRIV" ) || die "keygen failed"
+    chmod 600 "$PRIV"
+    openssl pkey -in "$PRIV" -pubout -out "$PUB" || die "pubkey extract failed"
+    chmod 644 "$PUB"
+}
+
+cmd_fingerprint() {
+    [[ -f "$PUB" ]] || die "no pubkey; run: maia-crypto init"
+    openssl pkey -pubin -in "$PUB" -outform DER | openssl dgst -sha256 | awk '{print $NF}'
+}
+
+cmd_pubkey() { [[ -f "$PUB" ]] || die "no pubkey; run init"; cat "$PUB"; }
+
+cmd_sign() {                # sign <file>
+    local f="${1:?usage: maia-crypto sign <file>}"
+    [[ -f "$PRIV" ]] || die "no privkey; run init"
+    [[ -f "$f" ]]    || die "no such file: $f"
+    openssl pkeyutl -sign -inkey "$PRIV" -rawin -in "$f" | openssl base64 -A
+}
+
+cmd_verify() {              # verify <file> <sig-b64>
+    local f="${1:?}" sig="${2:?usage: maia-crypto verify <file> <sig>}"
+    [[ -f "$PUB" ]] || die "no pubkey; run init"
+    [[ -f "$f" ]]   || die "no such file: $f"
+    local tmp; tmp="$(mktemp)"; trap 'rm -f "$tmp"' RETURN
+    printf '%s' "$sig" | openssl base64 -d -A > "$tmp" || die "invalid base64 signature"
+    openssl pkeyutl -verify -pubin -inkey "$PUB" -rawin -in "$f" -sigfile "$tmp" >/dev/null 2>&1
+}
+
+case "${1:-}" in
+    init)        cmd_init ;;
+    fingerprint) cmd_fingerprint ;;
+    pubkey)      cmd_pubkey ;;
+    sign)        shift; cmd_sign "$@" ;;
+    verify)      shift; cmd_verify "$@" ;;
+    *) die "usage: maia-crypto {init|fingerprint|pubkey|sign <file>|verify <file> <sig>}" ;;
+esac

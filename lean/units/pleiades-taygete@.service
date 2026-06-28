@@ -1,0 +1,23 @@
+[Unit]
+Description=Pleiades Taygete honeypot handler (%i)
+After=pleiades-maia.service
+
+[Service]
+ExecStart=/usr/local/sbin/taygete-handler.sh %i
+StandardInput=socket
+StandardOutput=socket
+StandardError=journal
+# Hard ceiling on a single connection's lifetime (anti slow-loris).
+RuntimeMaxSec=15
+
+MemoryMax=32M
+CPUQuota=10%
+
+# Sandbox: no host access, no key access; may write only the nexus spool dir.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+RuntimeDirectory=pleiades
+RuntimeDirectoryPreserve=yes
+ReadWritePaths=/run/pleiades

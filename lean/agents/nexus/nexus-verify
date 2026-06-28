@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# nexus-verify — forensic integrity check of the Pleiades Nexus ledger.
+# Walks the hash chain, recomputes every hash, and verifies every Ed25519
+# signature against Maia's public key. Exits 0 only if the whole chain is intact.
+#
+#   nexus-verify [ledger-path]      default: /var/lib/maia/nexus/ledger
+#   nexus-verify --show [path]      also print decoded events
+set -uo pipefail
+
+SHOW=0
+[ "${1:-}" = "--show" ] && { SHOW=1; shift; }
+LEDGER="${1:-/var/lib/maia/nexus/ledger}"
+GENESIS=0000000000000000000000000000000000000000000000000000000000000000
+
+[ -f "$LEDGER" ] || { echo "nexus-verify: no ledger at $LEDGER (nothing sealed yet)"; exit 0; }
+command -v maia-crypto >/dev/null || { echo "nexus-verify: maia-crypto not found"; exit 2; }
+
+prev="$GENESIS"; expect=1; n=0; bad=0
+while IFS='|' read -r seq ts p eb64 hash sig; do
+    [ -z "${seq:-}" ] && continue
+    n=$((n+1))
+    if [ "$seq" != "$expect" ]; then echo "nexus-verify: SEQ GAP at $seq (expected $expect)"; bad=1; break; fi
+    if [ "$p" != "$prev" ]; then echo "nexus-verify: CHAIN BREAK at seq=$seq (prev mismatch)"; bad=1; break; fi
+    calc="$(printf '%s' "${seq}|${ts}|${p}|${eb64}" | openssl dgst -sha256 | awk '{print $NF}')"
+    if [ "$calc" != "$hash" ]; then echo "nexus-verify: HASH MISMATCH at seq=$seq (record altered)"; bad=1; break; fi
+    hf="$(mktemp)"; printf '%s' "$hash" > "$hf"
+    if ! maia-crypto verify "$hf" "$sig"; then echo "nexus-verify: SIGNATURE INVALID at seq=$seq"; rm -f "$hf"; bad=1; break; fi
+    rm -f "$hf"
+    [ "$SHOW" = 1 ] && printf '  #%s [%s] %s\n' "$seq" "$ts" "$(printf '%s' "$eb64" | openssl base64 -d -A)"
+    prev="$hash"; expect=$((seq+1))
+done < "$LEDGER"
+
+if [ "$bad" -eq 0 ]; then
+    echo "nexus-verify: OK — $n records, chain intact, all signatures valid (head=${prev:0:16}...)"
+    exit 0
+else
+    echo "nexus-verify: TAMPER DETECTED"
+    exit 1
+fi

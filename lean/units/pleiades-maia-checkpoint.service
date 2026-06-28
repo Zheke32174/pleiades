@@ -1,0 +1,20 @@
+[Unit]
+Description=Pleiades Maia — periodic signed liveness checkpoint
+After=pleiades-maia.service
+Requires=pleiades-maia.service
+OnFailure=pleiades-celaeno-alert@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/maia-overseer.sh checkpoint
+
+RuntimeDirectory=pleiades
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=yes
+StateDirectory=maia
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/maia /run/pleiades

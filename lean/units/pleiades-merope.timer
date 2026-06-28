@@ -1,0 +1,12 @@
+[Unit]
+Description=Pleiades Merope snapshot cadence — slow, jittered
+
+[Timer]
+OnBootSec=12min
+OnUnitActiveSec=60min
+RandomizedDelaySec=10min
+AccuracySec=5min
+Persistent=false
+
+[Install]
+WantedBy=timers.target

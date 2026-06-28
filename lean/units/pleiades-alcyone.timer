@@ -1,0 +1,12 @@
+[Unit]
+Description=Pleiades Alcyone recon cadence — slow, jittered
+
+[Timer]
+OnBootSec=8min
+OnUnitActiveSec=20min
+RandomizedDelaySec=6min
+AccuracySec=3min
+Persistent=false
+
+[Install]
+WantedBy=timers.target

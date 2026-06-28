@@ -1,0 +1,18 @@
+[Unit]
+Description=Pleiades Alcyone — read-only recon / posture snapshot
+After=pleiades-maia.service
+OnFailure=pleiades-celaeno-alert@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/alcyone-recon.sh recon
+
+RuntimeDirectory=pleiades
+RuntimeDirectoryPreserve=yes
+
+# Read-only enforced: may write ONLY /run/pleiades. No host paths, no /var/lib.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/run/pleiades

@@ -1,0 +1,11 @@
+[Unit]
+Description=Pleiades Electra — decoy telnet (:2323)
+
+[Socket]
+ListenStream=2323
+Accept=yes
+MaxConnections=32
+MaxConnectionsPerSource=8
+
+[Install]
+WantedBy=sockets.target
