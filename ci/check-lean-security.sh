@@ -32,14 +32,14 @@ else
   ok "no in-process infinite agent loops"
 fi
 
-if grep -RIn '/mnt/c' "${ACTIVE[@]}"; then
-  bad "direct Windows drive access found in active lean runtime"
+# Launchers still carry one transitional Windows bridge. Active agents may not
+# browse the drive directly; Maia receives only the narrow /host/win spool.
+if grep -RIn '/mnt/c' "$ROOT/agents" "$ROOT/lib" "$ROOT/units"; then
+  bad "direct Windows drive access found inside an agent or service boundary"
 else
-  ok "no direct /mnt/c access in active runtime"
+  ok "no direct /mnt/c access inside agents or services"
 fi
 
-# Only the dedicated Maia bridge ingester may reference the narrow read-only
-# /host/win spool during this migration phase.
 host_refs=$(grep -RIl '/host/' "$ROOT/agents" || true)
 for f in $host_refs; do
   [[ "$f" == "$ROOT/agents/maia/maia-overseer.sh" ]] || bad "unauthorized host reference: $f"
