@@ -7,6 +7,7 @@ signing_key_file = "/etc/pleiades/keys/node-alienware-signing.json"
 state_database = "/var/lib/pleiades/node-agent/audit.sqlite3"
 power_class = "mains-high-power"
 trust_zone = "home-core"
+startup_mode = "managed"
 heartbeat_interval_seconds = 5
 heartbeat_timeout_seconds = 15
 read_only_timeout_seconds = 120
