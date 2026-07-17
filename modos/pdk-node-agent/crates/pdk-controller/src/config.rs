@@ -33,7 +33,10 @@ impl ControllerConfig {
         let raw = fs::read_to_string(path)
             .with_context(|| format!("reading controller config {}", path.display()))?;
         let config: Self = toml::from_str(&raw).context("parsing controller configuration")?;
-        anyhow::ensure!(!config.domain_id.trim().is_empty(), "domain_id cannot be empty");
+        anyhow::ensure!(
+            !config.domain_id.trim().is_empty(),
+            "domain_id cannot be empty"
+        );
         anyhow::ensure!(
             !config.controller_id.trim().is_empty(),
             "controller_id cannot be empty"

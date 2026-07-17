@@ -16,7 +16,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use pdk_crypto::load_signing_key;
 use pdk_protocol::v1::node_agent_server::NodeAgentServer;
-use pdk_transport::{server_tls, CertificateIdentityInterceptor, PeerRegistry};
+use pdk_transport::{CertificateIdentityInterceptor, PeerRegistry, server_tls};
 use serde::Serialize;
 use tonic::transport::Server;
 use tracing::info;
@@ -30,7 +30,7 @@ use crate::{
     heartbeat::HeartbeatLoop,
     inventory::InventoryManager,
     leases::LeaseManager,
-    policy::{build_trusted_controller_keys, PolicyEnforcer},
+    policy::{PolicyEnforcer, build_trusted_controller_keys},
     reconciliation::ReconciliationWorker,
     rpc::NodeAgentService,
     runtime::{RuntimeManager, SystemdDriver},
@@ -107,7 +107,8 @@ async fn main() -> Result<()> {
         .context("persisting node-agent startup event")?;
 
     let peer_registry = PeerRegistry::new(config.mtls_peers.clone())?;
-    let interceptor = CertificateIdentityInterceptor::new(peer_registry).requiring_role("controller");
+    let interceptor =
+        CertificateIdentityInterceptor::new(peer_registry).requiring_role("controller");
     let tls = server_tls(&config.tls)?;
     let rpc_service = NodeAgentService::new(
         config.domain_id.clone(),
@@ -131,9 +132,8 @@ async fn main() -> Result<()> {
         )
         .run(),
     );
-    let reconciliation_task = tokio::spawn(
-        ReconciliationWorker::new(autonomy.clone(), audit.clone(), control).run(),
-    );
+    let reconciliation_task =
+        tokio::spawn(ReconciliationWorker::new(autonomy.clone(), audit.clone(), control).run());
     let lease_task = tokio::spawn(
         LeaseManager::new(
             Duration::from_secs(config.lease_sweep_interval_seconds),

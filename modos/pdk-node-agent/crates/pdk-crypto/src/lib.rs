@@ -1,21 +1,20 @@
 use std::{fs, path::Path};
 
-use anyhow::{anyhow, bail, Context, Result};
-use base64::{engine::general_purpose::STANDARD, Engine as _};
+use anyhow::{Context, Result, anyhow, bail};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use prost::Message;
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 
 use pdk_protocol::{
+    CAPABILITY_SIGNATURE_CONTEXT, DOMAIN_EVENT_SIGNATURE_CONTEXT, EVENT_ACK_SIGNATURE_CONTEXT,
+    HEARTBEAT_ACK_SIGNATURE_CONTEXT, HEARTBEAT_SIGNATURE_CONTEXT,
     v1::{
         CapabilityGrantPayload, DomainEventPayload, EventAckPayload, HeartbeatAckPayload,
         HeartbeatPayload, SignedCapabilityGrant, SignedDomainEvent, SignedEventAck,
         SignedHeartbeat, SignedHeartbeatAck,
     },
-    CAPABILITY_SIGNATURE_CONTEXT, DOMAIN_EVENT_SIGNATURE_CONTEXT,
-    EVENT_ACK_SIGNATURE_CONTEXT, HEARTBEAT_ACK_SIGNATURE_CONTEXT,
-    HEARTBEAT_SIGNATURE_CONTEXT,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -44,7 +43,10 @@ pub fn generate_key_file(key_id: impl Into<String>) -> KeyFile {
 
 pub fn write_key_file(path: &Path, key_file: &KeyFile) -> Result<()> {
     if path.exists() {
-        bail!("refusing to overwrite existing key file: {}", path.display());
+        bail!(
+            "refusing to overwrite existing key file: {}",
+            path.display()
+        );
     }
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
@@ -92,7 +94,10 @@ pub fn sign_heartbeat(payload: HeartbeatPayload, key: &LoadedSigningKey) -> Sign
 pub fn verify_heartbeat(envelope: &SignedHeartbeat, key: &VerifyingKey) -> Result<()> {
     verify_message(
         HEARTBEAT_SIGNATURE_CONTEXT,
-        envelope.payload.as_ref().context("heartbeat payload missing")?,
+        envelope
+            .payload
+            .as_ref()
+            .context("heartbeat payload missing")?,
         &envelope.signature_base64,
         key,
     )
@@ -112,7 +117,10 @@ pub fn sign_heartbeat_ack(
 pub fn verify_heartbeat_ack(envelope: &SignedHeartbeatAck, key: &VerifyingKey) -> Result<()> {
     verify_message(
         HEARTBEAT_ACK_SIGNATURE_CONTEXT,
-        envelope.payload.as_ref().context("heartbeat ACK payload missing")?,
+        envelope
+            .payload
+            .as_ref()
+            .context("heartbeat ACK payload missing")?,
         &envelope.signature_base64,
         key,
     )
@@ -132,7 +140,10 @@ pub fn sign_capability(
 pub fn verify_capability(envelope: &SignedCapabilityGrant, key: &VerifyingKey) -> Result<()> {
     verify_message(
         CAPABILITY_SIGNATURE_CONTEXT,
-        envelope.payload.as_ref().context("capability payload missing")?,
+        envelope
+            .payload
+            .as_ref()
+            .context("capability payload missing")?,
         &envelope.signature_base64,
         key,
     )
@@ -149,7 +160,10 @@ pub fn sign_domain_event(payload: DomainEventPayload, key: &LoadedSigningKey) ->
 pub fn verify_domain_event(envelope: &SignedDomainEvent, key: &VerifyingKey) -> Result<()> {
     verify_message(
         DOMAIN_EVENT_SIGNATURE_CONTEXT,
-        envelope.payload.as_ref().context("domain event payload missing")?,
+        envelope
+            .payload
+            .as_ref()
+            .context("domain event payload missing")?,
         &envelope.signature_base64,
         key,
     )
@@ -166,7 +180,10 @@ pub fn sign_event_ack(payload: EventAckPayload, key: &LoadedSigningKey) -> Signe
 pub fn verify_event_ack(envelope: &SignedEventAck, key: &VerifyingKey) -> Result<()> {
     verify_message(
         EVENT_ACK_SIGNATURE_CONTEXT,
-        envelope.payload.as_ref().context("event ACK payload missing")?,
+        envelope
+            .payload
+            .as_ref()
+            .context("event ACK payload missing")?,
         &envelope.signature_base64,
         key,
     )
@@ -197,7 +214,9 @@ fn signing_bytes<M: Message>(context: &[u8], payload: &M) -> Vec<u8> {
 }
 
 fn decode_fixed<const N: usize>(encoded: &str, label: &str) -> Result<[u8; N]> {
-    let bytes = STANDARD.decode(encoded).with_context(|| format!("decoding {label}"))?;
+    let bytes = STANDARD
+        .decode(encoded)
+        .with_context(|| format!("decoding {label}"))?;
     bytes
         .try_into()
         .map_err(|value: Vec<u8>| anyhow!("{label} must be {N} bytes, got {}", value.len()))

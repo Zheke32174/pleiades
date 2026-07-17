@@ -1,14 +1,12 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use pdk_crypto::{
-    sign_event_ack, sign_heartbeat_ack, verify_domain_event, verify_heartbeat,
-};
+use pdk_crypto::{sign_event_ack, sign_heartbeat_ack, verify_domain_event, verify_heartbeat};
 use pdk_protocol::{
-    v1::{
-        control_plane_server::ControlPlane, EventAckPayload, HeartbeatAckPayload,
-        SignedDomainEvent, SignedEventAck, SignedHeartbeat, SignedHeartbeatAck,
-    },
     PROTOCOL_VERSION,
+    v1::{
+        EventAckPayload, HeartbeatAckPayload, SignedDomainEvent, SignedEventAck, SignedHeartbeat,
+        SignedHeartbeatAck, control_plane_server::ControlPlane,
+    },
 };
 use pdk_transport::peer_identity;
 use tonic::{Request, Response, Status};
@@ -42,7 +40,9 @@ impl ControlPlaneService {
             return Err(Status::failed_precondition("unsupported protocol version"));
         }
         if heartbeat.domain_id != self.state.config.domain_id {
-            return Err(Status::permission_denied("heartbeat belongs to another domain"));
+            return Err(Status::permission_denied(
+                "heartbeat belongs to another domain",
+            ));
         }
         if peer.identity != heartbeat.node_id {
             return Err(Status::permission_denied(
@@ -68,7 +68,9 @@ impl ControlPlaneService {
             .max_clock_skew_seconds
             .saturating_mul(1_000);
         if now.abs_diff(heartbeat.sent_at_unix_ms) > max_skew {
-            return Err(Status::unauthenticated("heartbeat timestamp outside allowed skew"));
+            return Err(Status::unauthenticated(
+                "heartbeat timestamp outside allowed skew",
+            ));
         }
 
         let replay_key = (heartbeat.node_id.clone(), heartbeat.boot_id.clone());
@@ -99,10 +101,7 @@ impl ControlPlaneService {
                 boot_id: heartbeat.boot_id.clone(),
                 accepted_sequence: heartbeat.sequence,
                 accepted_at_unix_ms: now,
-                suggested_interval_seconds: self
-                    .state
-                    .config
-                    .suggested_heartbeat_interval_seconds,
+                suggested_interval_seconds: self.state.config.suggested_heartbeat_interval_seconds,
                 authority_mode: self.state.config.authority_mode.clone(),
             },
             &self.state.signing_key,
@@ -145,7 +144,9 @@ impl ControlPlane for ControlPlaneService {
             .as_ref()
             .ok_or_else(|| Status::invalid_argument("event payload missing"))?;
         if event.protocol_version != PROTOCOL_VERSION {
-            return Err(Status::failed_precondition("unsupported event protocol version"));
+            return Err(Status::failed_precondition(
+                "unsupported event protocol version",
+            ));
         }
         if event.domain_id != self.state.config.domain_id {
             return Err(Status::permission_denied("event belongs to another domain"));
@@ -166,10 +167,7 @@ impl ControlPlane for ControlPlaneService {
         verify_domain_event(&envelope, &trusted.verifying_key)
             .map_err(|error| Status::unauthenticated(error.to_string()))?;
 
-        if event.event_id.is_empty()
-            || event.event_type.is_empty()
-            || event.trace_id.is_empty()
-        {
+        if event.event_id.is_empty() || event.event_type.is_empty() || event.trace_id.is_empty() {
             return Err(Status::invalid_argument(
                 "event_id, event_type, and trace_id are required",
             ));

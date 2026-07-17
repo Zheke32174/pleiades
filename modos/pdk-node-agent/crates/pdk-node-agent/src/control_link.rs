@@ -1,12 +1,12 @@
 use std::{collections::HashMap, sync::Arc};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use pdk_crypto::{verify_event_ack, verify_heartbeat_ack};
 use pdk_protocol::v1::{
-    control_plane_client::ControlPlaneClient, SignedDomainEvent, SignedEventAck, SignedHeartbeat,
-    SignedHeartbeatAck,
+    SignedDomainEvent, SignedEventAck, SignedHeartbeat, SignedHeartbeatAck,
+    control_plane_client::ControlPlaneClient,
 };
-use pdk_transport::{client_tls, TlsFileConfig};
+use pdk_transport::{TlsFileConfig, client_tls};
 use tonic::transport::{Channel, Endpoint};
 
 use crate::policy::TrustedControllerKey;
@@ -108,7 +108,10 @@ impl ControlPlaneLink {
         boot_id: &str,
         sequence: u64,
     ) -> Result<()> {
-        let payload = ack.payload.as_ref().context("heartbeat ACK payload missing")?;
+        let payload = ack
+            .payload
+            .as_ref()
+            .context("heartbeat ACK payload missing")?;
         if payload.domain_id != self.domain_id {
             bail!("heartbeat ACK belongs to another domain");
         }

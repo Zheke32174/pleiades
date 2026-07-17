@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use async_trait::async_trait;
 use pdk_protocol::v1::{IsolationConstraints, WorkloadReceipt, WorkloadSpec, WorkloadState};
 use zbus::Connection;
@@ -180,15 +180,13 @@ fn validate_workload(workload: &WorkloadSpec) -> Result<()> {
     if workload.executable.contains('\0') || workload.args.iter().any(|arg| arg.contains('\0')) {
         bail!("workload argv contains a NUL byte");
     }
-    if !workload.working_directory.is_empty() && !Path::new(&workload.working_directory).is_absolute() {
+    if !workload.working_directory.is_empty()
+        && !Path::new(&workload.working_directory).is_absolute()
+    {
         bail!("working_directory must be empty or absolute");
     }
     for (name, value) in &workload.environment {
-        if name.is_empty()
-            || name.contains('=')
-            || name.contains('\0')
-            || value.contains('\0')
-        {
+        if name.is_empty() || name.contains('=') || name.contains('\0') || value.contains('\0') {
             bail!("environment contains an invalid key or NUL byte");
         }
     }
@@ -198,16 +196,50 @@ fn validate_workload(workload: &WorkloadSpec) -> Result<()> {
 fn build_properties(workload: &WorkloadSpec) -> Result<Vec<(String, OwnedValue)>> {
     let isolation = workload.isolation.clone().unwrap_or_else(default_isolation);
     let mut properties = Vec::new();
-    push(&mut properties, "Description", format!("Pleiades workload {}", workload.workload_id))?;
+    push(
+        &mut properties,
+        "Description",
+        format!("Pleiades workload {}", workload.workload_id),
+    )?;
     push(&mut properties, "Type", "exec".to_owned())?;
-    push(&mut properties, "CollectMode", "inactive-or-failed".to_owned())?;
+    push(
+        &mut properties,
+        "CollectMode",
+        "inactive-or-failed".to_owned(),
+    )?;
     push(&mut properties, "DynamicUser", isolation.dynamic_user)?;
     push(&mut properties, "PrivateTmp", isolation.private_tmp)?;
     push(&mut properties, "PrivateNetwork", isolation.network_denied)?;
-    push(&mut properties, "NoNewPrivileges", isolation.no_new_privileges)?;
-    push(&mut properties, "RestrictSUIDSGID", isolation.restrict_suid_sgid)?;
-    push(&mut properties, "ProtectSystem", if isolation.read_only_root { "strict" } else { "full" }.to_owned())?;
-    push(&mut properties, "ProtectHome", if isolation.protect_home { "yes" } else { "read-only" }.to_owned())?;
+    push(
+        &mut properties,
+        "NoNewPrivileges",
+        isolation.no_new_privileges,
+    )?;
+    push(
+        &mut properties,
+        "RestrictSUIDSGID",
+        isolation.restrict_suid_sgid,
+    )?;
+    push(
+        &mut properties,
+        "ProtectSystem",
+        if isolation.read_only_root {
+            "strict"
+        } else {
+            "full"
+        }
+        .to_owned(),
+    )?;
+    push(
+        &mut properties,
+        "ProtectHome",
+        if isolation.protect_home {
+            "yes"
+        } else {
+            "read-only"
+        }
+        .to_owned(),
+    )?;
     push(&mut properties, "ProtectKernelTunables", true)?;
     push(&mut properties, "ProtectKernelModules", true)?;
     push(&mut properties, "ProtectControlGroups", true)?;
@@ -239,7 +271,11 @@ fn build_properties(workload: &WorkloadSpec) -> Result<Vec<(String, OwnedValue)>
         push(&mut properties, "Slice", isolation.cgroup_slice.clone())?;
     }
     if !workload.working_directory.is_empty() {
-        push(&mut properties, "WorkingDirectory", workload.working_directory.clone())?;
+        push(
+            &mut properties,
+            "WorkingDirectory",
+            workload.working_directory.clone(),
+        )?;
     }
     if !workload.environment.is_empty() {
         let mut environment = workload

@@ -4,10 +4,7 @@ use serde::Serialize;
 use tracing::{info, warn};
 
 use crate::{
-    audit::OfflineAuditBuffer,
-    autonomy::unix_ms,
-    policy::PolicyEnforcer,
-    runtime::RuntimeManager,
+    audit::OfflineAuditBuffer, autonomy::unix_ms, policy::PolicyEnforcer, runtime::RuntimeManager,
 };
 
 #[derive(Clone)]
@@ -86,8 +83,12 @@ impl LeaseManager {
                         )
                         .await;
                     match result {
-                        Ok(_) => info!(workload_id = %workload_id, token_id = %grant.token_id, "terminated workload after lease expiry"),
-                        Err(error) => warn!(workload_id = %workload_id, token_id = %grant.token_id, error = %error, "failed to terminate workload after lease expiry"),
+                        Ok(_) => {
+                            info!(workload_id = %workload_id, token_id = %grant.token_id, "terminated workload after lease expiry")
+                        }
+                        Err(error) => {
+                            warn!(workload_id = %workload_id, token_id = %grant.token_id, error = %error, "failed to terminate workload after lease expiry")
+                        }
                     }
                 }
             }

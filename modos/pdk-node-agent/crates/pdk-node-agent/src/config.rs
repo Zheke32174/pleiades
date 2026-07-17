@@ -45,7 +45,10 @@ impl NodeAgentConfig {
     }
 
     fn validate(&self) -> Result<()> {
-        anyhow::ensure!(!self.domain_id.trim().is_empty(), "domain_id cannot be empty");
+        anyhow::ensure!(
+            !self.domain_id.trim().is_empty(),
+            "domain_id cannot be empty"
+        );
         anyhow::ensure!(!self.node_id.trim().is_empty(), "node_id cannot be empty");
         anyhow::ensure!(
             self.heartbeat_interval_seconds > 0,

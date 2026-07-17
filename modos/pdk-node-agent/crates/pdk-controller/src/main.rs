@@ -4,12 +4,12 @@ mod state;
 
 use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::Parser;
 use config::ControllerConfig;
 use pdk_crypto::{decode_verifying_key, load_signing_key};
 use pdk_protocol::v1::control_plane_server::ControlPlaneServer;
-use pdk_transport::{server_tls, CertificateIdentityInterceptor, PeerRegistry};
+use pdk_transport::{CertificateIdentityInterceptor, PeerRegistry, server_tls};
 use rpc::ControlPlaneService;
 use state::{ControllerState, TrustedNodeKey};
 use tokio::sync::RwLock;

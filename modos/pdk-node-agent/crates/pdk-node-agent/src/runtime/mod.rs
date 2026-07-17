@@ -2,7 +2,7 @@ mod systemd;
 
 use std::{collections::HashMap, sync::Arc};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use async_trait::async_trait;
 use pdk_protocol::v1::{WorkloadReceipt, WorkloadSpec};
 use tokio::sync::RwLock;
@@ -59,7 +59,10 @@ impl RuntimeManager {
         _lease_id: &str,
     ) -> Result<WorkloadReceipt> {
         if self.active.read().await.contains_key(&workload.workload_id) {
-            bail!("workload {} is already known to the runtime manager", workload.workload_id);
+            bail!(
+                "workload {} is already known to the runtime manager",
+                workload.workload_id
+            );
         }
         let prepared = self.driver.prepare(workload).await?;
         let handle = self.driver.start(prepared).await?;
@@ -80,7 +83,8 @@ impl RuntimeManager {
                     .await;
                 let _ = self.driver.cleanup(&handle).await;
                 self.active.write().await.remove(&workload.workload_id);
-                Err(error).context("workload started but could not be observed; stopped fail-closed")
+                Err(error)
+                    .context("workload started but could not be observed; stopped fail-closed")
             }
         }
     }
@@ -112,7 +116,11 @@ impl RuntimeManager {
         Ok(receipt)
     }
 
-    pub async fn stop_by_token(&self, token_id: &str, reason: &str) -> Vec<(String, Result<WorkloadReceipt>)> {
+    pub async fn stop_by_token(
+        &self,
+        token_id: &str,
+        reason: &str,
+    ) -> Vec<(String, Result<WorkloadReceipt>)> {
         let workload_ids = self
             .active
             .read()

@@ -51,9 +51,15 @@ impl ReconciliationWorker {
                                 .map(|payload| payload.event_id.as_str())
                                 .unwrap_or_default();
                             match self.audit.acknowledge(acked).await {
-                                Ok(true) => info!(event_id = %acked, "cleared event after signed ACK"),
-                                Ok(false) => warn!(event_id = %acked, "signed ACK referenced an event not in the local queue"),
-                                Err(error) => warn!(event_id = %acked, error = %error, "could not clear acknowledged event"),
+                                Ok(true) => {
+                                    info!(event_id = %acked, "cleared event after signed ACK")
+                                }
+                                Ok(false) => {
+                                    warn!(event_id = %acked, "signed ACK referenced an event not in the local queue")
+                                }
+                                Err(error) => {
+                                    warn!(event_id = %acked, error = %error, "could not clear acknowledged event")
+                                }
                             }
                         }
                         Err(error) => {

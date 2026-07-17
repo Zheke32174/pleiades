@@ -1,17 +1,22 @@
-use std::{collections::HashMap, fs, path::{Path, PathBuf}, time::{SystemTime, UNIX_EPOCH}};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
 use pdk_crypto::{load_signing_key, sign_capability};
 use pdk_protocol::{
-    v1::{
-        node_agent_client::NodeAgentClient, CapabilityAction, CapabilityGrantPayload,
-        GetWorkloadStatusRequest, IsolationConstraints, SignedCapabilityGrant,
-        SpawnWorkloadRequest, StopWorkloadRequest, WorkloadSpec,
-    },
     PROTOCOL_VERSION,
+    v1::{
+        CapabilityAction, CapabilityGrantPayload, GetWorkloadStatusRequest, IsolationConstraints,
+        SignedCapabilityGrant, SpawnWorkloadRequest, StopWorkloadRequest, WorkloadSpec,
+        node_agent_client::NodeAgentClient,
+    },
 };
-use pdk_transport::{client_tls, TlsFileConfig};
+use pdk_transport::{TlsFileConfig, client_tls};
 use serde::Deserialize;
 use tonic::transport::{Channel, Endpoint};
 use uuid::Uuid;
@@ -133,8 +138,18 @@ async fn main() -> Result<()> {
                 ],
                 isolation.clone(),
             );
-            let token_id = grant.payload.as_ref().context("generated grant payload missing")?.token_id.clone();
-            let lease_id = grant.payload.as_ref().context("generated grant payload missing")?.lease_id.clone();
+            let token_id = grant
+                .payload
+                .as_ref()
+                .context("generated grant payload missing")?
+                .token_id
+                .clone();
+            let lease_id = grant
+                .payload
+                .as_ref()
+                .context("generated grant payload missing")?
+                .lease_id
+                .clone();
             push_grant(&mut client, grant).await?;
             let receipt = client
                 .spawn_workload(SpawnWorkloadRequest {
@@ -172,7 +187,12 @@ async fn main() -> Result<()> {
                 vec![CapabilityAction::StatusWorkload],
                 isolation(true, 0, 0),
             );
-            let token_id = grant.payload.as_ref().context("generated grant payload missing")?.token_id.clone();
+            let token_id = grant
+                .payload
+                .as_ref()
+                .context("generated grant payload missing")?
+                .token_id
+                .clone();
             push_grant(&mut client, grant).await?;
             let receipt = client
                 .get_workload_status(GetWorkloadStatusRequest {
@@ -202,7 +222,12 @@ async fn main() -> Result<()> {
                 vec![CapabilityAction::StopWorkload],
                 isolation(true, 0, 0),
             );
-            let token_id = grant.payload.as_ref().context("generated grant payload missing")?.token_id.clone();
+            let token_id = grant
+                .payload
+                .as_ref()
+                .context("generated grant payload missing")?
+                .token_id
+                .clone();
             push_grant(&mut client, grant).await?;
             let receipt = client
                 .stop_workload(StopWorkloadRequest {

@@ -1,15 +1,22 @@
-use std::{fs, sync::{atomic::{AtomicU64, Ordering}, Arc}, time::Duration};
+use std::{
+    fs,
+    sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    },
+    time::Duration,
+};
 
-use pdk_crypto::{sign_heartbeat, LoadedSigningKey};
+use pdk_crypto::{LoadedSigningKey, sign_heartbeat};
 use pdk_protocol::{
-    v1::{HealthStatus, HeartbeatPayload, NodeState},
     PROTOCOL_VERSION,
+    v1::{HealthStatus, HeartbeatPayload, NodeState},
 };
 use tracing::{info, warn};
 use uuid::Uuid;
 
 use crate::{
-    autonomy::{unix_ms, AutonomyStateMachine},
+    autonomy::{AutonomyStateMachine, unix_ms},
     control_link::ControlPlaneLink,
     inventory::InventoryManager,
 };
@@ -82,13 +89,18 @@ impl HeartbeatLoop {
                     .heartbeat(envelope, &self.boot_id, sequence)
                     .await
             } else {
-                self.control.register(envelope, &self.boot_id, sequence).await
+                self.control
+                    .register(envelope, &self.boot_id, sequence)
+                    .await
             };
             match result {
                 Ok(ack) => {
                     let Some(payload) = ack.payload else {
                         registered = false;
-                        warn!(sequence, "verified heartbeat ACK lost its payload before state update");
+                        warn!(
+                            sequence,
+                            "verified heartbeat ACK lost its payload before state update"
+                        );
                         continue;
                     };
                     self.autonomy.record_controller_ack(unix_ms());

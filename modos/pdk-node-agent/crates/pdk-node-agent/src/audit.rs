@@ -1,11 +1,14 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
-use pdk_crypto::{sign_domain_event, LoadedSigningKey};
-use pdk_protocol::{v1::{DomainEventPayload, SignedDomainEvent}, PROTOCOL_VERSION};
+use pdk_crypto::{LoadedSigningKey, sign_domain_event};
+use pdk_protocol::{
+    PROTOCOL_VERSION,
+    v1::{DomainEventPayload, SignedDomainEvent},
+};
 use prost::Message;
 use serde::Serialize;
-use sqlx::{sqlite::SqlitePoolOptions, Row, SqlitePool};
+use sqlx::{Row, SqlitePool, sqlite::SqlitePoolOptions};
 use uuid::Uuid;
 
 use crate::autonomy::unix_ms;
@@ -26,9 +29,9 @@ impl OfflineAuditBuffer {
         signing_key: std::sync::Arc<LoadedSigningKey>,
     ) -> Result<Self> {
         if let Some(parent) = path.parent() {
-            tokio::fs::create_dir_all(parent)
-                .await
-                .with_context(|| format!("creating audit database directory {}", parent.display()))?;
+            tokio::fs::create_dir_all(parent).await.with_context(|| {
+                format!("creating audit database directory {}", parent.display())
+            })?;
         }
         let url = format!("sqlite://{}?mode=rwc", path.display());
         let pool = SqlitePoolOptions::new()
@@ -81,7 +84,8 @@ impl OfflineAuditBuffer {
     ) -> Result<String> {
         let event_id = Uuid::new_v4().to_string();
         let created_at_unix_ms = unix_ms();
-        let payload_json = serde_json::to_vec(payload).context("serializing domain event payload")?;
+        let payload_json =
+            serde_json::to_vec(payload).context("serializing domain event payload")?;
         let signed = sign_domain_event(
             DomainEventPayload {
                 protocol_version: PROTOCOL_VERSION,
@@ -115,12 +119,11 @@ impl OfflineAuditBuffer {
     }
 
     pub async fn next(&self) -> Result<Option<SignedDomainEvent>> {
-        let row = sqlx::query(
-            "SELECT envelope FROM domain_event_queue ORDER BY sequence ASC LIMIT 1",
-        )
-        .fetch_optional(&self.pool)
-        .await
-        .context("reading oldest audit event")?;
+        let row =
+            sqlx::query("SELECT envelope FROM domain_event_queue ORDER BY sequence ASC LIMIT 1")
+                .fetch_optional(&self.pool)
+                .await
+                .context("reading oldest audit event")?;
         row.map(|row| {
             let bytes: Vec<u8> = row.try_get("envelope")?;
             SignedDomainEvent::decode(bytes.as_slice()).context("decoding queued domain event")

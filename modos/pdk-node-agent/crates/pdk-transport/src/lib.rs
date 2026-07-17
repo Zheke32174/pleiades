@@ -1,15 +1,15 @@
 use std::{collections::HashMap, fs, path::Path, sync::Arc};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use tonic::{
+    Request, Status,
     service::Interceptor,
     transport::{
-        server::{TcpConnectInfo, TlsConnectInfo},
         Certificate, ClientTlsConfig, Identity, ServerTlsConfig,
+        server::{TcpConnectInfo, TlsConnectInfo},
     },
-    Request, Status,
 };
 use x509_parser::{extensions::GeneralName, parse_x509_certificate};
 

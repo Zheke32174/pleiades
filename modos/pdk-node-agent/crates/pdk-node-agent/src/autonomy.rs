@@ -1,7 +1,7 @@
 use std::{
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicU64, Ordering},
     },
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -59,7 +59,10 @@ impl AutonomyStateMachine {
     }
 
     pub fn enter_read_only_safe(&self, reason: &str) {
-        if !matches!(self.current(), NodeState::Quarantined | NodeState::Standalone) {
+        if !matches!(
+            self.current(),
+            NodeState::Quarantined | NodeState::Standalone
+        ) {
             self.transition(NodeState::ReadOnlySafe, reason);
         }
     }
@@ -93,7 +96,10 @@ impl AutonomyStateMachine {
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         loop {
             interval.tick().await;
-            if matches!(self.current(), NodeState::Standalone | NodeState::Quarantined) {
+            if matches!(
+                self.current(),
+                NodeState::Standalone | NodeState::Quarantined
+            ) {
                 continue;
             }
             let last_ack = self.last_ack_unix_ms();

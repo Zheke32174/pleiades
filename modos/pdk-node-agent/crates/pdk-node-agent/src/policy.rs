@@ -1,15 +1,18 @@
 use std::{collections::HashMap, sync::Arc};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use ed25519_dalek::VerifyingKey;
 use pdk_crypto::verify_capability;
 use pdk_protocol::v1::{
-    CapabilityAction, CapabilityGrantPayload, IsolationConstraints,
-    SignedCapabilityGrant, WorkloadSpec,
+    CapabilityAction, CapabilityGrantPayload, IsolationConstraints, SignedCapabilityGrant,
+    WorkloadSpec,
 };
 use tokio::sync::RwLock;
 
-use crate::{autonomy::{unix_ms, AutonomyStateMachine}, config::TrustedControllerConfig};
+use crate::{
+    autonomy::{AutonomyStateMachine, unix_ms},
+    config::TrustedControllerConfig,
+};
 
 #[derive(Clone)]
 pub struct TrustedControllerKey {
@@ -126,7 +129,9 @@ impl PolicyEnforcer {
         lease_id: &str,
         workload: &WorkloadSpec,
     ) -> Result<Authorization> {
-        let grant = self.lookup_valid(token_id, CapabilityAction::SpawnWorkload).await?;
+        let grant = self
+            .lookup_valid(token_id, CapabilityAction::SpawnWorkload)
+            .await?;
         if grant.lease_id != lease_id {
             bail!("lease ID does not match capability token");
         }
@@ -140,7 +145,10 @@ impl PolicyEnforcer {
             .autonomy
             .allows_cached_workload_operation(workload.singleton_destructive)
         {
-            bail!("node state {:?} denies workload start", self.autonomy.current());
+            bail!(
+                "node state {:?} denies workload start",
+                self.autonomy.current()
+            );
         }
         enforce_isolation_floor(
             workload.isolation.as_ref(),
@@ -153,17 +161,18 @@ impl PolicyEnforcer {
         })
     }
 
-    pub async fn authorize_stop(
-        &self,
-        token_id: &str,
-        workload_id: &str,
-    ) -> Result<Authorization> {
-        let grant = self.lookup_valid(token_id, CapabilityAction::StopWorkload).await?;
+    pub async fn authorize_stop(&self, token_id: &str, workload_id: &str) -> Result<Authorization> {
+        let grant = self
+            .lookup_valid(token_id, CapabilityAction::StopWorkload)
+            .await?;
         if grant.subject_workload_id != workload_id {
             bail!("capability token subject does not match workload ID");
         }
         if !self.autonomy.allows_workload_stop() {
-            bail!("node state {:?} denies controller-requested workload stop", self.autonomy.current());
+            bail!(
+                "node state {:?} denies controller-requested workload stop",
+                self.autonomy.current()
+            );
         }
         Ok(Authorization {
             token_id: grant.token_id,
@@ -180,7 +189,9 @@ impl PolicyEnforcer {
         if !self.autonomy.allows_status_read() {
             bail!("node is quarantined");
         }
-        let grant = self.lookup_valid(token_id, CapabilityAction::StatusWorkload).await?;
+        let grant = self
+            .lookup_valid(token_id, CapabilityAction::StatusWorkload)
+            .await?;
         if grant.subject_workload_id != workload_id {
             bail!("capability token subject does not match workload ID");
         }
@@ -209,7 +220,12 @@ impl PolicyEnforcer {
     }
 
     pub async fn cached_count(&self) -> u64 {
-        self.grants.read().await.len().try_into().unwrap_or(u64::MAX)
+        self.grants
+            .read()
+            .await
+            .len()
+            .try_into()
+            .unwrap_or(u64::MAX)
     }
 
     async fn lookup_valid(
@@ -284,16 +300,32 @@ fn enforce_isolation_floor(
         return Ok(());
     };
     let requested = requested.context("workload omitted required isolation constraints")?;
-    require_bool(requested.network_denied, required.network_denied, "network_denied")?;
-    require_bool(requested.read_only_root, required.read_only_root, "read_only_root")?;
+    require_bool(
+        requested.network_denied,
+        required.network_denied,
+        "network_denied",
+    )?;
+    require_bool(
+        requested.read_only_root,
+        required.read_only_root,
+        "read_only_root",
+    )?;
     require_bool(requested.private_tmp, required.private_tmp, "private_tmp")?;
-    require_bool(requested.protect_home, required.protect_home, "protect_home")?;
+    require_bool(
+        requested.protect_home,
+        required.protect_home,
+        "protect_home",
+    )?;
     require_bool(
         requested.no_new_privileges,
         required.no_new_privileges,
         "no_new_privileges",
     )?;
-    require_bool(requested.dynamic_user, required.dynamic_user, "dynamic_user")?;
+    require_bool(
+        requested.dynamic_user,
+        required.dynamic_user,
+        "dynamic_user",
+    )?;
     require_bool(
         requested.restrict_suid_sgid,
         required.restrict_suid_sgid,

@@ -3,15 +3,13 @@ use tonic::{Request, Response, Status};
 use tracing::{info, warn};
 
 use pdk_protocol::v1::{
-    node_agent_server::NodeAgent, AgentStatus, CapabilityGrantAck, GetWorkloadStatusRequest,
-    SignedCapabilityGrant, SpawnWorkloadRequest, StopWorkloadRequest, WorkloadReceipt,
+    AgentStatus, CapabilityGrantAck, GetWorkloadStatusRequest, SignedCapabilityGrant,
+    SpawnWorkloadRequest, StopWorkloadRequest, WorkloadReceipt, node_agent_server::NodeAgent,
 };
 use pdk_transport::peer_identity;
 
 use crate::{
-    audit::OfflineAuditBuffer,
-    autonomy::AutonomyStateMachine,
-    policy::PolicyEnforcer,
+    audit::OfflineAuditBuffer, autonomy::AutonomyStateMachine, policy::PolicyEnforcer,
     runtime::RuntimeManager,
 };
 
@@ -91,11 +89,7 @@ impl NodeAgent for NodeAgentService {
                     detail: "signature, domain, target, validity interval, and Connected state verified",
                 };
                 if let Err(error) = self
-                    .audit_decision(
-                        &grant.token_id,
-                        "capability.grant.cached",
-                        &event,
-                    )
+                    .audit_decision(&grant.token_id, "capability.grant.cached", &event)
                     .await
                 {
                     self.policy.remove_cached_grant(&grant.token_id).await;
@@ -143,11 +137,7 @@ impl NodeAgent for NodeAgentService {
             .ok_or_else(|| Status::invalid_argument("workload specification missing"))?;
         let authorization = self
             .policy
-            .authorize_spawn(
-                &request.capability_token_id,
-                &request.lease_id,
-                workload,
-            )
+            .authorize_spawn(&request.capability_token_id, &request.lease_id, workload)
             .await
             .map_err(|error| Status::permission_denied(error.to_string()))?;
 
@@ -159,12 +149,8 @@ impl NodeAgent for NodeAgentService {
             workload_id: &authorization.workload_id,
             detail: "authorized before runtime driver invocation",
         };
-        self.audit_decision(
-            &request.trace_id,
-            "workload.spawn.authorized",
-            &intent,
-        )
-        .await?;
+        self.audit_decision(&request.trace_id, "workload.spawn.authorized", &intent)
+            .await?;
 
         let receipt = self
             .runtime
@@ -186,7 +172,10 @@ impl NodeAgent for NodeAgentService {
             warn!(workload_id = %authorization.workload_id, "audit failed after start; terminating workload fail-closed");
             let _ = self
                 .runtime
-                .stop(&authorization.workload_id, "post-start audit persistence failure")
+                .stop(
+                    &authorization.workload_id,
+                    "post-start audit persistence failure",
+                )
                 .await;
             return Err(error);
         }

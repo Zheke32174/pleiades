@@ -45,13 +45,13 @@ impl InventoryManager {
                 &["--version"],
             )
             .await,
-            probe_runtime("podman", &["/usr/bin/podman", "/bin/podman"], &["--version"]).await,
             probe_runtime(
-                "libvirt",
-                &["/usr/bin/virsh", "/bin/virsh"],
+                "podman",
+                &["/usr/bin/podman", "/bin/podman"],
                 &["--version"],
             )
             .await,
+            probe_runtime("libvirt", &["/usr/bin/virsh", "/bin/virsh"], &["--version"]).await,
         ];
 
         NodeInventory {
@@ -70,8 +70,7 @@ impl InventoryManager {
                     .try_into()
                     .unwrap_or(u32::MAX),
                 brand: cpu_brand,
-                global_usage_milli_percent: (system.global_cpu_usage().clamp(0.0, 100.0)
-                    * 1_000.0)
+                global_usage_milli_percent: (system.global_cpu_usage().clamp(0.0, 100.0) * 1_000.0)
                     .round() as u32,
             }),
             memory: Some(MemoryInventory {
@@ -108,7 +107,10 @@ impl InventoryManager {
 }
 
 async fn probe_runtime(name: &str, candidates: &[&str], args: &[&str]) -> RuntimeCapability {
-    let Some(executable) = candidates.iter().find(|candidate| Path::new(candidate).is_file()) else {
+    let Some(executable) = candidates
+        .iter()
+        .find(|candidate| Path::new(candidate).is_file())
+    else {
         return RuntimeCapability {
             name: name.to_owned(),
             available: false,
