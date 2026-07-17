@@ -25,7 +25,7 @@ use tracing_subscriber::EnvFilter;
 use crate::{
     audit::OfflineAuditBuffer,
     autonomy::AutonomyStateMachine,
-    config::NodeAgentConfig,
+    config::{NodeAgentConfig, StartupMode},
     control_link::ControlPlaneLink,
     heartbeat::HeartbeatLoop,
     inventory::InventoryManager,
@@ -48,6 +48,7 @@ struct AgentLifecycleEvent<'a> {
     version: &'a str,
     runtime: &'a str,
     authority_mode: &'a str,
+    startup_mode: &'a str,
 }
 
 #[tokio::main]
@@ -69,6 +70,18 @@ async fn main() -> Result<()> {
         Duration::from_secs(config.heartbeat_timeout_seconds),
         Duration::from_secs(config.read_only_timeout_seconds),
     );
+    let startup_mode = match config.startup_mode {
+        StartupMode::Managed => "managed",
+        StartupMode::Standalone => {
+            autonomy.enter_standalone("configured for deliberate standalone operation");
+            "standalone"
+        }
+        StartupMode::Quarantined => {
+            autonomy.quarantine("configured quarantine requires steward intervention");
+            "quarantined"
+        }
+    };
+
     let audit = OfflineAuditBuffer::open(
         &config.state_database,
         config.domain_id.clone(),
@@ -100,6 +113,7 @@ async fn main() -> Result<()> {
         version: env!("CARGO_PKG_VERSION"),
         runtime: "systemd-transient-unit-over-dbus",
         authority_mode: "single-authoritative-controller-no-quorum",
+        startup_mode,
     };
     audit
         .queue_event("node.agent.started", "startup", &lifecycle)
@@ -148,6 +162,7 @@ async fn main() -> Result<()> {
         bind = %bind,
         domain_id = %config.domain_id,
         node_id = %config.node_id,
+        startup_mode,
         "PDK node kernel agent ready"
     );
 
