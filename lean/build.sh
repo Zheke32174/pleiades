@@ -59,13 +59,19 @@ for u in "$SRC"/units/*.service; do
     }
 done
 
-# Cadence and evidence guards.
+# Cadence and evidence guards inspect executable runtime sources, not historical
+# review documents that intentionally quote the old failure patterns.
 if grep -RnE '^[[:space:]]*while[[:space:]]+(true|:)' "$SRC/agents"; then
     echo "[build] ERROR: in-process infinite loop found — use event activation or a timer"
     exit 1
 fi
-if grep -RInE 'journalctl[[:space:]].*--vacuum|Restart=always|curl[^|]*\|[[:space:]]*(sh|bash)' "$SRC"; then
-    echo "[build] ERROR: prohibited evidence erasure, restart policy, or curl-pipe execution"
+if grep -RInE 'journalctl[[:space:]].*--vacuum|curl[^|]*\|[[:space:]]*(sh|bash)' \
+    "$SRC/agents" "$SRC/lib" "$SRC/ops" "$SRC/units"; then
+    echo "[build] ERROR: prohibited evidence erasure or curl-pipe execution"
+    exit 1
+fi
+if grep -RIn 'Restart=always' "$SRC/units"; then
+    echo "[build] ERROR: prohibited infinite restart policy"
     exit 1
 fi
 
