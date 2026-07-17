@@ -4,6 +4,15 @@ use anyhow::{Context, Result};
 use pdk_transport::{PeerBindingConfig, TlsFileConfig};
 use serde::Deserialize;
 
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub enum StartupMode {
+    #[default]
+    Managed,
+    Standalone,
+    Quarantined,
+}
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeAgentConfig {
@@ -16,6 +25,8 @@ pub struct NodeAgentConfig {
     pub state_database: std::path::PathBuf,
     pub power_class: String,
     pub trust_zone: String,
+    #[serde(default)]
+    pub startup_mode: StartupMode,
     pub heartbeat_interval_seconds: u64,
     pub heartbeat_timeout_seconds: u64,
     pub read_only_timeout_seconds: u64,
@@ -66,6 +77,12 @@ impl NodeAgentConfig {
             self.lease_sweep_interval_seconds > 0,
             "lease_sweep_interval_seconds must be positive"
         );
+        if self.startup_mode == StartupMode::Managed {
+            anyhow::ensure!(
+                !self.trusted_controllers.iter().all(|controller| !controller.enabled),
+                "managed startup requires at least one enabled trusted controller"
+            );
+        }
         Ok(())
     }
 }
