@@ -1,0 +1,53 @@
+name: PDK diagnostics
+
+on:
+  push:
+    branches: [modos/epoch-0-canon-and-pdk]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modos/pdk-node-agent/**'
+      - '.github/workflows/pdk-diagnostics.yml'
+
+concurrency:
+  group: pdk-diagnostics-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clippy-report:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: modos/pdk-node-agent
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install stable Rust and Clippy
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy
+          rustup default stable
+      - name: Install Protobuf compiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq protobuf-compiler
+      - name: Capture complete Clippy report
+        id: clippy
+        shell: bash
+        run: |
+          set +e
+          cargo clippy --workspace --all-targets --all-features -- -D warnings \
+            > clippy.log 2>&1
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          cat clippy.log
+          exit 0
+      - name: Upload Clippy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdk-clippy-report-${{ github.sha }}
+          path: modos/pdk-node-agent/clippy.log
+          if-no-files-found: error
+          retention-days: 14
+      - name: Enforce Clippy result
+        if: always()
+        run: exit "${{ steps.clippy.outputs.exit_code }}"
