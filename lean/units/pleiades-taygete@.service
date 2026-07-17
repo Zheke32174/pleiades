@@ -7,17 +7,34 @@ ExecStart=/usr/local/sbin/taygete-handler.sh %i
 StandardInput=socket
 StandardOutput=socket
 StandardError=journal
-# Hard ceiling on a single connection's lifetime (anti slow-loris).
 RuntimeMaxSec=15
-
 MemoryMax=32M
 CPUQuota=10%
+TasksMax=16
+Slice=pleiades.slice
+UMask=0077
 
-# Sandbox: no host access, no key access; may write only the nexus spool dir.
 NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
 ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes
+PrivateDevices=yes
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+MemoryDenyWriteExecute=yes
 RuntimeDirectory=pleiades
 RuntimeDirectoryPreserve=yes
 ReadWritePaths=/run/pleiades
