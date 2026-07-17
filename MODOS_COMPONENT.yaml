@@ -1,0 +1,41 @@
+apiVersion: modos.pleiades/v1alpha1
+kind: Component
+metadata:
+  name: pleiades-defensive-substrate
+  repository: Zheke32174/pleiades
+  visibility: public
+  lifecycle: operational
+  defaultBranch: main
+spec:
+  roles:
+    - public-integration-surface
+    - defensive-node-substrate
+    - pdk-reference-implementation
+    - forensic-event-source
+  authority: local-enforcement
+  inputs:
+    - signed-domain-instructions
+    - host-and-container-telemetry
+    - steward-approved-configuration
+  outputs:
+    - signed-audit-events
+    - node-inventory
+    - workload-status
+    - defensive-observations
+  capabilitiesProvided:
+    - node.inventory
+    - workload.native.systemd
+    - audit.append
+    - telemetry.defensive
+  capabilitiesRequired:
+    - host.kernel.local
+    - filesystem.local
+    - network.mtls
+  dataClasses:
+    - public
+    - internal
+    - evidence
+    - untrusted
+  failurePolicy: degrade-local
+  promotionPolicy: evidence-gated
+  notes: Existing honeypot and defensive automation remain intact; MODOS is added as a governed integration layer.
