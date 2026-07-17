@@ -76,21 +76,25 @@ impl ControlPlaneService {
         let replay_key = (heartbeat.node_id.clone(), heartbeat.boot_id.clone());
         {
             let mut replay = self.state.replay.write().await;
-            if let Some(previous) = replay.get(&replay_key) {
-                if heartbeat.sequence <= *previous {
-                    return Err(Status::already_exists("heartbeat sequence replayed"));
-                }
+            if let Some(previous) = replay.get(&replay_key)
+                && heartbeat.sequence <= *previous
+            {
+                return Err(Status::already_exists("heartbeat sequence replayed"));
             }
             replay.insert(replay_key, heartbeat.sequence);
         }
 
-        self.state.observations.write().await.insert(
-            heartbeat.node_id.clone(),
-            NodeObservation {
-                heartbeat: heartbeat.clone(),
-                accepted_at_unix_ms: now,
-            },
-        );
+        let observation = NodeObservation {
+            heartbeat: heartbeat.clone(),
+            accepted_at_unix_ms: now,
+        };
+        let observed_sequence = observation.heartbeat.sequence;
+        let observation_accepted_at = observation.accepted_at_unix_ms;
+        self.state
+            .observations
+            .write()
+            .await
+            .insert(heartbeat.node_id.clone(), observation);
 
         let ack = sign_heartbeat_ack(
             HeartbeatAckPayload {
@@ -109,7 +113,8 @@ impl ControlPlaneService {
 
         info!(
             node_id = %heartbeat.node_id,
-            sequence = heartbeat.sequence,
+            sequence = observed_sequence,
+            accepted_at_unix_ms = observation_accepted_at,
             peer_fingerprint = %peer.certificate_sha256,
             "accepted signed node heartbeat"
         );
