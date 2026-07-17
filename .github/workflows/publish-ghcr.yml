@@ -2,19 +2,47 @@ name: Publish GitHub Package
 
 on:
   push:
-    branches: [ main, master ]
-    tags: [ 'v*' ]
+    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing version tag to publish'
+        required: true
+        default: 'v0.1.0'
 
 permissions:
   contents: read
   packages: write
+  id-token: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve and validate tag
+        id: version
+        shell: bash
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          TAG="${GITHUB_REF_NAME:-$INPUT_TAG}"
+          if [[ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]]; then
+            TAG="$INPUT_TAG"
+            git rev-parse "refs/tags/$TAG" >/dev/null 2>&1 || {
+              echo "ERROR: tag $TAG does not exist"
+              exit 1
+            }
+            git checkout --detach "$TAG"
+          fi
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]] || {
+            echo "ERROR: invalid package tag: $TAG"
+            exit 1
+          }
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Set lowercase image name
         id: image
@@ -34,13 +62,12 @@ jobs:
         with:
           images: ${{ steps.image.outputs.name }}
           tags: |
-            type=raw,value=latest
+            type=raw,value=${{ steps.version.outputs.tag }}
             type=sha,prefix=sha-
-            type=ref,event=branch
-            type=ref,event=tag
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.description=Pleiades public showcase package
+            org.opencontainers.image.description=Pleiades defensive research package
+            org.opencontainers.image.version=${{ steps.version.outputs.tag }}
 
       - name: Build and publish package
         uses: docker/build-push-action@v6
@@ -50,3 +77,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          provenance: true
+          sbom: true

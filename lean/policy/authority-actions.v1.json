@@ -1,0 +1,59 @@
+{
+  "api_version": "pleiades.authority/v1",
+  "policy_id": "lean-default-deny",
+  "default": "deny",
+  "notes": "Declarative broker vocabulary. This file grants no authority by itself; a deterministic broker must verify identity, signature, freshness, target scope, current state, rollback and validators.",
+  "forbidden_verbs": [
+    "exec",
+    "shell",
+    "eval",
+    "install_package",
+    "load_kernel_module",
+    "write_raw_disk",
+    "flash_firmware",
+    "disable_security_policy",
+    "delete_audit_evidence"
+  ],
+  "actions": {
+    "service.status": {
+      "risk": "read_only",
+      "targets": ["pleiades-*.service"],
+      "validators": ["unit_exists"]
+    },
+    "service.restart": {
+      "risk": "reversible",
+      "targets": [
+        "pleiades-taygete.socket",
+        "pleiades-electra-http.socket",
+        "pleiades-electra-telnet.socket"
+      ],
+      "rate_limit": {"count": 2, "window_seconds": 300},
+      "validators": ["unit_exists", "not_critical", "health_probe_after"],
+      "rollback": "stop_and_restore_previous_state"
+    },
+    "diagnostic.run": {
+      "risk": "bounded",
+      "targets": ["registered-package"],
+      "requirements": ["signed_package", "pinned_version", "declared_capabilities"],
+      "validators": ["schema_valid", "resource_budget", "output_captured"]
+    },
+    "cgroup.move": {
+      "risk": "reversible",
+      "targets": ["identified_process"],
+      "requirements": ["pid_start_time_match", "declared_destination_cgroup"],
+      "validators": ["process_identity", "critical_process_safelist", "cgroup_exists"]
+    },
+    "configuration.stage": {
+      "risk": "review_required",
+      "targets": ["allowlisted_path"],
+      "requirements": ["signed_artifact", "expected_current_hash", "rollback_copy"],
+      "validators": ["syntax_valid", "policy_valid", "health_probe_after"]
+    },
+    "deployment.rollback": {
+      "risk": "review_required",
+      "targets": ["known_deployment"],
+      "requirements": ["signed_manifest", "known_good_digest", "anti_rollback_epoch"],
+      "validators": ["artifact_signature", "provenance", "post_rollback_health"]
+    }
+  }
+}

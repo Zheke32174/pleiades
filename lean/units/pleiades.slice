@@ -1,0 +1,11 @@
+[Unit]
+Description=Pleiades defensive service resource envelope
+
+[Slice]
+CPUAccounting=yes
+MemoryAccounting=yes
+TasksAccounting=yes
+CPUQuota=200%
+MemoryHigh=768M
+MemoryMax=1G
+TasksMax=256

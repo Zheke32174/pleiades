@@ -5,21 +5,39 @@ After=network.target
 OnFailure=pleiades-celaeno-alert@%n.service
 
 [Service]
-# Oneshot: establish the trust root once, then stay "active" with zero running
-# process. Liveness is systemd's job; periodic proof is the checkpoint timer's.
+# Oneshot: establish the trust root once, then stay active with zero running
+# process. Periodic proof and sealing are owned by the checkpoint timer.
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/local/sbin/maia-overseer.sh init
+Slice=pleiades.slice
 
 RuntimeDirectory=pleiades
 RuntimeDirectoryMode=0750
 RuntimeDirectoryPreserve=yes
 StateDirectory=maia
+UMask=0077
 
 NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
 ProtectSystem=strict
 ProtectHome=yes
 PrivateTmp=yes
+PrivateDevices=yes
+ProtectProc=invisible
+ProcSubset=pid
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+SystemCallArchitectures=native
+MemoryDenyWriteExecute=yes
 ReadWritePaths=/var/lib/maia /run/pleiades
 
 [Install]
