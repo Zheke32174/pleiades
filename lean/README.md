@@ -1,62 +1,102 @@
-# Pleiades — lean rebuild
+# Pleiades Lean Runtime
 
-A clean, reproducible reintroduction of the Pleiades defensive swarm, rebuilt one
-agent at a time to avoid the previous stack's failure modes (see
-`../pleiades-design-review.md` and `../pleiades-improvement-brainstorm.md`).
+`lean/` is the canonical release-track implementation of the Pleiades defensive suite. It is a clean reintroduction of the useful components from the earlier stack, rebuilt around explicit invariants rather than runtime self-assembly.
 
-## Invariants (enforced, not aspirational)
-1. **One canonical binary + one unit per agent.** No runtime self-install, no `curl|sh`.
-   `build.sh` checks every unit's `ExecStart` binary exists before it will finish.
-2. **No error masking.** Use `require <cmd>` from the shared lib; failures are logged and
-   surface in the agent's status. An agent reports `ok` only when it really is.
-3. **systemd owns supervision.** `Restart=on-failure` + `StartLimitBurst` — no bespoke
-   while-true restart loops. No crash-loop storms.
-4. **Stay in the container.** Read host telemetry only through the explicit read-only
-   bridge; never write host paths. No EFI/firmware persistence.
-5. **The Nexus is the journal.** Structured events via `nexus_emit` (tag `pleiades-nexus`),
-   retained — never self-vacuumed.
-6. **No fast loops. Cadence lives in systemd timers.** Agents NEVER run an in-process
-   `while true; sleep N` loop (`build.sh` rejects any agent that does). Periodic work is a
-   `.timer` with `RandomizedDelaySec` (jitter — agents never wake in lockstep) and a generous
-   `AccuracySec` (systemd coalesces wakeups). Prefer event-driven (path/socket units) over
-   polling. The old stack's many 10s/30s/2s/0.1s loops across 9 agents were a primary failure
-   mode — we do not repeat it.
+## Enforced invariants
+
+1. **One canonical binary and one canonical unit per component.** `build.sh` refuses to finish when an `ExecStart` target is missing.
+2. **No error masking.** Failures are surfaced through status and the Nexus event path.
+3. **systemd owns supervision.** Services use event activation, `OnFailure`, and slow jittered timers rather than custom restart loops.
+4. **No direct host mutation.** The remaining `/host/win` bridge reader is a temporary migration interface limited to Maia; the target design replaces it with authenticated host collectors.
+5. **Evidence is retained.** Events receive unique IDs and are sealed into a hash-chained, Ed25519-signed ledger.
+6. **Every service is resource-bounded.** Services run inside `pleiades.slice`, while public-facing handlers also have per-connection time, CPU, memory, task, and connection limits.
+7. **Cognition is non-authoritative.** Future AI workers interpret and propose. A deterministic broker owns the transition from proposal to host action.
 
 ## Layout
-```
-lib/pleiades-common.sh     shared helpers (log, require, nexus_emit, status_set)
-agents/<name>/             per-agent binary + daemon
-units/<name>.service       one hardened, rate-limited unit per agent
-build.sh                   idempotent installer (run in-container as root)
+
+```text
+agents/                       bounded component implementations
+lib/pleiades-common.sh        event, status and error helpers
+units/                        hardened systemd services, sockets, timers and slice
+policy/authority-actions.v1.json
+                              default-deny future broker vocabulary
+ops/                          boot, deployment and verification helpers
+docs/SECURITY_PROPERTIES.md   executable defensive guarantees
+build.sh                      offline idempotent installer
 ```
 
-## Build / deploy
-Run inside the booted container as root:
+## Components
+
+| Component | Role | Authority |
+|---|---|---|
+| Maia | Key initialization, signed checkpoint, Nexus sealing | Evidence-plane write access |
+| Nexus | Ledger verification | Read-only verifier |
+| Taygete | SSH deception sensor | Event submission only |
+| Electra | HTTP/telnet deception sensors | Event submission only |
+| Alcyone | Listener and connection posture | Observe-only |
+| Celaeno | Failure alert recording | Observe-only |
+| Merope | Signed encrypted snapshots | Snapshot state only; restore separately guarded |
+| Sterope | Threat posture calculation | Observe-only |
+
+## Build
+
+Run inside the booted Gentoo container as root:
+
 ```bash
 bash /opt/pleiades-build/build.sh
-systemctl enable --now pleiades-maia.service pleiades-maia-checkpoint.timer
+systemctl enable --now \
+  pleiades-maia.service \
+  pleiades-maia-checkpoint.timer \
+  pleiades-taygete.socket \
+  pleiades-electra-http.socket \
+  pleiades-electra-telnet.socket
 ```
 
-## The Nexus ledger
-Events emitted via `nexus_emit` go to the journal (transport) and a spool. Maia drains the
-spool on its checkpoint into a **hash-chained, Ed25519-signed, append-only** ledger at
-`/var/lib/maia/nexus/ledger` — never self-vacuumed. Each record:
-```
-SEQ|TS|PREV_HASH|EVENT_B64|HASH|SIG     HASH = sha256(SEQ|TS|PREV_HASH|EVENT_B64), SIG = Maia(HASH)
-```
-`nexus-verify [--show]` walks the chain, recomputes every hash, and verifies every signature
-against Maia's public key — any alteration or deletion breaks the chain and is detected.
-Sealing rides Maia's existing checkpoint timer (no extra wakeups).
+The build installs the shared resource slice and rejects unit/binary mismatches, infinite agent loops, `Restart=always`, evidence-vacuuming commands, and runtime `curl | sh` execution.
 
-## Reintroduction order
-1. **Maia** — trust root (Ed25519 via openssl).            [done]
-2. **Nexus** — journal-backed, hash-chained signed ledger.  [done]
-3. **Taygete** — SSH honeypot sensor (socket-activated).    [done]
-4. **Celaeno** — watchdog, event-driven `OnFailure` (no restart loop).  [done]
-5. **Electra** — multi-port decoy farm (:8088 http, :2323 telnet).  [done]
-Then Alcyone (read-only) / Merope / Sterope (de-offensified) / Asterope.
+## Nexus ledger
 
-## Adding the next agent
-1. `agents/<name>/<name>-daemon.sh` — source the lib, use `require`, `status_set`, `nexus_emit`.
-2. `units/pleiades-<name>.service` — copy the Maia unit's hardening + rate-limit block.
-3. Add install lines to `build.sh`. Re-run; the ExecStart check guards mismatches.
+`nexus_emit` writes an event with a unique ID, source identity, and observed timestamp to the journal and the current flock-serialized queue. Maia claims the queue atomically and seals records into:
+
+```text
+SEQ|TS|PREV_HASH|EVENT_B64|HASH|SIG
+```
+
+`HASH` covers the sequence, timestamp, previous hash and encoded event. `SIG` is Maia's Ed25519 signature over that hash.
+
+```bash
+nexus-verify
+nexus-verify --show
+nexus-verify --allow-empty
+```
+
+Missing, empty, invalid, and valid ledgers produce distinct results. Interrupted sealing leaves an inflight artifact that Maia requeues on the next checkpoint. Delivery is therefore at least once; event IDs permit later deduplication.
+
+## Verification
+
+From the host environment:
+
+```bash
+bash lean/ops/verify-full.sh
+```
+
+The verifier exercises the trust root, live socket sensors, sealing, sandbox behavior, failure alerts, snapshot gating, threat scoring, and final ledger validation. Any failed assertion exits nonzero.
+
+Static release checks:
+
+```bash
+bash ci/check-lean-security.sh lean
+```
+
+## Migration direction
+
+The current lean container is a staging substrate, not the final trust topology. The next structural changes are:
+
+1. replace direct host mounts with signed host collectors;
+2. move public-facing decoys into disposable microVMs;
+3. introduce durable authenticated event intake;
+4. place evidence signing and anchoring outside the deception environment;
+5. implement the deterministic authority broker;
+6. attach the learning spine and non-authoritative cognitive coprocessor.
+
+See [`../docs/DEFENSIVE_ARCHITECTURE.md`](../docs/DEFENSIVE_ARCHITECTURE.md).
