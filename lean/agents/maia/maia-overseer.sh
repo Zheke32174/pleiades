@@ -26,6 +26,19 @@ requeue_from_line() {
     )
 }
 
+# Delete an inflight file only after its remaining records are safely back in
+# the queue. When requeue fails, preserve the file for the next recovery pass.
+requeue_and_clear() {
+    local work="$1" start_line="$2" reason="$3"
+    if requeue_from_line "$work" "$start_line"; then
+        rm -f "$work"
+        log_warn "nexus: $reason; current and remaining events requeued"
+        return 0
+    fi
+    log_err "nexus: $reason and requeue failed; evidence preserved at $work"
+    return 1
+}
+
 recover_stale_inflight() {
     local spool="$PLEIADES_NEXUS_SPOOL" stale found=0
     shopt -s nullglob
@@ -99,26 +112,21 @@ nexus_seal() {
         input="${seq}|${ts}|${prev}|${eb64}"
         hash="$(printf '%s' "$input" | openssl dgst -sha256 | awk '{print $NF}')"
         hf="$(mktemp)" || {
-            requeue_from_line "$work" "$line_no"
-            rm -f "$work"
-            log_err "nexus: cannot create signature input at seq=$seq"
+            requeue_and_clear "$work" "$line_no" "temporary signature input creation failed" || :
+            status_set "$AGENT" degraded "signature_input_failed" || :
             return 1
         }
         printf '%s' "$hash" > "$hf"
         if ! sig="$(maia-crypto sign "$hf")"; then
             rm -f "$hf"
-            requeue_from_line "$work" "$line_no" || log_err "nexus: requeue also failed after signing failure"
-            rm -f "$work"
-            status_set "$AGENT" degraded "ledger_sign_failed"
-            log_err "nexus: sign failed at seq=$seq; current and remaining events requeued"
+            requeue_and_clear "$work" "$line_no" "ledger signing failed at seq=$seq" || :
+            status_set "$AGENT" degraded "ledger_sign_failed" || :
             return 1
         fi
         rm -f "$hf"
         if ! printf '%s|%s|%s|%s|%s|%s\n' "$seq" "$ts" "$prev" "$eb64" "$hash" "$sig" >> "$LEDGER"; then
-            requeue_from_line "$work" "$line_no" || log_err "nexus: requeue also failed after ledger append failure"
-            rm -f "$work"
-            status_set "$AGENT" degraded "ledger_append_failed"
-            log_err "nexus: ledger append failed at seq=$seq; current and remaining events requeued"
+            requeue_and_clear "$work" "$line_no" "ledger append failed at seq=$seq" || :
+            status_set "$AGENT" degraded "ledger_append_failed" || :
             return 1
         fi
         prev="$hash"
@@ -127,7 +135,7 @@ nexus_seal() {
 
     rm -f "$work"
     chmod 600 "$LEDGER" || {
-        status_set "$AGENT" degraded "ledger_permissions_failed"
+        status_set "$AGENT" degraded "ledger_permissions_failed" || :
         log_err "nexus: unable to set ledger permissions"
         return 1
     }
@@ -169,7 +177,7 @@ windows_net_ingest() {
 do_init() {
     log_info "Maia init — establishing trust root"
     if ! require maia-crypto init; then
-        status_set "$AGENT" failed "keygen_failed"
+        status_set "$AGENT" failed "keygen_failed" || :
         nexus_emit maia_failed reason=keygen || :
         exit 1
     fi
@@ -182,7 +190,7 @@ do_init() {
 
 do_checkpoint() {
     if ! require maia-crypto init; then
-        status_set "$AGENT" failed "keygen_failed"
+        status_set "$AGENT" failed "keygen_failed" || :
         exit 1
     fi
     local fp ts sig cp=/run/pleiades/maia.checkpoint
@@ -190,14 +198,14 @@ do_checkpoint() {
     ts="$(date +%s)"
     printf 'maia-alive:%s' "$ts" > "$cp"
     sig="$(maia-crypto sign "$cp")" || {
-        status_set "$AGENT" degraded "sign_failed"
+        status_set "$AGENT" degraded "sign_failed" || :
         nexus_emit maia_degraded reason=sign || :
         exit 1
     }
     status_set "$AGENT" ok "" || exit 1
     nexus_emit maia_checkpoint "key=$fp" "ts=$ts" "load=$(host_load)" "sig=${sig:0:16}" || exit 1
-    windows_ingest || { status_set "$AGENT" degraded "windows_ingest_failed"; exit 1; }
-    windows_net_ingest || { status_set "$AGENT" degraded "net_ingest_failed"; exit 1; }
+    windows_ingest || { status_set "$AGENT" degraded "windows_ingest_failed" || :; exit 1; }
+    windows_net_ingest || { status_set "$AGENT" degraded "net_ingest_failed" || :; exit 1; }
     nexus_seal || exit 1
 }
 
