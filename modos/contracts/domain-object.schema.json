@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-domain-object-v1.json",
+  "title": "MODOS Domain Object Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec", "provenance", "partitionPolicy"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"type": "string", "minLength": 1},
+    "metadata": {
+      "type": "object",
+      "required": ["id", "name", "generation", "createdAt"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1},
+        "generation": {"type": "integer", "minimum": 1},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "labels": {"type": "object", "additionalProperties": {"type": "string"}}
+      }
+    },
+    "spec": {"type": "object"},
+    "status": {"type": "object"},
+    "provenance": {
+      "type": "object",
+      "required": ["source", "digest", "trust", "visibility", "lineage"],
+      "properties": {
+        "source": {"type": "string"},
+        "digest": {"type": "string"},
+        "trust": {"enum": ["untrusted", "observed", "verified", "canonical"]},
+        "visibility": {"enum": ["public", "internal", "private", "secret", "model-only", "steward-only"]},
+        "lineage": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "partitionPolicy": {
+      "type": "object",
+      "required": ["read", "write", "merge", "globalAuthorityRequired"],
+      "properties": {
+        "read": {"enum": ["deny", "allow-local", "allow-cached"]},
+        "write": {"enum": ["deny", "local-only", "provisional", "authoritative"]},
+        "merge": {"enum": ["none", "last-writer", "crdt", "application-defined", "steward-review"]},
+        "globalAuthorityRequired": {"type": "boolean"},
+        "conflictVisibility": {"enum": ["internal", "steward", "public"]}
+      }
+    }
+  }
+}
