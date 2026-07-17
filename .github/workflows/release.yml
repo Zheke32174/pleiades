@@ -2,13 +2,12 @@ name: Release
 
 on:
   push:
-    branches: [ main, master ]
-    tags: [ 'v*' ]
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version/tag, for example v0.1.0'
-        required: false
+        description: 'Existing version tag, for example v0.1.0'
+        required: true
         default: 'v0.1.0'
 
 permissions:
@@ -20,29 +19,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Resolve version
+      - name: Resolve and validate version
         id: version
         shell: bash
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          VERSION="${{ github.event.inputs.version }}"
-          if [ -z "$VERSION" ]; then VERSION="v0.1.0"; fi
+          VERSION="${GITHUB_REF_NAME:-$INPUT_VERSION}"
+          if [[ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]]; then
+            VERSION="$INPUT_VERSION"
+            git rev-parse "refs/tags/$VERSION" >/dev/null 2>&1 || {
+              echo "ERROR: tag $VERSION does not exist"
+              exit 1
+            }
+          fi
+          [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]] || {
+            echo "ERROR: invalid release tag: $VERSION"
+            exit 1
+          }
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Write release notes
         shell: bash
         run: |
           NAME="${GITHUB_REPOSITORY#*/}"
-          IMAGE="ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]'):latest"
+          IMAGE="ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]'):${{ steps.version.outputs.version }}"
           cat > RELEASE_NOTES.md <<EOF
           # $NAME ${{ steps.version.outputs.version }}
 
-          Public showcase release for $NAME.
+          Defensive research release built from a version tag after repository checks.
 
           GitHub Package:
           \`$IMAGE\`
 
-          GitHub also provides source ZIP and source tarball assets automatically on this Release.
+          GitHub also provides source ZIP and source tarball assets automatically.
           EOF
 
       - name: Create or update GitHub Release
@@ -52,7 +65,7 @@ jobs:
         shell: bash
         run: |
           if gh release view "$VERSION" >/dev/null 2>&1; then
-            gh release edit "$VERSION" --target "$GITHUB_SHA" --title "${GITHUB_REPOSITORY#*/} $VERSION" --notes-file RELEASE_NOTES.md
+            gh release edit "$VERSION" --target "$VERSION" --title "${GITHUB_REPOSITORY#*/} $VERSION" --notes-file RELEASE_NOTES.md
           else
-            gh release create "$VERSION" --target "$GITHUB_SHA" --title "${GITHUB_REPOSITORY#*/} $VERSION" --notes-file RELEASE_NOTES.md
+            gh release create "$VERSION" --target "$VERSION" --title "${GITHUB_REPOSITORY#*/} $VERSION" --notes-file RELEASE_NOTES.md
           fi
