@@ -68,10 +68,10 @@ impl PeerRegistry {
             .get(&fingerprint)
             .with_context(|| format!("certificate fingerprint {fingerprint} is not enrolled"))?;
         let uri_sans = certificate_uri_sans(certificate_der)?;
-        if let Some(required) = &binding.required_uri_san {
-            if !uri_sans.iter().any(|candidate| candidate == required) {
-                bail!("certificate is enrolled but lacks required URI SAN {required}");
-            }
+        if let Some(required) = &binding.required_uri_san
+            && !uri_sans.iter().any(|candidate| candidate == required)
+        {
+            bail!("certificate is enrolled but lacks required URI SAN {required}");
         }
         Ok(PeerIdentity {
             identity: binding.identity.clone(),
@@ -118,13 +118,13 @@ impl Interceptor for CertificateIdentityInterceptor {
             .registry
             .resolve(leaf.as_ref())
             .map_err(|error| Status::permission_denied(error.to_string()))?;
-        if let Some(required_role) = &self.required_role {
-            if &peer.role != required_role {
-                return Err(Status::permission_denied(format!(
-                    "peer role {} cannot call this service; required {}",
-                    peer.role, required_role
-                )));
-            }
+        if let Some(required_role) = &self.required_role
+            && &peer.role != required_role
+        {
+            return Err(Status::permission_denied(format!(
+                "peer role {} cannot call this service; required {}",
+                peer.role, required_role
+            )));
         }
         request.extensions_mut().insert(peer);
         Ok(request)
