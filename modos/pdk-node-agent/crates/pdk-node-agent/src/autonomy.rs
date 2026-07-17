@@ -112,10 +112,7 @@ impl AutonomyStateMachine {
             }
             let elapsed_ms = unix_ms().saturating_sub(last_ack);
             if elapsed_ms >= duration_ms(self.read_only_timeout) {
-                self.transition(
-                    NodeState::ReadOnlySafe,
-                    "controller ACK timeout exceeded read-only threshold",
-                );
+                self.enter_read_only_safe("controller ACK timeout exceeded read-only threshold");
             } else if elapsed_ms >= duration_ms(self.heartbeat_timeout) {
                 self.transition(
                     NodeState::DegradedAutonomous,
