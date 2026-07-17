@@ -27,10 +27,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-      - name: ShellCheck lean runtime (hard fail)
-        run: find lean ci -name '*.sh' -exec shellcheck --severity=warning {} +
-      - name: ShellCheck historical scripts (advisory)
-        run: find . -name '*.sh' -not -path './.git/*' -not -path './lean/*' -not -path './ci/*' -exec shellcheck --severity=warning {} + 2>&1 || true
+      - name: ShellCheck lean runtime errors (hard fail)
+        run: find lean ci -name '*.sh' -exec shellcheck --severity=error {} +
+      - name: ShellCheck warnings (advisory)
+        run: find . -name '*.sh' -not -path './.git/*' -exec shellcheck --severity=warning {} + 2>&1 || true
 
   lean-security:
     runs-on: ubuntu-latest
