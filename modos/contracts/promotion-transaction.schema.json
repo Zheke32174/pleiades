@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-promotion-transaction-v1.json",
+  "title": "MODOS Promotion Transaction",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "candidate", "evidence", "criteria", "rollout", "rollback", "approvals", "signature"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "PromotionTransaction"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "domainId", "createdAt", "requestedBy", "target"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "domainId": {"type": "string", "minLength": 1},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "requestedBy": {"type": "string", "minLength": 1},
+        "target": {"type": "string", "minLength": 1},
+        "traceId": {"type": "string"}
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidateRef", "baselineRef", "sourceRefs", "digest", "changeSummary"],
+      "properties": {
+        "candidateRef": {"type": "string", "minLength": 1},
+        "baselineRef": {"type": "string", "minLength": 1},
+        "sourceRefs": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "digest": {"type": "string", "minLength": 1},
+        "changeSummary": {"type": "string", "minLength": 1},
+        "diffRef": {"type": "string"},
+        "ghostWorldRef": {"type": "string"}
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "ref", "digest", "result"],
+        "properties": {
+          "type": {"enum": ["build", "test", "security", "performance", "reliability", "compatibility", "simulation", "steward-review", "user-comparison", "rollback-test"]},
+          "ref": {"type": "string", "minLength": 1},
+          "digest": {"type": "string", "minLength": 1},
+          "result": {"enum": ["pass", "fail", "inconclusive", "waived"]},
+          "summary": {"type": "string"}
+        }
+      }
+    },
+    "criteria": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["machineMeasurable", "stewardVerifiable", "ordinaryPersonNoticeable"],
+      "properties": {
+        "machineMeasurable": {"type": "object", "required": ["status", "evidenceRefs"], "properties": {"status": {"enum": ["pass", "fail", "not-applicable"]}, "evidenceRefs": {"type": "array", "items": {"type": "string"}}}},
+        "stewardVerifiable": {"type": "object", "required": ["status", "evidenceRefs"], "properties": {"status": {"enum": ["pass", "fail", "not-applicable"]}, "evidenceRefs": {"type": "array", "items": {"type": "string"}}}},
+        "ordinaryPersonNoticeable": {"type": "object", "required": ["status", "evidenceRefs"], "properties": {"status": {"enum": ["pass", "fail", "not-applicable"]}, "evidenceRefs": {"type": "array", "items": {"type": "string"}}}}
+      }
+    },
+    "rollout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "stages", "pauseOnRegression"],
+      "properties": {
+        "strategy": {"enum": ["single-node", "canary", "rolling", "blue-green", "manual"]},
+        "stages": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "pauseOnRegression": {"type": "boolean"},
+        "maximumParallelTargets": {"type": "integer", "minimum": 1}
+      }
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["available", "procedureRef", "tested"],
+      "properties": {
+        "available": {"type": "boolean"},
+        "procedureRef": {"type": "string", "minLength": 1},
+        "tested": {"type": "boolean"},
+        "recoveryPointRef": {"type": "string"}
+      }
+    },
+    "approvals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["principal", "role", "decision", "decidedAt"],
+        "properties": {
+          "principal": {"type": "string", "minLength": 1},
+          "role": {"enum": ["steward", "security", "operations", "maintainer", "policy"]},
+          "decision": {"enum": ["approve", "reject", "abstain"]},
+          "decidedAt": {"type": "string", "format": "date-time"},
+          "signatureRef": {"type": "string"}
+        }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keyId", "algorithm", "value"],
+      "properties": {
+        "keyId": {"type": "string", "minLength": 1},
+        "algorithm": {"const": "Ed25519"},
+        "value": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
