@@ -1,0 +1,41 @@
+name: PDK one-shot formatter
+
+on:
+  push:
+    branches: [modos/epoch-0-canon-and-pdk]
+    paths:
+      - 'modos/pdk-node-agent/**/*.rs'
+      - '.github/workflows/pdk-autofmt.yml'
+
+concurrency:
+  group: pdk-one-shot-formatter
+  cancel-in-progress: true
+
+jobs:
+  format:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modos/epoch-0-canon-and-pdk
+      - name: Install rustfmt
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt
+          rustup default stable
+      - name: Format only the PDK workspace
+        working-directory: modos/pdk-node-agent
+        run: cargo fmt --all
+      - name: Commit formatter-only changes
+        run: |
+          if git diff --quiet -- modos/pdk-node-agent; then
+            echo 'No formatter changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add modos/pdk-node-agent
+          git commit -m 'style(pdk): apply cargo fmt after autonomy wiring'
+          git push origin HEAD:modos/epoch-0-canon-and-pdk
