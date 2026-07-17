@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-context-envelope-v1.json",
+  "title": "MODOS Context Immunity Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "content", "provenance", "security", "transformations"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "ContextEnvelope"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "createdAt"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "traceId": {"type": "string"},
+        "mindId": {"type": "string"}
+      }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mediaType", "digest"],
+      "properties": {
+        "mediaType": {"type": "string", "minLength": 1},
+        "digest": {"type": "string", "minLength": 1},
+        "artifactRef": {"type": "string"},
+        "inlineText": {"type": "string"},
+        "language": {"type": "string"},
+        "sizeBytes": {"type": "integer", "minimum": 0}
+      },
+      "oneOf": [
+        {"required": ["artifactRef"], "not": {"required": ["inlineText"]}},
+        {"required": ["inlineText"], "not": {"required": ["artifactRef"]}}
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceType", "sourceRef", "sourceDigest", "lineage"],
+      "properties": {
+        "sourceType": {"enum": ["steward", "repository", "file", "web", "model", "agent", "sensor", "service", "generated", "unknown"]},
+        "sourceRef": {"type": "string", "minLength": 1},
+        "sourceDigest": {"type": "string", "minLength": 1},
+        "lineage": {"type": "array", "items": {"type": "string"}},
+        "observedAt": {"type": "string", "format": "date-time"},
+        "collectorIdentity": {"type": "string"}
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trust", "visibility", "authorityCeiling", "taints", "allowedUses"],
+      "properties": {
+        "trust": {"enum": ["untrusted", "observed", "corroborated", "verified", "canonical"]},
+        "visibility": {"enum": ["public", "internal", "private", "secret", "model-only", "steward-only"]},
+        "authorityCeiling": {"enum": ["none", "proposal", "local-enforcement", "domain-control", "steward-only"]},
+        "taints": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"enum": ["external-instruction", "prompt-injection", "unknown-binary", "secret-bearing", "personal-data", "executable", "model-generated", "stale", "conflicted", "unverified-translation"]}
+        },
+        "allowedUses": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"enum": ["display", "retrieve", "summarize", "embed", "reason", "train-candidate", "execute-isolated", "execute-governed", "publish"]}
+        },
+        "expiresAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "transformations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["operation", "actor", "inputDigest", "outputDigest", "performedAt"],
+        "properties": {
+          "operation": {"enum": ["decode", "extract", "normalize", "translate", "summarize", "chunk", "embed", "redact", "merge", "generate", "classify"]},
+          "actor": {"type": "string", "minLength": 1},
+          "inputDigest": {"type": "string", "minLength": 1},
+          "outputDigest": {"type": "string", "minLength": 1},
+          "performedAt": {"type": "string", "format": "date-time"},
+          "receiptRef": {"type": "string"}
+        }
+      }
+    }
+  }
+}
