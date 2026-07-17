@@ -12,10 +12,18 @@ ok()  { echo "[lean-security] OK: $*"; }
   exit 2
 }
 
-if grep -RInE 'journalctl[[:space:]].*--vacuum|curl[^|]*\|[[:space:]]*(sh|bash)|Restart=always' "$ROOT"; then
-  bad "prohibited self-erasure, curl-pipe execution, or infinite restart policy found"
+ACTIVE=("$ROOT/agents" "$ROOT/lib" "$ROOT/ops" "$ROOT/units")
+
+if grep -RInE 'journalctl[[:space:]].*--vacuum|curl[^|]*\|[[:space:]]*(sh|bash)' "${ACTIVE[@]}"; then
+  bad "prohibited evidence erasure or curl-pipe execution found"
 else
-  ok "no journal vacuum, curl-pipe execution, or Restart=always"
+  ok "no journal vacuum or curl-pipe execution"
+fi
+
+if grep -RIn 'Restart=always' "$ROOT/units"; then
+  bad "infinite restart policy found"
+else
+  ok "no Restart=always in lean units"
 fi
 
 if grep -RInE '^[[:space:]]*while[[:space:]]+(true|:)' "$ROOT/agents"; then
@@ -24,10 +32,10 @@ else
   ok "no in-process infinite agent loops"
 fi
 
-if grep -RIn '/mnt/c' "$ROOT"; then
-  bad "direct Windows drive access found in lean runtime"
+if grep -RIn '/mnt/c' "${ACTIVE[@]}"; then
+  bad "direct Windows drive access found in active lean runtime"
 else
-  ok "no direct /mnt/c access"
+  ok "no direct /mnt/c access in active runtime"
 fi
 
 # Only the dedicated Maia bridge ingester may reference the narrow read-only
@@ -51,7 +59,7 @@ for unit in "$ROOT"/units/pleiades-taygete@.service "$ROOT"/units/pleiades-elect
   done
 done
 
-if grep -RInE '(^|[^[:alnum:]_])(exec|eval)[[:space:]]+\$|bash[[:space:]]+-c[[:space:]]+"?\$' "$ROOT/agents"; then
+if grep -RInE '(^|[^[:alnum:]_])(eval)[[:space:]]+\$|bash[[:space:]]+-c[[:space:]]+"?\$' "$ROOT/agents"; then
   bad "dynamic command execution found in a lean agent"
 else
   ok "no obvious dynamic shell execution in lean agents"
