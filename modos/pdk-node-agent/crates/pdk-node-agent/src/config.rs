@@ -79,7 +79,10 @@ impl NodeAgentConfig {
         );
         if self.startup_mode == StartupMode::Managed {
             anyhow::ensure!(
-                !self.trusted_controllers.iter().all(|controller| !controller.enabled),
+                !self
+                    .trusted_controllers
+                    .iter()
+                    .all(|controller| !controller.enabled),
                 "managed startup requires at least one enabled trusted controller"
             );
         }
