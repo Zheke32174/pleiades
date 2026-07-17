@@ -36,8 +36,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check for prohibited public wording in docs and READMEs
         run: |
-          # These terms must not appear in public-facing docs.
-          # They may appear in experimental/ scripts with appropriate framing.
           bad=$(grep -rniE \
             'selfdestruct|dead[[:space:]]drop|black-level|self-obfuscate|credential harvester|wipe traces|mutual persistence|BIOS-level hook|survive deletion|anti-lobotomy|anti-cryostasis|mirror dimension|RESURRECT signal|rehydrat' \
             README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md docs/ 2>/dev/null || true)
@@ -118,6 +116,35 @@ jobs:
         run: |
           chmod +x ci/check-polyglot.sh
           bash ci/check-polyglot.sh root.x86_64/scripts
+
+  # ── Draft-branch formatter (scoped auto-correction) ─────────────────────
+  pdk-autofmt:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/modos/epoch-0-canon-and-pdk' && github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modos/epoch-0-canon-and-pdk
+      - name: Install rustfmt
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt
+          rustup default stable
+      - name: Format PDK workspace
+        working-directory: modos/pdk-node-agent
+        run: cargo fmt --all
+      - name: Commit formatter-only changes
+        run: |
+          if git diff --quiet -- modos/pdk-node-agent; then
+            echo "No formatter changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add modos/pdk-node-agent
+          git commit -m "style(pdk): apply cargo fmt"
+          git push origin HEAD:modos/epoch-0-canon-and-pdk
 
   # ── PDK Rust workspace (hard fail) ──────────────────────────────────────
   pdk-rust:
