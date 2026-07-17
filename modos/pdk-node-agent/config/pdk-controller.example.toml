@@ -1,0 +1,36 @@
+domain_id = "domain://pleiades/home"
+controller_id = "controller://pleiades/alienware-primary"
+authority_mode = "single-authoritative-controller"
+bind = "0.0.0.0:7443"
+signing_key_file = "/etc/pleiades/keys/controller-signing.json"
+max_clock_skew_seconds = 30
+suggested_heartbeat_interval_seconds = 5
+
+[tls]
+certificate_chain = "/etc/pleiades/pki/controller-alienware.chain.pem"
+private_key = "/etc/pleiades/pki/controller-alienware.key.pem"
+trust_bundle = "/etc/pleiades/pki/ca.cert.pem"
+
+[[trusted_nodes]]
+node_id = "node://pleiades/alienware"
+key_id = "node-alienware-ed25519-v1"
+public_key_base64 = "REPLACE_WITH_PDK_KEYGEN_OUTPUT"
+enabled = true
+
+[[trusted_nodes]]
+node_id = "node://pleiades/lenovo"
+key_id = "node-lenovo-ed25519-v1"
+public_key_base64 = "REPLACE_WITH_PDK_KEYGEN_OUTPUT"
+enabled = true
+
+[[mtls_peers]]
+identity = "node://pleiades/alienware"
+role = "node"
+certificate_sha256 = "REPLACE_WITH_FINGERPRINT_FROM_BOOTSTRAP"
+required_uri_san = "spiffe://pleiades.local/node/alienware"
+
+[[mtls_peers]]
+identity = "node://pleiades/lenovo"
+role = "node"
+certificate_sha256 = "REPLACE_WITH_FINGERPRINT_FROM_BOOTSTRAP"
+required_uri_san = "spiffe://pleiades.local/node/lenovo"
