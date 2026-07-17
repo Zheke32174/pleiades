@@ -6,8 +6,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
-  # ── Shell syntax (hard fail) ──────────────────────────────────────────────
   shell-syntax:
     runs-on: ubuntu-latest
     steps:
@@ -20,24 +22,34 @@ jobs:
           done < <(find . -name '*.sh' -not -path './.git/*')
           exit $fail
 
-  # ── ShellCheck (advisory) ────────────────────────────────────────────────
   shellcheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-      - name: ShellCheck (warnings only — not a hard fail)
-        run: find . -name '*.sh' -not -path './.git/*' -exec shellcheck --severity=warning {} + 2>&1 || true
+      - name: ShellCheck lean runtime (hard fail)
+        run: find lean ci -name '*.sh' -exec shellcheck --severity=warning {} +
+      - name: ShellCheck historical scripts (advisory)
+        run: find . -name '*.sh' -not -path './.git/*' -not -path './lean/*' -not -path './ci/*' -exec shellcheck --severity=warning {} + 2>&1 || true
 
-  # ── Prohibited public language (hard fail) ───────────────────────────────
+  lean-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check defensive invariants
+        run: bash ci/check-lean-security.sh lean
+      - name: Validate all lean JSON
+        run: |
+          while IFS= read -r f; do
+            python3 -m json.tool "$f" >/dev/null
+          done < <(find lean -name '*.json' -type f)
+
   wording-guard:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check for prohibited public wording in docs and READMEs
+      - name: Check prohibited public wording
         run: |
-          # These terms must not appear in public-facing docs.
-          # They may appear in experimental/ scripts with appropriate framing.
           bad=$(grep -rniE \
             'selfdestruct|dead[[:space:]]drop|black-level|self-obfuscate|credential harvester|wipe traces|mutual persistence|BIOS-level hook|survive deletion|anti-lobotomy|anti-cryostasis|mirror dimension|RESURRECT signal|rehydrat' \
             README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md docs/ 2>/dev/null || true)
@@ -48,7 +60,6 @@ jobs:
           fi
           echo "Wording check passed."
 
-  # ── Secret-shape scan (hard fail) ────────────────────────────────────────
   secret-scan:
     runs-on: ubuntu-latest
     steps:
@@ -67,7 +78,6 @@ jobs:
           fi
           echo "Secret scan passed."
 
-  # ── Python syntax (hard fail) ────────────────────────────────────────────
   python-syntax:
     runs-on: ubuntu-latest
     steps:
@@ -80,7 +90,6 @@ jobs:
           done < <(find . -name '*.py' -not -path './.git/*')
           exit $fail
 
-  # ── Repo hygiene (hard fail) ─────────────────────────────────────────────
   hygiene:
     runs-on: ubuntu-latest
     steps:
@@ -101,7 +110,6 @@ jobs:
           fi
           echo "No .env files found."
 
-  # ── Polyglot heredoc syntax (hard fail) ─────────────────────────────────
   polyglot-syntax:
     runs-on: ubuntu-latest
     steps:
@@ -115,7 +123,6 @@ jobs:
           chmod +x ci/check-polyglot.sh
           bash ci/check-polyglot.sh root.x86_64/scripts
 
-  # ── DevContainer (advisory) ──────────────────────────────────────────────
   devcontainer:
     runs-on: ubuntu-latest
     steps:
@@ -123,7 +130,7 @@ jobs:
       - name: Validate devcontainer.json if present
         run: |
           if [ -f ".devcontainer/devcontainer.json" ]; then
-            python3 -m json.tool .devcontainer/devcontainer.json > /dev/null && echo "devcontainer.json valid"
+            python3 -m json.tool .devcontainer/devcontainer.json > /dev/null
           else
             echo "No devcontainer.json (optional)"
           fi
