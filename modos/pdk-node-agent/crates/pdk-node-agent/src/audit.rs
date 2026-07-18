@@ -56,6 +56,10 @@ impl OfflineAuditBuffer {
             .execute(&pool)
             .await
             .context("setting SQLite synchronous=FULL")?;
+        sqlx::query("PRAGMA busy_timeout = 5000")
+            .execute(&pool)
+            .await
+            .context("setting SQLite audit busy timeout")?;
         sqlx::query("PRAGMA foreign_keys = ON")
             .execute(&pool)
             .await
@@ -128,10 +132,7 @@ impl OfflineAuditBuffer {
         Ok(prepared.event_id)
     }
 
-    pub(crate) async fn insert_prepared_event(
-        &self,
-        event: &PreparedAuditEvent,
-    ) -> Result<()> {
+    pub(crate) async fn insert_prepared_event(&self, event: &PreparedAuditEvent) -> Result<()> {
         sqlx::query(
             r#"
             INSERT INTO domain_event_queue
