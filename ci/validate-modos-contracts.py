@@ -46,7 +46,10 @@ def semantic_errors(instance: dict[str, Any]) -> list[str]:
             errors.append("first-pass contribution must not observe other contributions")
         contribution_type = instance["contribution"]["type"]
         dissent_status = instance["epistemics"]["dissentStatus"]
-        if contribution_type == "dissent" and dissent_status not in {"minority", "formal-dissent"}:
+        if contribution_type == "dissent" and dissent_status not in {
+            "minority",
+            "formal-dissent",
+        }:
             errors.append("dissent contribution must preserve a dissent status")
         if instance["security"]["authorityCeiling"] not in {"none", "proposal"}:
             errors.append("workspace contribution exceeds proposal authority")
@@ -60,6 +63,23 @@ def semantic_errors(instance: dict[str, Any]) -> list[str]:
             if instance["security"]["trainingDisposition"] == "steward-approved":
                 errors.append("a record cannot self-assert steward approval")
 
+    elif kind == "AgentConvergenceContract":
+        participation = instance["participation"]
+        authority = instance["authority"]
+        budget = authority["capabilityBudget"]
+        if participation["forgeScope"] == "delegated-bounded":
+            if authority["authorityCeiling"] != "local-enforcement":
+                errors.append(
+                    "delegated-bounded Forge scope requires local-enforcement authority"
+                )
+            if budget["maxActions"] < 1:
+                errors.append("delegated-bounded agent requires a nonzero action budget")
+        if authority["authorityCeiling"] in {"none", "proposal"}:
+            if budget["maxActions"] != 0 or budget["allowedCapabilities"]:
+                errors.append("proposal-side agent cannot carry an action capability budget")
+        if instance["verification"]["verifierRef"] == instance["metadata"]["agentId"]:
+            errors.append("agent cannot be its only verifier")
+
     return errors
 
 
@@ -69,7 +89,6 @@ def main() -> int:
     args = parser.parse_args()
 
     contracts = args.contracts.resolve()
-    fixture_bundle = load_json(contracts / "canon-wave-v1.fixtures.json")
     checker = FormatChecker()
     failures: list[str] = []
 
@@ -80,26 +99,47 @@ def main() -> int:
         schemas[schema_path.name] = schema
         print(f"schema ok: {schema_path.name}")
 
-    for case in fixture_bundle["cases"]:
-        schema_name = case["schema"]
-        instance_name = case["name"]
-        expected_valid = bool(case["valid"])
-        schema = schemas[schema_name]
-        instance = case["instance"]
-        validator = Draft202012Validator(schema, format_checker=checker)
-        schema_errors = sorted(validator.iter_errors(instance), key=lambda err: list(err.path))
-        semantics = semantic_errors(instance) if not schema_errors else []
-        actual_valid = not schema_errors and not semantics
+    fixture_paths = sorted(contracts.glob("*.fixtures.json"))
+    if not fixture_paths:
+        print("no contract fixture bundles found", file=sys.stderr)
+        return 1
 
-        if actual_valid != expected_valid:
-            detail = [error.message for error in schema_errors] + semantics
-            failures.append(
-                f"{instance_name}: expected valid={expected_valid}, got valid={actual_valid}; "
-                + "; ".join(detail)
+    case_count = 0
+    for fixture_path in fixture_paths:
+        fixture_bundle = load_json(fixture_path)
+        cases = fixture_bundle.get("cases")
+        if not isinstance(cases, list) or not cases:
+            failures.append(f"{fixture_path.name}: cases must be a nonempty list")
+            continue
+        print(f"fixture bundle: {fixture_path.name}")
+        for case in cases:
+            case_count += 1
+            schema_name = case["schema"]
+            instance_name = case["name"]
+            expected_valid = bool(case["valid"])
+            schema = schemas.get(schema_name)
+            if schema is None:
+                failures.append(
+                    f"{fixture_path.name}/{instance_name}: unknown schema {schema_name}"
+                )
+                continue
+            instance = case["instance"]
+            validator = Draft202012Validator(schema, format_checker=checker)
+            schema_errors = sorted(
+                validator.iter_errors(instance), key=lambda error: list(error.path)
             )
-        else:
-            outcome = "accepted" if actual_valid else "rejected"
-            print(f"fixture {outcome}: {instance_name}")
+            semantics = semantic_errors(instance) if not schema_errors else []
+            actual_valid = not schema_errors and not semantics
+
+            if actual_valid != expected_valid:
+                detail = [error.message for error in schema_errors] + semantics
+                failures.append(
+                    f"{fixture_path.name}/{instance_name}: expected valid={expected_valid}, "
+                    f"got valid={actual_valid}; " + "; ".join(detail)
+                )
+            else:
+                outcome = "accepted" if actual_valid else "rejected"
+                print(f"fixture {outcome}: {instance_name}")
 
     if failures:
         print("contract validation failures:", file=sys.stderr)
@@ -107,7 +147,10 @@ def main() -> int:
             print(f"- {failure}", file=sys.stderr)
         return 1
 
-    print(f"validated {len(schemas)} schemas and {len(fixture_bundle['cases'])} fixtures")
+    print(
+        f"validated {len(schemas)} schemas, {len(fixture_paths)} bundles, "
+        f"and {case_count} fixtures"
+    )
     return 0
 
 
