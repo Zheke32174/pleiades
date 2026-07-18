@@ -9,27 +9,46 @@ on:
       - 'modos/pdk-node-agent/**'
       - '.github/workflows/pdk-diagnostics.yml'
 
+permissions:
+  contents: read
+
 concurrency:
   group: pdk-diagnostics-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  clippy-report:
+  rust-report:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: modos/pdk-node-agent
     steps:
       - uses: actions/checkout@v4
-      - name: Install stable Rust and Clippy
+        with:
+          show-progress: false
+      - name: Install stable Rust, rustfmt, and Clippy
         run: |
-          rustup toolchain install stable --profile minimal --component clippy
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
           rustup default stable
       - name: Install Protobuf compiler
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq protobuf-compiler
-      - name: Capture complete Clippy report
+      - name: Capture exact rustfmt patch
+        id: rustfmt
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo fmt --all
+          git -C ../.. diff -- modos/pdk-node-agent > rustfmt.patch
+          if [[ -s rustfmt.patch ]]; then
+            echo 'exit_code=1' >> "$GITHUB_OUTPUT"
+            cat rustfmt.patch
+          else
+            echo 'exit_code=0' >> "$GITHUB_OUTPUT"
+            printf 'workspace is rustfmt-clean\n' > rustfmt.patch
+          fi
+      - name: Capture complete Clippy report on formatted tree
         id: clippy
         shell: bash
         run: |
@@ -40,14 +59,22 @@ jobs:
           echo "exit_code=$status" >> "$GITHUB_OUTPUT"
           cat clippy.log
           exit 0
-      - name: Upload Clippy report
+      - name: Upload Rust diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: pdk-clippy-report-${{ github.sha }}
-          path: modos/pdk-node-agent/clippy.log
+          name: pdk-rust-report-${{ github.sha }}
+          path: |
+            modos/pdk-node-agent/rustfmt.patch
+            modos/pdk-node-agent/clippy.log
           if-no-files-found: error
           retention-days: 14
-      - name: Enforce Clippy result
+      - name: Enforce Rust diagnostic result
         if: always()
-        run: exit "${{ steps.clippy.outputs.exit_code }}"
+        env:
+          RUSTFMT_EXIT: ${{ steps.rustfmt.outputs.exit_code }}
+          CLIPPY_EXIT: ${{ steps.clippy.outputs.exit_code }}
+        run: |
+          set -euo pipefail
+          [[ "$RUSTFMT_EXIT" == 0 ]]
+          [[ "$CLIPPY_EXIT" == 0 ]]
