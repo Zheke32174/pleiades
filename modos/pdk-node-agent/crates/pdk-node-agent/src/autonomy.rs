@@ -141,8 +141,7 @@ mod tests {
 
     #[test]
     fn controller_ack_transitions_without_subscribers() {
-        let autonomy =
-            AutonomyStateMachine::new(Duration::from_secs(30), Duration::from_secs(60));
+        let autonomy = AutonomyStateMachine::new(Duration::from_secs(30), Duration::from_secs(60));
         assert_eq!(autonomy.current(), NodeState::DegradedAutonomous);
 
         autonomy.record_controller_ack(42);
@@ -154,8 +153,7 @@ mod tests {
 
     #[test]
     fn later_subscriber_observes_current_state() {
-        let autonomy =
-            AutonomyStateMachine::new(Duration::from_secs(30), Duration::from_secs(60));
+        let autonomy = AutonomyStateMachine::new(Duration::from_secs(30), Duration::from_secs(60));
         autonomy.quarantine("fixture quarantine");
 
         let receiver = autonomy.subscribe();
