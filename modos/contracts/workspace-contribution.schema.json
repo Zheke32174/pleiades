@@ -40,12 +40,15 @@
         "proposedAction": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["capabilityName", "resourceRef", "requestedOperations"],
+          "required": ["capabilityName", "resourceRef", "requestedOperations", "verifierRef", "failurePath"],
           "properties": {
             "capabilityName": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
             "resourceRef": {"type": "string", "minLength": 1},
             "requestedOperations": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
-            "justificationDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+            "verifierRef": {"type": "string", "minLength": 1},
+            "failurePath": {"type": "string", "minLength": 1},
+            "justificationDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+            "approvalRef": {"type": "string", "minLength": 1}
           }
         }
       }
