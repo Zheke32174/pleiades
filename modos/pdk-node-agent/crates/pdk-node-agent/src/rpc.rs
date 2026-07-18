@@ -268,8 +268,7 @@ impl NodeAgent for NodeAgentService {
             .authorize_status(&request.capability_token_id, &request.workload_id)
             .await
             .map_err(|error| Status::permission_denied(error.to_string()))?;
-        self.consume_durable_use(&request.capability_token_id)
-            .await?;
+        self.consume_durable_use(&request.capability_token_id).await?;
         let receipt = self
             .runtime
             .status(&request.workload_id)
