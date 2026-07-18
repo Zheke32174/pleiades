@@ -134,7 +134,7 @@ async fn main() -> Result<()> {
         policy.clone(),
         runtime.clone(),
         audit.clone(),
-        authority_state,
+        authority_state.clone(),
     );
 
     let autonomy_task = tokio::spawn(autonomy.clone().monitor());
@@ -158,6 +158,7 @@ async fn main() -> Result<()> {
             policy,
             runtime,
             audit,
+            authority_state,
         )
         .run(),
     );

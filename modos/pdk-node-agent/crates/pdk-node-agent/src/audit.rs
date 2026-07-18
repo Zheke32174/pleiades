@@ -8,10 +8,19 @@ use pdk_protocol::{
 };
 use prost::Message;
 use serde::Serialize;
-use sqlx::{Row, SqlitePool, sqlite::SqlitePoolOptions};
+use sqlx::{Row, Sqlite, SqlitePool, Transaction, sqlite::SqlitePoolOptions};
 use uuid::Uuid;
 
 use crate::autonomy::unix_ms;
+
+#[derive(Clone, Debug)]
+pub(crate) struct PreparedAuditEvent {
+    pub(crate) event_id: String,
+    pub(crate) created_at_unix_ms: u64,
+    pub(crate) event_type: String,
+    pub(crate) trace_id: String,
+    pub(crate) envelope: Vec<u8>,
+}
 
 #[derive(Clone)]
 pub struct OfflineAuditBuffer {
@@ -47,6 +56,10 @@ impl OfflineAuditBuffer {
             .execute(&pool)
             .await
             .context("setting SQLite synchronous=FULL")?;
+        sqlx::query("PRAGMA busy_timeout = 5000")
+            .execute(&pool)
+            .await
+            .context("setting SQLite audit busy timeout")?;
         sqlx::query("PRAGMA foreign_keys = ON")
             .execute(&pool)
             .await
@@ -76,12 +89,12 @@ impl OfflineAuditBuffer {
         })
     }
 
-    pub async fn queue_event<T: Serialize>(
+    pub(crate) fn prepare_event<T: Serialize>(
         &self,
         event_type: &str,
         trace_id: &str,
         payload: &T,
-    ) -> Result<String> {
+    ) -> Result<PreparedAuditEvent> {
         let event_id = Uuid::new_v4().to_string();
         let created_at_unix_ms = unix_ms();
         let payload_json =
@@ -99,7 +112,27 @@ impl OfflineAuditBuffer {
             },
             &self.signing_key,
         );
-        let envelope = signed.encode_to_vec();
+        Ok(PreparedAuditEvent {
+            event_id,
+            created_at_unix_ms,
+            event_type: event_type.to_owned(),
+            trace_id: trace_id.to_owned(),
+            envelope: signed.encode_to_vec(),
+        })
+    }
+
+    pub async fn queue_event<T: Serialize>(
+        &self,
+        event_type: &str,
+        trace_id: &str,
+        payload: &T,
+    ) -> Result<String> {
+        let prepared = self.prepare_event(event_type, trace_id, payload)?;
+        self.insert_prepared_event(&prepared).await?;
+        Ok(prepared.event_id)
+    }
+
+    pub(crate) async fn insert_prepared_event(&self, event: &PreparedAuditEvent) -> Result<()> {
         sqlx::query(
             r#"
             INSERT INTO domain_event_queue
@@ -107,15 +140,15 @@ impl OfflineAuditBuffer {
             VALUES (?, ?, ?, ?, ?)
             "#,
         )
-        .bind(&event_id)
-        .bind(as_i64(created_at_unix_ms))
-        .bind(event_type)
-        .bind(trace_id)
-        .bind(envelope)
+        .bind(&event.event_id)
+        .bind(as_i64(event.created_at_unix_ms))
+        .bind(&event.event_type)
+        .bind(&event.trace_id)
+        .bind(&event.envelope)
         .execute(&self.pool)
         .await
         .context("persisting signed domain event")?;
-        Ok(event_id)
+        Ok(())
     }
 
     pub async fn next(&self) -> Result<Option<SignedDomainEvent>> {
@@ -160,6 +193,28 @@ impl OfflineAuditBuffer {
         let count: i64 = row.try_get("count")?;
         Ok(count.max(0) as u64)
     }
+}
+
+pub(crate) async fn insert_prepared_event_tx(
+    transaction: &mut Transaction<'_, Sqlite>,
+    event: &PreparedAuditEvent,
+) -> Result<()> {
+    sqlx::query(
+        r#"
+        INSERT INTO domain_event_queue
+            (event_id, created_at_unix_ms, event_type, trace_id, envelope)
+        VALUES (?, ?, ?, ?, ?)
+        "#,
+    )
+    .bind(&event.event_id)
+    .bind(as_i64(event.created_at_unix_ms))
+    .bind(&event.event_type)
+    .bind(&event.trace_id)
+    .bind(&event.envelope)
+    .execute(&mut **transaction)
+    .await
+    .context("persisting signed domain event in transaction")?;
+    Ok(())
 }
 
 fn truncate(value: &str, max_chars: usize) -> String {

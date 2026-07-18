@@ -10,7 +10,7 @@ use pdk_transport::peer_identity;
 
 use crate::{
     audit::OfflineAuditBuffer,
-    authority::AuthorityStateStore,
+    authority::{AuthorityStateStore, GrantAdmission},
     autonomy::{AutonomyStateMachine, unix_ms},
     policy::PolicyEnforcer,
     runtime::RuntimeManager,
@@ -97,41 +97,49 @@ impl NodeAgent for NodeAgentService {
             .await
         {
             Ok(grant) => {
-                if let Err(error) = self
-                    .authority_state
-                    .persist_grant(&grant, &signature_base64)
-                    .await
-                {
-                    self.policy.remove_cached_grant(&grant.token_id).await;
-                    return Err(Status::permission_denied(format!(
-                        "durable capability continuity check failed: {error}"
-                    )));
-                }
                 let event = DecisionEvent {
                     decision: "allow",
                     operation: "push_capability_grant",
                     controller_id: &peer.identity,
                     token_id: &grant.token_id,
                     workload_id: &grant.subject_workload_id,
-                    detail: "signature, domain, target, validity interval, Connected state, durable sequence floor, and token identity verified",
+                    detail: "signature, domain, target, validity interval, Connected state, durable sequence floor, token identity, and signed admission receipt verified",
                 };
-                if let Err(error) = self
-                    .audit_decision(&grant.token_id, "capability.grant.cached", &event)
+                let prepared = self
+                    .audit
+                    .prepare_event("capability.grant.cached", &grant.token_id, &event)
+                    .map_err(|error| {
+                        Status::internal(format!(
+                            "preparing signed capability admission receipt failed: {error}"
+                        ))
+                    })?;
+                let admission = self
+                    .authority_state
+                    .admit_grant(&grant, &signature_base64, &prepared)
                     .await
-                {
-                    self.policy.remove_cached_grant(&grant.token_id).await;
-                    return Err(error);
-                }
+                    .map_err(|error| {
+                        Status::failed_precondition(format!(
+                            "transactional capability admission failed: {error}"
+                        ))
+                    })?;
+                let admission_state = match admission {
+                    GrantAdmission::New { .. } => "new",
+                    GrantAdmission::Recovered { .. } => "recovered",
+                    GrantAdmission::Idempotent { .. } => "idempotent",
+                };
                 info!(
                     token_id = %grant.token_id,
                     workload_id = %grant.subject_workload_id,
                     controller = %peer.identity,
-                    "cached signed capability grant with durable continuity state"
+                    admission_state,
+                    "committed signed capability grant with atomic authority and audit state"
                 );
                 Ok(Response::new(CapabilityGrantAck {
                     token_id: grant.token_id,
                     accepted: true,
-                    message: "capability grant cached with durable continuity state".into(),
+                    message: format!(
+                        "capability grant transactionally admitted ({admission_state})"
+                    ),
                 }))
             }
             Err(error) => {
