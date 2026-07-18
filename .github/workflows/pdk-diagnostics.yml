@@ -85,6 +85,12 @@ jobs:
             modos/pdk-node-agent/rustfmt.patch
             modos/pdk-node-agent/clippy.log
             modos/pdk-node-agent/tests.log
+            modos/pdk-node-agent/crates/pdk-node-agent/src/audit.rs
+            modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs
+            modos/pdk-node-agent/crates/pdk-node-agent/src/leases.rs
+            modos/pdk-node-agent/crates/pdk-node-agent/src/main.rs
+            modos/pdk-node-agent/crates/pdk-node-agent/src/policy.rs
+            modos/pdk-node-agent/crates/pdk-node-agent/src/rpc.rs
           if-no-files-found: error
           retention-days: 14
       - name: Enforce Rust diagnostic result
