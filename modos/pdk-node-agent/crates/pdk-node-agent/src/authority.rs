@@ -80,13 +80,12 @@ impl AuthorityStateStore {
             .await
             .context("starting capability grant transaction")?;
 
-        if let Some(row) = sqlx::query(
-            "SELECT signature_base64 FROM capability_grant_state WHERE token_id = ?",
-        )
-        .bind(&grant.token_id)
-        .fetch_optional(&mut *transaction)
-        .await
-        .context("checking durable capability token identity")?
+        if let Some(row) =
+            sqlx::query("SELECT signature_base64 FROM capability_grant_state WHERE token_id = ?")
+                .bind(&grant.token_id)
+                .fetch_optional(&mut *transaction)
+                .await
+                .context("checking durable capability token identity")?
         {
             let existing_signature: String = row.try_get("signature_base64")?;
             if existing_signature != signature_base64 {
@@ -249,7 +248,9 @@ mod tests {
             "pdk-authority-continuity-{}.sqlite",
             Uuid::new_v4()
         ));
-        let first = AuthorityStateStore::open(&path).await.expect("open first store");
+        let first = AuthorityStateStore::open(&path)
+            .await
+            .expect("open first store");
         let accepted = grant("token-current", 20, 1);
         first
             .persist_grant(&accepted, "signature-current")
@@ -261,7 +262,9 @@ mod tests {
             .expect("consume only use");
         first.pool.close().await;
 
-        let reopened = AuthorityStateStore::open(&path).await.expect("reopen store");
+        let reopened = AuthorityStateStore::open(&path)
+            .await
+            .expect("reopen store");
         let exhausted = reopened
             .consume_use(&accepted.token_id, crate::autonomy::unix_ms())
             .await
