@@ -599,7 +599,9 @@ mod tests {
     #[tokio::test]
     async fn bounded_busy_timeout_allows_short_writer_contention() {
         let path = database_path("authority-contention");
-        let first = AuthorityStateStore::open(&path).await.expect("open first store");
+        let first = AuthorityStateStore::open(&path)
+            .await
+            .expect("open first store");
         let second = AuthorityStateStore::open(&path)
             .await
             .expect("open second store");
