@@ -38,6 +38,13 @@ enum CapabilityAction {
   CAPABILITY_ACTION_WRITE_PROVISIONAL_EVENT = 5;
 }
 
+enum OfflinePolicy {
+  OFFLINE_POLICY_UNSPECIFIED = 0;
+  OFFLINE_POLICY_DENY = 1;
+  OFFLINE_POLICY_FINISH_CURRENT = 2;
+  OFFLINE_POLICY_BOUNDED_CACHE = 3;
+}
+
 message CpuInventory {
   string architecture = 1;
   uint32 logical_cores = 2;
@@ -160,6 +167,10 @@ message CapabilityGrantPayload {
   string nonce = 13;
   IsolationConstraints maximum_isolation = 14;
   bool singleton_destructive = 15;
+  uint64 grant_sequence = 16;
+  uint32 max_uses = 17;
+  OfflinePolicy offline_policy = 18;
+  string policy_digest_sha256 = 19;
 }
 
 message SignedCapabilityGrant {
