@@ -404,6 +404,13 @@ impl AuthorityStateStore {
         Ok(consumed.try_into().unwrap_or(u32::MAX))
     }
 
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "durable storage primitive awaits the authenticated revocation RPC checkpoint"
+        )
+    )]
     pub async fn revoke_grant(
         &self,
         token_id: &str,
