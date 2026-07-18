@@ -1,0 +1,253 @@
+--- a/modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs
++++ b/modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs
+@@ -2,7 +2,7 @@
+ 
+ use anyhow::{Context, Result, bail};
+ use pdk_protocol::v1::CapabilityGrantPayload;
+-use sqlx::{Row, SqlitePool, sqlite::SqlitePoolOptions};
++use sqlx::{Row, Sqlite, SqlitePool, Transaction, sqlite::SqlitePoolOptions};
+ 
+ use crate::audit::{PreparedAuditEvent, insert_prepared_event_tx};
+ 
+@@ -75,6 +75,23 @@
+         .execute(&pool)
+         .await
+         .context("creating capability sequence floor")?;
++        sqlx::query(
++            r#"
++            CREATE TABLE IF NOT EXISTS capability_authority_write_fence (
++                id INTEGER PRIMARY KEY CHECK (id = 1),
++                generation INTEGER NOT NULL
++            )
++            "#,
++        )
++        .execute(&pool)
++        .await
++        .context("creating capability authority write fence")?;
++        sqlx::query(
++            "INSERT OR IGNORE INTO capability_authority_write_fence (id, generation) VALUES (1, 0)",
++        )
++        .execute(&pool)
++        .await
++        .context("initializing capability authority write fence")?;
+         sqlx::query(
+             r#"
+             CREATE TABLE IF NOT EXISTS capability_grant_state (
+@@ -164,6 +181,7 @@
+             .begin()
+             .await
+             .context("starting capability admission transaction")?;
++        acquire_authority_write_fence(&mut transaction).await?;
+ 
+         if let Some(row) = sqlx::query(
+             "SELECT signature_base64 FROM capability_revocation_tombstone WHERE token_id = ?",
+@@ -325,6 +343,7 @@
+             .begin()
+             .await
+             .context("starting capability use transaction")?;
++        acquire_authority_write_fence(&mut transaction).await?;
+         let row = sqlx::query(
+             r#"
+             SELECT g.uses, g.max_uses, g.expires_at_unix_ms,
+@@ -398,6 +417,7 @@
+             .begin()
+             .await
+             .context("starting capability revocation transaction")?;
++        acquire_authority_write_fence(&mut transaction).await?;
+         let identity = sqlx::query(
+             "SELECT signature_base64 FROM capability_token_identity WHERE token_id = ?",
+         )
+@@ -454,14 +474,37 @@
+     }
+ 
+     pub async fn compact_expired(&self, now_unix_ms: u64) -> Result<u64> {
++        let mut transaction = self
++            .pool
++            .begin()
++            .await
++            .context("starting capability compaction transaction")?;
++        acquire_authority_write_fence(&mut transaction).await?;
+         let result =
+             sqlx::query("DELETE FROM capability_grant_state WHERE expires_at_unix_ms <= ?")
+                 .bind(as_i64(now_unix_ms))
+-                .execute(&self.pool)
++                .execute(&mut *transaction)
+                 .await
+                 .context("compacting expired active capability state")?;
+-        Ok(result.rows_affected())
+-    }
++        let rows_affected = result.rows_affected();
++        transaction
++            .commit()
++            .await
++            .context("committing capability compaction")?;
++        Ok(rows_affected)
++    }
++}
++
++async fn acquire_authority_write_fence(
++    transaction: &mut Transaction<'_, Sqlite>,
++) -> Result<()> {
++    sqlx::query(
++        "UPDATE capability_authority_write_fence SET generation = generation + 1 WHERE id = 1",
++    )
++    .execute(&mut **transaction)
++    .await
++    .context("acquiring capability authority write fence")?;
++    Ok(())
+ }
+ 
+ async fn ensure_column(
+--- a/modos/pdk-node-agent/crates/pdk-node-agent/src/leases.rs
++++ b/modos/pdk-node-agent/crates/pdk-node-agent/src/leases.rs
+@@ -4,7 +4,11 @@
+ use tracing::{info, warn};
+ 
+ use crate::{
+-    audit::OfflineAuditBuffer, autonomy::unix_ms, policy::PolicyEnforcer, runtime::RuntimeManager,
++    audit::OfflineAuditBuffer,
++    authority::AuthorityStateStore,
++    autonomy::unix_ms,
++    policy::PolicyEnforcer,
++    runtime::RuntimeManager,
+ };
+ 
+ #[derive(Clone)]
+@@ -13,6 +17,7 @@
+     policy: PolicyEnforcer,
+     runtime: RuntimeManager,
+     audit: OfflineAuditBuffer,
++    authority_state: AuthorityStateStore,
+ }
+ 
+ #[derive(Serialize)]
+@@ -29,12 +34,14 @@
+         policy: PolicyEnforcer,
+         runtime: RuntimeManager,
+         audit: OfflineAuditBuffer,
++        authority_state: AuthorityStateStore,
+     ) -> Self {
+         Self {
+             interval,
+             policy,
+             runtime,
+             audit,
++            authority_state,
+         }
+     }
+ 
+@@ -43,7 +50,17 @@
+         ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+         loop {
+             ticker.tick().await;
+-            let expired = self.policy.purge_expired(unix_ms()).await;
++            let now_unix_ms = unix_ms();
++            let expired = self.policy.purge_expired(now_unix_ms).await;
++            match self.authority_state.compact_expired(now_unix_ms).await {
++                Ok(removed) if removed > 0 => {
++                    info!(removed, "compacted expired durable capability state")
++                }
++                Ok(_) => {}
++                Err(error) => {
++                    warn!(error = %error, "failed to compact expired durable capability state")
++                }
++            }
+             for grant in expired {
+                 let reason = "capability lease expired";
+                 let results = self.runtime.stop_by_token(&grant.token_id, reason).await;
+--- a/modos/pdk-node-agent/crates/pdk-node-agent/src/main.rs
++++ b/modos/pdk-node-agent/crates/pdk-node-agent/src/main.rs
+@@ -134,7 +134,7 @@
+         policy.clone(),
+         runtime.clone(),
+         audit.clone(),
+-        authority_state,
++        authority_state.clone(),
+     );
+ 
+     let autonomy_task = tokio::spawn(autonomy.clone().monitor());
+@@ -158,6 +158,7 @@
+             policy,
+             runtime,
+             audit,
++            authority_state,
+         )
+         .run(),
+     );
+--- a/modos/pdk-node-agent/crates/pdk-node-agent/src/policy.rs
++++ b/modos/pdk-node-agent/crates/pdk-node-agent/src/policy.rs
+@@ -35,7 +35,6 @@
+ struct CachedGrant {
+     envelope: SignedCapabilityGrant,
+     payload: CapabilityGrantPayload,
+-    uses: u32,
+ }
+ 
+ #[derive(Clone, Debug)]
+@@ -136,7 +135,6 @@
+             CachedGrant {
+                 envelope,
+                 payload: payload.clone(),
+-                uses: 0,
+             },
+         );
+         highest_sequences.insert(sequence_key, payload.grant_sequence);
+@@ -222,10 +220,6 @@
+         expired
+     }
+ 
+-    pub async fn remove_cached_grant(&self, token_id: &str) -> bool {
+-        self.grants.write().await.remove(token_id).is_some()
+-    }
+-
+     pub async fn cached_count(&self) -> u64 {
+         self.grants
+             .read()
+@@ -244,20 +238,14 @@
+     where
+         F: FnOnce(&CapabilityGrantPayload) -> Result<()>,
+     {
+-        let mut grants = self.grants.write().await;
+-        let cached = grants
+-            .get_mut(token_id)
+-            .context("capability token is not cached")?;
++        let grants = self.grants.read().await;
++        let cached = grants.get(token_id).context("capability token is not cached")?;
+         validate_grant_time(&cached.payload, unix_ms(), self.max_clock_skew_ms)?;
+         if !cached.payload.actions.contains(&(action as i32)) {
+             bail!("capability token does not authorize requested action");
+         }
+         enforce_offline_policy(&cached.payload, self.autonomy.current(), action)?;
+         validate_subject(&cached.payload)?;
+-        if cached.uses >= cached.payload.max_uses {
+-            bail!("capability lease use budget is exhausted");
+-        }
+-        cached.uses = cached.uses.saturating_add(1);
+         Ok(cached.payload.clone())
+     }
+ }
+@@ -555,7 +543,7 @@
+     }
+ 
+     #[tokio::test]
+-    async fn use_budget_is_consumed_only_after_subject_validation() {
++    async fn subject_validation_does_not_consume_the_durable_budget() {
+         let (enforcer, key, _) = fixture();
+         enforcer
+             .cache_signed_grant(
+@@ -579,12 +567,11 @@
+         enforcer
+             .authorize_status("token-budget", "workload-1")
+             .await
+-            .expect("valid subject should still have one use");
+-        let error = enforcer
++            .expect("valid subject should pass policy validation");
++        enforcer
+             .authorize_status("token-budget", "workload-1")
+             .await
+-            .expect_err("second successful use must be rejected");
+-        assert!(error.to_string().contains("use budget is exhausted"));
++            .expect("durable authority state, not the policy cache, owns use consumption");
+     }
+ 
+     #[test]
