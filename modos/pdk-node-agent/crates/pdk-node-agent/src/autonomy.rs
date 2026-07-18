@@ -107,12 +107,17 @@ impl AutonomyStateMachine {
         if current == next {
             return;
         }
-        if self.state_tx.send(next).is_ok() {
-            if matches!(next, NodeState::Quarantined | NodeState::ReadOnlySafe) {
-                warn!(from = ?current, to = ?next, reason, "node autonomy state changed");
-            } else {
-                info!(from = ?current, to = ?next, reason, "node autonomy state changed");
-            }
+
+        // `watch::Sender::send` refuses to update when no receivers exist.
+        // Autonomy is authoritative local state and must not depend on whether an
+        // observer happens to be subscribed, so replace the value unconditionally.
+        let previous = self.state_tx.send_replace(next);
+        debug_assert_eq!(previous, current);
+
+        if matches!(next, NodeState::Quarantined | NodeState::ReadOnlySafe) {
+            warn!(from = ?current, to = ?next, reason, "node autonomy state changed");
+        } else {
+            info!(from = ?current, to = ?next, reason, "node autonomy state changed");
         }
     }
 }
@@ -128,4 +133,33 @@ pub fn unix_ms() -> u64 {
         .as_millis()
         .try_into()
         .unwrap_or(u64::MAX)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn controller_ack_transitions_without_subscribers() {
+        let autonomy =
+            AutonomyStateMachine::new(Duration::from_secs(30), Duration::from_secs(60));
+        assert_eq!(autonomy.current(), NodeState::DegradedAutonomous);
+
+        autonomy.record_controller_ack(42);
+
+        assert_eq!(autonomy.current(), NodeState::Connected);
+        assert_eq!(autonomy.last_ack_unix_ms(), 42);
+        assert!(autonomy.allows_new_global_grant());
+    }
+
+    #[test]
+    fn later_subscriber_observes_current_state() {
+        let autonomy =
+            AutonomyStateMachine::new(Duration::from_secs(30), Duration::from_secs(60));
+        autonomy.quarantine("fixture quarantine");
+
+        let receiver = autonomy.subscribe();
+
+        assert_eq!(*receiver.borrow(), NodeState::Quarantined);
+    }
 }
