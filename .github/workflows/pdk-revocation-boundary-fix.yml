@@ -1,0 +1,44 @@
+name: Apply PDK revocation boundary annotation
+
+on:
+  push:
+    branches:
+      - modos/checkpoint-transactional-authority
+    paths:
+      - '.github/workflows/pdk-revocation-boundary-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - name: Mark storage primitive boundary
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs')
+          text = path.read_text()
+          needle = '    pub async fn revoke_grant(\n'
+          replacement = '''    #[cfg_attr(\n        not(test),\n        expect(\n            dead_code,\n            reason = "durable storage primitive awaits the authenticated revocation RPC checkpoint"\n        )\n    )]\n    pub async fn revoke_grant(\n'''
+          if text.count(needle) != 1:
+              raise SystemExit('expected exactly one revoke_grant method')
+          path.write_text(text.replace(needle, replacement))
+          PY
+          cargo fmt --manifest-path modos/pdk-node-agent/Cargo.toml --all
+          rm .github/workflows/pdk-revocation-boundary-fix.yml
+          git diff --check
+      - name: Commit bounded annotation
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs .github/workflows/pdk-revocation-boundary-fix.yml
+          git commit -m 'chore(pdk): make revocation protocol boundary explicit'
+          git push origin "HEAD:${{ github.ref_name }}"
