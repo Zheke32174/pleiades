@@ -49,6 +49,12 @@ Restart does not automatically reactivate cached permission. The authenticated c
 
 Compaction removes only expired active grant rows. It does not lower sequence floors or delete token identity or revocation history.
 
+## Revocation boundary
+
+PR #10 implements and tests the durable revocation storage primitive, including atomic tombstone and signed-outbox persistence. It does not expose an authenticated revocation RPC and therefore does not claim operational remote revocation.
+
+The storage method is intentionally retained behind an explicit compile-time boundary until issue #13 supplies the signed instruction schema, issuer authorization, monotonic revocation sequence, active-cache removal, workload termination policy, and idempotent RPC receipt.
+
 ## Lease sweeping
 
 The lease sweeper removes expired grants from the policy cache, terminates associated workloads, emits signed outcome events, and compacts expired durable active state. Compaction failure is reported but cannot make an expired grant usable because authorization independently enforces signed expiry.
@@ -64,4 +70,4 @@ The checkpoint remains incomplete unless automated tests prove:
 5. short SQLite writer contention resolves within the bounded busy timeout;
 6. rustfmt, strict Clippy, full workspace tests, and release compilation pass.
 
-Live Alienware–Lenovo behavior, controller quorum, offline cache restoration, and production promotion remain separate gates.
+Live Alienware–Lenovo behavior, controller quorum, offline cache restoration, authenticated revocation, and production promotion remain separate gates.
