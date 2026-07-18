@@ -35,7 +35,6 @@ pub struct PolicyEnforcer {
 struct CachedGrant {
     envelope: SignedCapabilityGrant,
     payload: CapabilityGrantPayload,
-    uses: u32,
 }
 
 #[derive(Clone, Debug)]
@@ -136,7 +135,6 @@ impl PolicyEnforcer {
             CachedGrant {
                 envelope,
                 payload: payload.clone(),
-                uses: 0,
             },
         );
         highest_sequences.insert(sequence_key, payload.grant_sequence);
@@ -222,10 +220,6 @@ impl PolicyEnforcer {
         expired
     }
 
-    pub async fn remove_cached_grant(&self, token_id: &str) -> bool {
-        self.grants.write().await.remove(token_id).is_some()
-    }
-
     pub async fn cached_count(&self) -> u64 {
         self.grants
             .read()
@@ -244,9 +238,9 @@ impl PolicyEnforcer {
     where
         F: FnOnce(&CapabilityGrantPayload) -> Result<()>,
     {
-        let mut grants = self.grants.write().await;
+        let grants = self.grants.read().await;
         let cached = grants
-            .get_mut(token_id)
+            .get(token_id)
             .context("capability token is not cached")?;
         validate_grant_time(&cached.payload, unix_ms(), self.max_clock_skew_ms)?;
         if !cached.payload.actions.contains(&(action as i32)) {
@@ -254,10 +248,6 @@ impl PolicyEnforcer {
         }
         enforce_offline_policy(&cached.payload, self.autonomy.current(), action)?;
         validate_subject(&cached.payload)?;
-        if cached.uses >= cached.payload.max_uses {
-            bail!("capability lease use budget is exhausted");
-        }
-        cached.uses = cached.uses.saturating_add(1);
         Ok(cached.payload.clone())
     }
 }
@@ -555,7 +545,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn use_budget_is_consumed_only_after_subject_validation() {
+    async fn subject_validation_does_not_consume_the_durable_budget() {
         let (enforcer, key, _) = fixture();
         enforcer
             .cache_signed_grant(
@@ -579,12 +569,11 @@ mod tests {
         enforcer
             .authorize_status("token-budget", "workload-1")
             .await
-            .expect("valid subject should still have one use");
-        let error = enforcer
+            .expect("valid subject should pass policy validation");
+        enforcer
             .authorize_status("token-budget", "workload-1")
             .await
-            .expect_err("second successful use must be rejected");
-        assert!(error.to_string().contains("use budget is exhausted"));
+            .expect("durable authority state, not the policy cache, owns use consumption");
     }
 
     #[test]

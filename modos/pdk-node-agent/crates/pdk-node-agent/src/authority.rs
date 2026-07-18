@@ -2,7 +2,7 @@ use std::path::Path;
 
 use anyhow::{Context, Result, bail};
 use pdk_protocol::v1::CapabilityGrantPayload;
-use sqlx::{Row, SqlitePool, sqlite::SqlitePoolOptions};
+use sqlx::{Row, Sqlite, SqlitePool, Transaction, sqlite::SqlitePoolOptions};
 
 use crate::audit::{PreparedAuditEvent, insert_prepared_event_tx};
 
@@ -75,6 +75,23 @@ impl AuthorityStateStore {
         .execute(&pool)
         .await
         .context("creating capability sequence floor")?;
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS capability_authority_write_fence (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                generation INTEGER NOT NULL
+            )
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .context("creating capability authority write fence")?;
+        sqlx::query(
+            "INSERT OR IGNORE INTO capability_authority_write_fence (id, generation) VALUES (1, 0)",
+        )
+        .execute(&pool)
+        .await
+        .context("initializing capability authority write fence")?;
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS capability_grant_state (
@@ -164,6 +181,7 @@ impl AuthorityStateStore {
             .begin()
             .await
             .context("starting capability admission transaction")?;
+        acquire_authority_write_fence(&mut transaction).await?;
 
         if let Some(row) = sqlx::query(
             "SELECT signature_base64 FROM capability_revocation_tombstone WHERE token_id = ?",
@@ -325,6 +343,7 @@ impl AuthorityStateStore {
             .begin()
             .await
             .context("starting capability use transaction")?;
+        acquire_authority_write_fence(&mut transaction).await?;
         let row = sqlx::query(
             r#"
             SELECT g.uses, g.max_uses, g.expires_at_unix_ms,
@@ -398,6 +417,7 @@ impl AuthorityStateStore {
             .begin()
             .await
             .context("starting capability revocation transaction")?;
+        acquire_authority_write_fence(&mut transaction).await?;
         let identity = sqlx::query(
             "SELECT signature_base64 FROM capability_token_identity WHERE token_id = ?",
         )
@@ -454,14 +474,35 @@ impl AuthorityStateStore {
     }
 
     pub async fn compact_expired(&self, now_unix_ms: u64) -> Result<u64> {
+        let mut transaction = self
+            .pool
+            .begin()
+            .await
+            .context("starting capability compaction transaction")?;
+        acquire_authority_write_fence(&mut transaction).await?;
         let result =
             sqlx::query("DELETE FROM capability_grant_state WHERE expires_at_unix_ms <= ?")
                 .bind(as_i64(now_unix_ms))
-                .execute(&self.pool)
+                .execute(&mut *transaction)
                 .await
                 .context("compacting expired active capability state")?;
-        Ok(result.rows_affected())
+        let rows_affected = result.rows_affected();
+        transaction
+            .commit()
+            .await
+            .context("committing capability compaction")?;
+        Ok(rows_affected)
     }
+}
+
+async fn acquire_authority_write_fence(transaction: &mut Transaction<'_, Sqlite>) -> Result<()> {
+    sqlx::query(
+        "UPDATE capability_authority_write_fence SET generation = generation + 1 WHERE id = 1",
+    )
+    .execute(&mut **transaction)
+    .await
+    .context("acquiring capability authority write fence")?;
+    Ok(())
 }
 
 async fn ensure_column(

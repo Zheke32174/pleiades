@@ -4,7 +4,8 @@ use serde::Serialize;
 use tracing::{info, warn};
 
 use crate::{
-    audit::OfflineAuditBuffer, autonomy::unix_ms, policy::PolicyEnforcer, runtime::RuntimeManager,
+    audit::OfflineAuditBuffer, authority::AuthorityStateStore, autonomy::unix_ms,
+    policy::PolicyEnforcer, runtime::RuntimeManager,
 };
 
 #[derive(Clone)]
@@ -13,6 +14,7 @@ pub struct LeaseManager {
     policy: PolicyEnforcer,
     runtime: RuntimeManager,
     audit: OfflineAuditBuffer,
+    authority_state: AuthorityStateStore,
 }
 
 #[derive(Serialize)]
@@ -29,12 +31,14 @@ impl LeaseManager {
         policy: PolicyEnforcer,
         runtime: RuntimeManager,
         audit: OfflineAuditBuffer,
+        authority_state: AuthorityStateStore,
     ) -> Self {
         Self {
             interval,
             policy,
             runtime,
             audit,
+            authority_state,
         }
     }
 
@@ -43,7 +47,17 @@ impl LeaseManager {
         ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         loop {
             ticker.tick().await;
-            let expired = self.policy.purge_expired(unix_ms()).await;
+            let now_unix_ms = unix_ms();
+            let expired = self.policy.purge_expired(now_unix_ms).await;
+            match self.authority_state.compact_expired(now_unix_ms).await {
+                Ok(removed) if removed > 0 => {
+                    info!(removed, "compacted expired durable capability state")
+                }
+                Ok(_) => {}
+                Err(error) => {
+                    warn!(error = %error, "failed to compact expired durable capability state")
+                }
+            }
             for grant in expired {
                 let reason = "capability lease expired";
                 let results = self.runtime.stop_by_token(&grant.token_id, reason).await;
