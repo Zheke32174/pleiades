@@ -2,9 +2,15 @@ name: PDK diagnostics
 
 on:
   push:
-    branches: [modos/epoch-0-canon-and-pdk]
+    branches:
+      - 'modos/**'
+    paths:
+      - 'modos/pdk-node-agent/**'
+      - '.github/workflows/pdk-diagnostics.yml'
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - modos/epoch-0-canon-and-pdk
     paths:
       - 'modos/pdk-node-agent/**'
       - '.github/workflows/pdk-diagnostics.yml'
