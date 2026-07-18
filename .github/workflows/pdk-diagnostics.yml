@@ -10,7 +10,7 @@ on:
   pull_request:
     branches:
       - main
-      - modos/epoch-0-canon-and-pdk
+      - 'modos/**'
     paths:
       - 'modos/pdk-node-agent/**'
       - '.github/workflows/pdk-diagnostics.yml'
