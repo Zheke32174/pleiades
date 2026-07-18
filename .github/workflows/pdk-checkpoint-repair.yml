@@ -1,0 +1,44 @@
+name: Apply PDK transactional authority repair
+
+on:
+  push:
+    branches:
+      - modos/checkpoint-transactional-authority
+    paths:
+      - '.github/workflows/pdk-checkpoint-repair.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pdk-checkpoint-repair-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  apply-repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - name: Install rustfmt
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt
+          rustup default stable
+      - name: Apply bounded repair and canonical formatting
+        run: |
+          set -euo pipefail
+          patch='modos/pdk-node-agent/checkpoints/transactional-authority-followup.patch'
+          git apply --check "$patch"
+          git apply "$patch"
+          cargo fmt --manifest-path modos/pdk-node-agent/Cargo.toml --all
+          git diff --check
+      - name: Commit repair to checkpoint branch
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add modos/pdk-node-agent/crates/pdk-node-agent/src/
+          git commit -m 'fix(pdk): serialize authority mutations and unify use budgets'
+          git push origin "HEAD:${{ github.ref_name }}"
