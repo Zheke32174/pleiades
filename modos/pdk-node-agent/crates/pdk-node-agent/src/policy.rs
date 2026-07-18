@@ -339,11 +339,13 @@ fn enforce_offline_policy(
             },
         },
         NodeState::ReadOnlySafe => {
-            matches!(policy, OfflinePolicy::FinishCurrent | OfflinePolicy::BoundedCache)
-                && matches!(
-                    action,
-                    CapabilityAction::StopWorkload | CapabilityAction::StatusWorkload
-                )
+            matches!(
+                policy,
+                OfflinePolicy::FinishCurrent | OfflinePolicy::BoundedCache
+            ) && matches!(
+                action,
+                CapabilityAction::StopWorkload | CapabilityAction::StatusWorkload
+            )
         }
         NodeState::Standalone | NodeState::Quarantined | NodeState::Unspecified => false,
     };
@@ -464,21 +466,13 @@ mod tests {
     const POLICY_DIGEST: &str =
         "sha256:a6dda54861f8897bd1e0a2fb14d072d4733a54e1496bda220c70d24e188e131e";
 
-    fn fixture(
-    ) -> (
-        PolicyEnforcer,
-        LoadedSigningKey,
-        AutonomyStateMachine,
-    ) {
+    fn fixture() -> (PolicyEnforcer, LoadedSigningKey, AutonomyStateMachine) {
         let signing_key = SigningKey::from_bytes(&[7_u8; 32]);
         let loaded = LoadedSigningKey {
             key_id: "controller-key".into(),
             signing_key,
         };
-        let autonomy = AutonomyStateMachine::new(
-            Duration::from_secs(30),
-            Duration::from_secs(60),
-        );
+        let autonomy = AutonomyStateMachine::new(Duration::from_secs(30), Duration::from_secs(60));
         autonomy.record_controller_ack(unix_ms());
         let trusted = HashMap::from([(
             "controller-1".into(),
@@ -487,13 +481,7 @@ mod tests {
                 verifying_key: loaded.signing_key.verifying_key(),
             },
         )]);
-        let enforcer = PolicyEnforcer::new(
-            "pleiades-lab",
-            "node-1",
-            autonomy.clone(),
-            5,
-            trusted,
-        );
+        let enforcer = PolicyEnforcer::new("pleiades-lab", "node-1", autonomy.clone(), 5, trusted);
         (enforcer, loaded, autonomy)
     }
 
