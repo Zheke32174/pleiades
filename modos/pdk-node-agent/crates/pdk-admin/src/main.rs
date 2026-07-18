@@ -12,14 +12,18 @@ use pdk_protocol::{
     PROTOCOL_VERSION,
     v1::{
         CapabilityAction, CapabilityGrantPayload, GetWorkloadStatusRequest, IsolationConstraints,
-        SignedCapabilityGrant, SpawnWorkloadRequest, StopWorkloadRequest, WorkloadSpec,
-        node_agent_client::NodeAgentClient,
+        OfflinePolicy, SignedCapabilityGrant, SpawnWorkloadRequest, StopWorkloadRequest,
+        WorkloadSpec, node_agent_client::NodeAgentClient,
     },
 };
 use pdk_transport::{TlsFileConfig, client_tls};
 use serde::Deserialize;
 use tonic::transport::{Channel, Endpoint};
 use uuid::Uuid;
+
+const LOCAL_POLICY_VERSION: &str = "epoch2-local-policy-v1";
+const LOCAL_POLICY_DIGEST: &str =
+    "sha256:a6dda54861f8897bd1e0a2fb14d072d4733a54e1496bda220c70d24e188e131e";
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -137,6 +141,8 @@ async fn main() -> Result<()> {
                     CapabilityAction::StopWorkload,
                 ],
                 isolation.clone(),
+                OfflinePolicy::BoundedCache,
+                3,
             );
             let token_id = grant
                 .payload
@@ -186,6 +192,8 @@ async fn main() -> Result<()> {
                 lease_seconds,
                 vec![CapabilityAction::StatusWorkload],
                 isolation(true, 0, 0),
+                OfflinePolicy::BoundedCache,
+                1,
             );
             let token_id = grant
                 .payload
@@ -221,6 +229,8 @@ async fn main() -> Result<()> {
                 lease_seconds,
                 vec![CapabilityAction::StopWorkload],
                 isolation(true, 0, 0),
+                OfflinePolicy::FinishCurrent,
+                1,
             );
             let token_id = grant
                 .payload
@@ -252,6 +262,7 @@ fn connect(endpoint: &NodeEndpoint, tls: &TlsFileConfig) -> Result<NodeAgentClie
     Ok(NodeAgentClient::new(endpoint.connect_lazy()))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn grant(
     config: &AdminConfig,
     key: &pdk_crypto::LoadedSigningKey,
@@ -260,6 +271,8 @@ fn grant(
     lease_seconds: u64,
     actions: Vec<CapabilityAction>,
     isolation: IsolationConstraints,
+    offline_policy: OfflinePolicy,
+    max_uses: u32,
 ) -> SignedCapabilityGrant {
     let now = unix_ms();
     sign_capability(
@@ -274,11 +287,15 @@ fn grant(
             actions: actions.into_iter().map(|action| action as i32).collect(),
             issued_at_unix_ms: now,
             not_before_unix_ms: now.saturating_sub(1_000),
-            expires_at_unix_ms: now.saturating_add(lease_seconds.saturating_mul(1_000)),
-            policy_version: "epoch2-local-policy-v1".into(),
+            expires_at_unix_ms: now.saturating_add(lease_seconds.max(1).saturating_mul(1_000)),
+            policy_version: LOCAL_POLICY_VERSION.into(),
             nonce: Uuid::new_v4().to_string(),
             maximum_isolation: Some(isolation),
             singleton_destructive: false,
+            grant_sequence: now,
+            max_uses,
+            offline_policy: offline_policy as i32,
+            policy_digest_sha256: LOCAL_POLICY_DIGEST.into(),
         },
         key,
     )
@@ -320,11 +337,11 @@ fn isolation(
 }
 
 fn parse_key_value(value: &str) -> Result<(String, String), String> {
-    let (key, value) = value
-        .split_once('=')
-        .ok_or_else(|| "environment must be KEY=VALUE".to_owned())?;
-    if key.is_empty() || key.contains('=') || key.contains('\0') || value.contains('\0') {
-        return Err("environment contains an invalid key or NUL byte".into());
+    let Some((key, value)) = value.split_once('=') else {
+        return Err("environment values must use KEY=VALUE".into());
+    };
+    if key.is_empty() {
+        return Err("environment key must not be empty".into());
     }
     Ok((key.to_owned(), value.to_owned()))
 }
