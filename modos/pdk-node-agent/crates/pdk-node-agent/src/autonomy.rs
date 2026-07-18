@@ -71,26 +71,6 @@ impl AutonomyStateMachine {
         self.current() == NodeState::Connected
     }
 
-    pub fn allows_status_read(&self) -> bool {
-        !matches!(self.current(), NodeState::Quarantined)
-    }
-
-    pub fn allows_workload_stop(&self) -> bool {
-        matches!(
-            self.current(),
-            NodeState::Connected | NodeState::DegradedAutonomous | NodeState::ReadOnlySafe
-        )
-    }
-
-    pub fn allows_cached_workload_operation(&self, singleton_destructive: bool) -> bool {
-        match self.current() {
-            NodeState::Connected => true,
-            NodeState::DegradedAutonomous => !singleton_destructive,
-            NodeState::ReadOnlySafe | NodeState::Standalone | NodeState::Quarantined => false,
-            NodeState::Unspecified => false,
-        }
-    }
-
     pub async fn monitor(self) {
         let mut interval = tokio::time::interval(Duration::from_secs(1));
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
