@@ -39,6 +39,10 @@ impl AuthorityStateStore {
             .execute(&pool)
             .await
             .context("setting SQLite authority state synchronous=FULL")?;
+        sqlx::query("PRAGMA busy_timeout = 5000")
+            .execute(&pool)
+            .await
+            .context("setting SQLite authority busy timeout")?;
         sqlx::query("PRAGMA foreign_keys = ON")
             .execute(&pool)
             .await
@@ -193,17 +197,17 @@ impl AuthorityStateStore {
                 bail!("token ID collision with different durable signed content");
             }
             let admission_event_id: Option<String> = row.try_get("admission_event_id")?;
+            let active: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM capability_grant_state WHERE token_id = ?",
+            )
+            .bind(&grant.token_id)
+            .fetch_one(&mut *transaction)
+            .await
+            .context("checking active durable capability state")?;
+            if active == 0 {
+                bail!("capability identity is retained but active state was compacted");
+            }
             if let Some(event_id) = admission_event_id {
-                let active: i64 = sqlx::query_scalar(
-                    "SELECT COUNT(*) FROM capability_grant_state WHERE token_id = ?",
-                )
-                .bind(&grant.token_id)
-                .fetch_one(&mut *transaction)
-                .await
-                .context("checking active durable capability state")?;
-                if active == 0 {
-                    bail!("capability identity is retained but active state was compacted");
-                }
                 transaction
                     .commit()
                     .await
@@ -450,13 +454,12 @@ impl AuthorityStateStore {
     }
 
     pub async fn compact_expired(&self, now_unix_ms: u64) -> Result<u64> {
-        let result = sqlx::query(
-            "DELETE FROM capability_grant_state WHERE expires_at_unix_ms <= ?",
-        )
-        .bind(as_i64(now_unix_ms))
-        .execute(&self.pool)
-        .await
-        .context("compacting expired active capability state")?;
+        let result =
+            sqlx::query("DELETE FROM capability_grant_state WHERE expires_at_unix_ms <= ?")
+                .bind(as_i64(now_unix_ms))
+                .execute(&self.pool)
+                .await
+                .context("compacting expired active capability state")?;
         Ok(result.rows_affected())
     }
 }
@@ -499,6 +502,8 @@ fn as_i64(value: u64) -> i64 {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
     use pdk_protocol::v1::CapabilityGrantPayload;
     use uuid::Uuid;
 
@@ -592,9 +597,49 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn bounded_busy_timeout_allows_short_writer_contention() {
+        let path = database_path("authority-contention");
+        let first = AuthorityStateStore::open(&path).await.expect("open first store");
+        let second = AuthorityStateStore::open(&path)
+            .await
+            .expect("open second store");
+        let mut lock = first.pool.begin().await.expect("begin writer lock");
+        sqlx::query(
+            "INSERT INTO capability_sequence_floor (sequence_key, highest_sequence) VALUES ('lock-holder', 1)",
+        )
+        .execute(&mut *lock)
+        .await
+        .expect("acquire SQLite writer lock");
+
+        let task = tokio::spawn(async move {
+            let candidate = grant("token-contention", 11, 1);
+            second
+                .admit_grant(
+                    &candidate,
+                    "signature-contention",
+                    &event("contention-event", "capability.grant.cached"),
+                )
+                .await
+        });
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        lock.rollback().await.expect("release writer lock");
+        let admitted = tokio::time::timeout(Duration::from_secs(2), task)
+            .await
+            .expect("contended admission should finish within timeout")
+            .expect("contended admission task should join")
+            .expect("contended admission should succeed");
+        assert!(matches!(admitted, GrantAdmission::New { .. }));
+
+        first.pool.close().await;
+        remove_database(&path).await;
+    }
+
+    #[tokio::test]
     async fn idempotent_retry_and_use_budget_survive_reopen() {
         let path = database_path("authority-reopen");
-        let first = AuthorityStateStore::open(&path).await.expect("open first store");
+        let first = AuthorityStateStore::open(&path)
+            .await
+            .expect("open first store");
         let accepted = grant("token-current", 20, 1);
         let admission = event("admission-current", "capability.grant.cached");
         first
@@ -607,7 +652,9 @@ mod tests {
             .expect("consume only use");
         first.pool.close().await;
 
-        let reopened = AuthorityStateStore::open(&path).await.expect("reopen store");
+        let reopened = AuthorityStateStore::open(&path)
+            .await
+            .expect("reopen store");
         let retry_event = event("unused-retry-event", "capability.grant.cached");
         assert_eq!(
             reopened
@@ -649,7 +696,9 @@ mod tests {
     #[tokio::test]
     async fn revocation_and_compaction_preserve_restrictions() {
         let path = database_path("authority-revocation");
-        let first = AuthorityStateStore::open(&path).await.expect("open first store");
+        let first = AuthorityStateStore::open(&path)
+            .await
+            .expect("open first store");
         let accepted = grant("token-revoked", 30, 3);
         first
             .admit_grant(
@@ -673,7 +722,9 @@ mod tests {
         );
         first.pool.close().await;
 
-        let reopened = AuthorityStateStore::open(&path).await.expect("reopen store");
+        let reopened = AuthorityStateStore::open(&path)
+            .await
+            .expect("reopen store");
         let revoked = reopened
             .consume_use(&accepted.token_id, crate::autonomy::unix_ms())
             .await
@@ -689,7 +740,10 @@ mod tests {
             .expect_err("revoked grant must not reactivate");
         assert!(readmission.to_string().contains("durably revoked"));
 
-        assert_eq!(reopened.compact_expired(u64::MAX).await.expect("compact"), 1);
+        assert_eq!(
+            reopened.compact_expired(u64::MAX).await.expect("compact"),
+            1
+        );
         let identity_count: i64 =
             sqlx::query_scalar("SELECT COUNT(*) FROM capability_token_identity")
                 .fetch_one(&reopened.pool)
