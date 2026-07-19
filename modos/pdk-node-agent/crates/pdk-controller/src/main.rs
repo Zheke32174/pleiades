@@ -16,7 +16,6 @@ use pdk_transport::{CertificateIdentityInterceptor, PeerRegistry, server_tls};
 use rpc::ControlPlaneService;
 use state::{ControllerState, TrustedNodeKey};
 use store::ControllerStateStore;
-use tokio::sync::RwLock;
 use tonic::transport::Server;
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -51,7 +50,6 @@ async fn main() -> Result<()> {
         config: Arc::new(config),
         signing_key,
         trusted_node_keys,
-        observations: Arc::new(RwLock::new(HashMap::new())),
         store,
         heartbeat_store,
     };
