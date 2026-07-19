@@ -17,8 +17,7 @@ use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::{
-    heartbeat_store::HeartbeatAdmissionError,
-    state::{ControllerState, NodeObservation},
+    heartbeat_store::HeartbeatAdmissionError, state::ControllerState,
     store::EventAdmissionError,
 };
 
@@ -70,12 +69,6 @@ impl ControlPlaneService {
 
         match self.state.heartbeat_store.retry_ack(&envelope).await {
             Ok(Some(ack)) => {
-                let accepted_at = ack
-                    .payload
-                    .as_ref()
-                    .map(|payload| payload.accepted_at_unix_ms)
-                    .unwrap_or_default();
-                self.record_observation(heartbeat.clone(), accepted_at).await;
                 info!(
                     node_id = %heartbeat.node_id,
                     sequence = heartbeat.sequence,
@@ -164,12 +157,6 @@ impl ControlPlaneService {
         };
         let disposition = admission.disposition();
         let ack = admission.into_ack();
-        let accepted_at = ack
-            .payload
-            .as_ref()
-            .map(|payload| payload.accepted_at_unix_ms)
-            .unwrap_or(now);
-        self.record_observation(heartbeat.clone(), accepted_at).await;
         info!(
             node_id = %heartbeat.node_id,
             sequence = heartbeat.sequence,
@@ -179,16 +166,6 @@ impl ControlPlaneService {
             "durably accepted signed node heartbeat"
         );
         Ok(Response::new(ack))
-    }
-
-    async fn record_observation(&self, heartbeat: pdk_protocol::v1::HeartbeatPayload, accepted_at: u64) {
-        self.state.observations.write().await.insert(
-            heartbeat.node_id.clone(),
-            NodeObservation {
-                heartbeat,
-                accepted_at_unix_ms: accepted_at,
-            },
-        );
     }
 }
 
