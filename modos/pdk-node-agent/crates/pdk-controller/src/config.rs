@@ -12,6 +12,7 @@ pub struct ControllerConfig {
     pub authority_mode: String,
     pub bind: String,
     pub signing_key_file: std::path::PathBuf,
+    pub state_database_file: std::path::PathBuf,
     pub tls: TlsFileConfig,
     pub max_clock_skew_seconds: u64,
     pub suggested_heartbeat_interval_seconds: u64,
@@ -40,6 +41,10 @@ impl ControllerConfig {
         anyhow::ensure!(
             !config.controller_id.trim().is_empty(),
             "controller_id cannot be empty"
+        );
+        anyhow::ensure!(
+            !config.state_database_file.as_os_str().is_empty(),
+            "state_database_file cannot be empty"
         );
         anyhow::ensure!(
             config.authority_mode == "single-authoritative-controller",
