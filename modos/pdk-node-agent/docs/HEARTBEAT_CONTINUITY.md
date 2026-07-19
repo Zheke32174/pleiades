@@ -61,9 +61,11 @@ The local single-controller database uses:
 
 Concurrent exact submissions produce one new admission and one idempotent result. Sequence rollback remains rejected after process restart.
 
-## Observation cache
+## Durable read authority
 
-The in-memory latest-observation map is only a read cache. It is updated after durable admission or exact ACK recovery. The durable signed heartbeat table and stream floor are the continuity authority.
+The controller maintains no separate in-memory latest-observation authority. Exact retry traffic therefore cannot regress a volatile cache or masquerade as the newest node state.
+
+Future status and observation readers must derive their answer from the durable accepted-heartbeat table and stream-floor record. A later projection cache may be added only as a disposable, monotonically updated view whose contents can be rebuilt from those tables.
 
 ## Boundaries
 
