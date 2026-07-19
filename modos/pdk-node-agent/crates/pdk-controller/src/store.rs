@@ -395,10 +395,7 @@ mod tests {
             .await
             .expect("first admission");
         let error = store
-            .admit_event(
-                &altered,
-                &acknowledgement(&altered, "ack/altered", 30),
-            )
+            .admit_event(&altered, &acknowledgement(&altered, "ack/altered", 30))
             .await
             .expect_err("collision must fail");
         assert!(matches!(error, EventAdmissionError::Collision));
@@ -433,11 +430,7 @@ mod tests {
     #[tokio::test]
     async fn concurrent_exact_retries_commit_one_identity() {
         let path = database_path("concurrent");
-        let store = Arc::new(
-            ControllerStateStore::open(&path)
-                .await
-                .expect("open store"),
-        );
+        let store = Arc::new(ControllerStateStore::open(&path).await.expect("open store"));
         let event = Arc::new(event("event/concurrent", br#"{"value":1}"#));
         let ack = Arc::new(acknowledgement(&event, "ack/concurrent", 20));
         let first_store = Arc::clone(&store);
@@ -453,7 +446,10 @@ mod tests {
         let first = first.expect("first concurrent admission");
         let second = second.expect("second concurrent admission");
         assert_ne!(first.disposition(), second.disposition());
-        assert_eq!(first.into_ack().encode_to_vec(), second.into_ack().encode_to_vec());
+        assert_eq!(
+            first.into_ack().encode_to_vec(),
+            second.into_ack().encode_to_vec()
+        );
         assert_eq!(store.event_count().await.expect("event count"), 1);
         let _ = tokio::fs::remove_dir_all(path.parent().expect("database parent")).await;
     }
