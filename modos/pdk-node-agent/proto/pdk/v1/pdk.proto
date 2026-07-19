@@ -129,6 +129,7 @@ message HeartbeatAckPayload {
   uint64 accepted_at_unix_ms = 7;
   uint64 suggested_interval_seconds = 8;
   string authority_mode = 9;
+  string heartbeat_digest_sha256 = 10;
 }
 
 message SignedHeartbeatAck {

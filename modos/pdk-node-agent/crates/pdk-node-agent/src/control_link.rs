@@ -1,7 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Context, Result, bail};
-use pdk_crypto::{signed_domain_event_digest_sha256, verify_event_ack, verify_heartbeat_ack};
+use pdk_crypto::{
+    signed_domain_event_digest_sha256, signed_heartbeat_digest_sha256, verify_event_ack,
+    verify_heartbeat_ack,
+};
 use pdk_protocol::v1::{
     SignedDomainEvent, SignedEventAck, SignedHeartbeat, SignedHeartbeatAck,
     control_plane_client::ControlPlaneClient,
@@ -45,13 +48,14 @@ impl ControlPlaneLink {
         boot_id: &str,
         sequence: u64,
     ) -> Result<SignedHeartbeatAck> {
+        let expected_digest = signed_heartbeat_digest_sha256(&heartbeat);
         let mut client = ControlPlaneClient::new(self.channel.clone());
         let ack = client
             .register_node(heartbeat)
             .await
             .context("registering node with control plane")?
             .into_inner();
-        self.verify_heartbeat_ack(&ack, boot_id, sequence)?;
+        self.verify_heartbeat_ack(&ack, boot_id, sequence, &expected_digest)?;
         Ok(ack)
     }
 
@@ -61,13 +65,14 @@ impl ControlPlaneLink {
         boot_id: &str,
         sequence: u64,
     ) -> Result<SignedHeartbeatAck> {
+        let expected_digest = signed_heartbeat_digest_sha256(&heartbeat);
         let mut client = ControlPlaneClient::new(self.channel.clone());
         let ack = client
             .heartbeat(heartbeat)
             .await
             .context("sending node heartbeat")?
             .into_inner();
-        self.verify_heartbeat_ack(&ack, boot_id, sequence)?;
+        self.verify_heartbeat_ack(&ack, boot_id, sequence, &expected_digest)?;
         Ok(ack)
     }
 
@@ -116,6 +121,7 @@ impl ControlPlaneLink {
         ack: &SignedHeartbeatAck,
         boot_id: &str,
         sequence: u64,
+        expected_digest: &str,
     ) -> Result<()> {
         let payload = ack
             .payload
@@ -129,6 +135,9 @@ impl ControlPlaneLink {
         }
         if payload.boot_id != boot_id || payload.accepted_sequence != sequence {
             bail!("heartbeat ACK does not match the current boot and sequence");
+        }
+        if payload.heartbeat_digest_sha256 != expected_digest {
+            bail!("heartbeat ACK does not match submitted signed heartbeat content");
         }
         let controller = self
             .trusted_controllers

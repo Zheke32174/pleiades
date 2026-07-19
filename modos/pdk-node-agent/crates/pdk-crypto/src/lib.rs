@@ -104,6 +104,11 @@ pub fn verify_heartbeat(envelope: &SignedHeartbeat, key: &VerifyingKey) -> Resul
     )
 }
 
+pub fn signed_heartbeat_digest_sha256(envelope: &SignedHeartbeat) -> String {
+    let digest = Sha256::digest(envelope.encode_to_vec());
+    format!("sha256:{digest:x}")
+}
+
 pub fn sign_heartbeat_ack(
     payload: HeartbeatAckPayload,
     key: &LoadedSigningKey,
