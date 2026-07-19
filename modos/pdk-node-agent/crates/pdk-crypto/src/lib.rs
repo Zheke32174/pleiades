@@ -6,6 +6,7 @@ use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use prost::Message;
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 use pdk_protocol::{
     CAPABILITY_SIGNATURE_CONTEXT, DOMAIN_EVENT_SIGNATURE_CONTEXT, EVENT_ACK_SIGNATURE_CONTEXT,
@@ -167,6 +168,11 @@ pub fn verify_domain_event(envelope: &SignedDomainEvent, key: &VerifyingKey) -> 
         &envelope.signature_base64,
         key,
     )
+}
+
+pub fn signed_domain_event_digest_sha256(envelope: &SignedDomainEvent) -> String {
+    let digest = Sha256::digest(envelope.encode_to_vec());
+    format!("sha256:{digest:x}")
 }
 
 pub fn sign_event_ack(payload: EventAckPayload, key: &LoadedSigningKey) -> SignedEventAck {
