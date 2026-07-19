@@ -1,0 +1,15 @@
+CONTRIBUTING.md
+DISCLAIMER.md
+LICENSE
+PRIVACY.md
+README.md
+RELEASE_SCOPE.md
+SECURITY.md
+THIRD_PARTY_NOTICES.md
+VERSION
+ci/check-lean-security.sh
+ci/scan_public_repo.py
+docs
+lean
+release/source-paths.txt
+scripts/package_lean_source.py
