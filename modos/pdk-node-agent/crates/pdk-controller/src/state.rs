@@ -4,7 +4,10 @@ use ed25519_dalek::VerifyingKey;
 use pdk_protocol::v1::HeartbeatPayload;
 use tokio::sync::RwLock;
 
-use crate::{config::ControllerConfig, store::ControllerStateStore};
+use crate::{
+    config::ControllerConfig, heartbeat_store::ControllerHeartbeatStore,
+    store::ControllerStateStore,
+};
 use pdk_crypto::LoadedSigningKey;
 
 #[derive(Clone)]
@@ -24,7 +27,7 @@ pub struct ControllerState {
     pub config: Arc<ControllerConfig>,
     pub signing_key: Arc<LoadedSigningKey>,
     pub trusted_node_keys: Arc<HashMap<String, TrustedNodeKey>>,
-    pub replay: Arc<RwLock<HashMap<(String, String), u64>>>,
     pub observations: Arc<RwLock<HashMap<String, NodeObservation>>>,
     pub store: ControllerStateStore,
+    pub heartbeat_store: ControllerHeartbeatStore,
 }
