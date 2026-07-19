@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-delivery-stream-state-v1.json",
+  "title": "MODOS Delivery Stream State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "state"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "DeliveryStreamState"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["producerPrincipalId", "receiverPrincipalId", "deliveryStreamId", "generation", "createdAt", "observedAt"],
+      "properties": {
+        "producerPrincipalId": {"type": "string", "minLength": 1},
+        "receiverPrincipalId": {"type": "string", "minLength": 1},
+        "deliveryStreamId": {"type": "string", "minLength": 1},
+        "generation": {"type": "integer", "minimum": 1},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "observedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nextSequence", "queuedHighWater", "acknowledgedHighWater", "pendingEvents", "pendingBytes", "health"],
+      "properties": {
+        "nextSequence": {"type": "integer", "minimum": 1},
+        "queuedHighWater": {"type": "integer", "minimum": 0},
+        "acknowledgedHighWater": {"type": "integer", "minimum": 0},
+        "pendingEvents": {"type": "integer", "minimum": 0},
+        "pendingBytes": {"type": "integer", "minimum": 0},
+        "oldestPendingAt": {"type": "string", "format": "date-time"},
+        "lastReceiptRef": {"type": "string", "minLength": 1},
+        "lastReceiptAt": {"type": "string", "format": "date-time"},
+        "retryAfter": {"type": "string", "format": "date-time"},
+        "health": {"enum": ["healthy", "backlogged", "receiver-unavailable", "corrupt", "collision", "paused"]}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"pendingEvents": {"minimum": 1}}},
+          "then": {"required": ["oldestPendingAt"]}
+        }
+      ]
+    }
+  }
+}
