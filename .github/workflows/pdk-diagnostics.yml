@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'modos/**'
+      - 'storage/**'
     paths:
       - 'modos/pdk-node-agent/**'
       - '.github/workflows/pdk-diagnostics.yml'
@@ -11,6 +12,7 @@ on:
     branches:
       - main
       - 'modos/**'
+      - 'storage/**'
     paths:
       - 'modos/pdk-node-agent/**'
       - '.github/workflows/pdk-diagnostics.yml'
