@@ -1,8 +1,8 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use pdk_crypto::{
-    sign_event_ack, sign_heartbeat_ack, signed_domain_event_digest_sha256, verify_domain_event,
-    verify_heartbeat,
+    sign_event_ack, sign_heartbeat_ack, signed_domain_event_digest_sha256,
+    signed_heartbeat_digest_sha256, verify_domain_event, verify_heartbeat,
 };
 use pdk_protocol::{
     PROTOCOL_VERSION,
@@ -17,6 +17,7 @@ use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::{
+    heartbeat_store::HeartbeatAdmissionError,
     state::{ControllerState, NodeObservation},
     store::EventAdmissionError,
 };
@@ -67,6 +68,45 @@ impl ControlPlaneService {
         verify_heartbeat(&envelope, &trusted.verifying_key)
             .map_err(|error| Status::unauthenticated(error.to_string()))?;
 
+        match self.state.heartbeat_store.retry_ack(&envelope).await {
+            Ok(Some(ack)) => {
+                let accepted_at = ack
+                    .payload
+                    .as_ref()
+                    .map(|payload| payload.accepted_at_unix_ms)
+                    .unwrap_or_default();
+                self.record_observation(heartbeat.clone(), accepted_at).await;
+                info!(
+                    node_id = %heartbeat.node_id,
+                    sequence = heartbeat.sequence,
+                    disposition = "idempotent",
+                    peer_fingerprint = %peer.certificate_sha256,
+                    "recovered durable signed heartbeat acknowledgement"
+                );
+                return Ok(Response::new(ack));
+            }
+            Ok(None) => {}
+            Err(HeartbeatAdmissionError::Collision) => {
+                return Err(Status::already_exists(
+                    "heartbeat sequence collides with different signed content",
+                ));
+            }
+            Err(HeartbeatAdmissionError::Replay { .. }) => {
+                return Err(Status::already_exists("heartbeat sequence replayed"));
+            }
+            Err(HeartbeatAdmissionError::Storage(storage_error)) => {
+                error!(
+                    node_id = %heartbeat.node_id,
+                    sequence = heartbeat.sequence,
+                    error = %storage_error,
+                    "failed durable heartbeat retry lookup"
+                );
+                return Err(Status::unavailable(
+                    "controller could not read durable heartbeat state",
+                ));
+            }
+        }
+
         let now = unix_ms();
         let max_skew = self
             .state
@@ -79,30 +119,8 @@ impl ControlPlaneService {
             ));
         }
 
-        let replay_key = (heartbeat.node_id.clone(), heartbeat.boot_id.clone());
-        {
-            let mut replay = self.state.replay.write().await;
-            if let Some(previous) = replay.get(&replay_key)
-                && heartbeat.sequence <= *previous
-            {
-                return Err(Status::already_exists("heartbeat sequence replayed"));
-            }
-            replay.insert(replay_key, heartbeat.sequence);
-        }
-
-        let observation = NodeObservation {
-            heartbeat: heartbeat.clone(),
-            accepted_at_unix_ms: now,
-        };
-        let observed_sequence = observation.heartbeat.sequence;
-        let observation_accepted_at = observation.accepted_at_unix_ms;
-        self.state
-            .observations
-            .write()
-            .await
-            .insert(heartbeat.node_id.clone(), observation);
-
-        let ack = sign_heartbeat_ack(
+        let heartbeat_digest = signed_heartbeat_digest_sha256(&envelope);
+        let candidate_ack = sign_heartbeat_ack(
             HeartbeatAckPayload {
                 ack_id: Uuid::new_v4().to_string(),
                 domain_id: self.state.config.domain_id.clone(),
@@ -113,18 +131,64 @@ impl ControlPlaneService {
                 accepted_at_unix_ms: now,
                 suggested_interval_seconds: self.state.config.suggested_heartbeat_interval_seconds,
                 authority_mode: self.state.config.authority_mode.clone(),
+                heartbeat_digest_sha256: heartbeat_digest.clone(),
             },
             &self.state.signing_key,
         );
-
+        let admission = match self
+            .state
+            .heartbeat_store
+            .admit_new(&envelope, &candidate_ack)
+            .await
+        {
+            Ok(admission) => admission,
+            Err(HeartbeatAdmissionError::Collision) => {
+                return Err(Status::already_exists(
+                    "heartbeat sequence collides with different signed content",
+                ));
+            }
+            Err(HeartbeatAdmissionError::Replay { .. }) => {
+                return Err(Status::already_exists("heartbeat sequence replayed"));
+            }
+            Err(HeartbeatAdmissionError::Storage(storage_error)) => {
+                error!(
+                    node_id = %heartbeat.node_id,
+                    sequence = heartbeat.sequence,
+                    error = %storage_error,
+                    "failed durable heartbeat admission"
+                );
+                return Err(Status::unavailable(
+                    "controller could not durably admit signed heartbeat",
+                ));
+            }
+        };
+        let disposition = admission.disposition();
+        let ack = admission.into_ack();
+        let accepted_at = ack
+            .payload
+            .as_ref()
+            .map(|payload| payload.accepted_at_unix_ms)
+            .unwrap_or(now);
+        self.record_observation(heartbeat.clone(), accepted_at).await;
         info!(
             node_id = %heartbeat.node_id,
-            sequence = observed_sequence,
-            accepted_at_unix_ms = observation_accepted_at,
+            sequence = heartbeat.sequence,
+            heartbeat_digest = %heartbeat_digest,
+            disposition,
             peer_fingerprint = %peer.certificate_sha256,
-            "accepted signed node heartbeat"
+            "durably accepted signed node heartbeat"
         );
         Ok(Response::new(ack))
+    }
+
+    async fn record_observation(&self, heartbeat: pdk_protocol::v1::HeartbeatPayload, accepted_at: u64) {
+        self.state.observations.write().await.insert(
+            heartbeat.node_id.clone(),
+            NodeObservation {
+                heartbeat,
+                accepted_at_unix_ms: accepted_at,
+            },
+        );
     }
 }
 
