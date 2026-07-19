@@ -1,4 +1,5 @@
 mod config;
+mod heartbeat_store;
 mod rpc;
 mod state;
 mod store;
@@ -8,6 +9,7 @@ use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc};
 use anyhow::{Context, Result, bail};
 use clap::Parser;
 use config::ControllerConfig;
+use heartbeat_store::ControllerHeartbeatStore;
 use pdk_crypto::{decode_verifying_key, load_signing_key};
 use pdk_protocol::v1::control_plane_server::ControlPlaneServer;
 use pdk_transport::{CertificateIdentityInterceptor, PeerRegistry, server_tls};
@@ -40,6 +42,7 @@ async fn main() -> Result<()> {
     let signing_key = Arc::new(load_signing_key(&config.signing_key_file)?);
     let trusted_node_keys = Arc::new(build_node_key_store(&config)?);
     let store = ControllerStateStore::open(&config.state_database_file).await?;
+    let heartbeat_store = ControllerHeartbeatStore::open(&config.state_database_file).await?;
     let peer_registry = PeerRegistry::new(config.mtls_peers.clone())?;
     let interceptor = CertificateIdentityInterceptor::new(peer_registry).requiring_role("node");
     let tls = server_tls(&config.tls)?;
@@ -48,9 +51,9 @@ async fn main() -> Result<()> {
         config: Arc::new(config),
         signing_key,
         trusted_node_keys,
-        replay: Arc::new(RwLock::new(HashMap::new())),
         observations: Arc::new(RwLock::new(HashMap::new())),
         store,
+        heartbeat_store,
     };
 
     info!(
