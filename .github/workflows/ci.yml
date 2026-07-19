@@ -1,9 +1,13 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -41,6 +45,12 @@ jobs:
           while IFS= read -r f; do
             python3 -m json.tool "$f" >/dev/null
           done < <(find lean -name '*.json' -type f)
+      - name: Check public release boundary
+        run: |
+          set -euo pipefail
+          ! grep -E '^(root\.x86_64|experimental|modos)(/|$)' release/source-paths.txt
+          ! git ls-files '.github/workflows/publish-ghcr.yml' Dockerfile.package | grep -q .
+          test "$(tr -d '[:space:]' < VERSION)" = '0.2.0'
 
   wording-guard:
     runs-on: ubuntu-latest
@@ -95,7 +105,7 @@ jobs:
       - name: Required files present
         run: |
           fail=0
-          for f in README.md LICENSE SECURITY.md DISCLAIMER.md; do
+          for f in README.md LICENSE SECURITY.md DISCLAIMER.md PRIVACY.md RELEASE_SCOPE.md THIRD_PARTY_NOTICES.md VERSION; do
             [ -f "$f" ] || { echo "MISSING: $f"; fail=1; }
           done
           exit $fail
