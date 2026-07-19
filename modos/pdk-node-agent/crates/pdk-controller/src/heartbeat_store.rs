@@ -425,7 +425,7 @@ mod tests {
     use prost::Message;
     use uuid::Uuid;
 
-    use super::{ControllerHeartbeatStore, HeartbeatAdmission, HeartbeatAdmissionError};
+    use super::{ControllerHeartbeatStore, HeartbeatAdmissionError};
 
     fn database_path(label: &str) -> PathBuf {
         std::env::temp_dir()
