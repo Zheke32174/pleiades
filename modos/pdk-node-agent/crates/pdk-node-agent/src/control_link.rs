@@ -1,9 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Context, Result, bail};
-use pdk_crypto::{
-    signed_domain_event_digest_sha256, verify_event_ack, verify_heartbeat_ack,
-};
+use pdk_crypto::{signed_domain_event_digest_sha256, verify_event_ack, verify_heartbeat_ack};
 use pdk_protocol::v1::{
     SignedDomainEvent, SignedEventAck, SignedHeartbeat, SignedHeartbeatAck,
     control_plane_client::ControlPlaneClient,
