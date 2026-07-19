@@ -1,8 +1,8 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use pdk_crypto::{
-    sign_event_ack, sign_heartbeat_ack, signed_domain_event_digest_sha256,
-    verify_domain_event, verify_heartbeat,
+    sign_event_ack, sign_heartbeat_ack, signed_domain_event_digest_sha256, verify_domain_event,
+    verify_heartbeat,
 };
 use pdk_protocol::{
     PROTOCOL_VERSION,
