@@ -17,8 +17,7 @@ use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::{
-    heartbeat_store::HeartbeatAdmissionError, state::ControllerState,
-    store::EventAdmissionError,
+    heartbeat_store::HeartbeatAdmissionError, state::ControllerState, store::EventAdmissionError,
 };
 
 #[derive(Clone)]
