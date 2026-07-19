@@ -247,6 +247,8 @@ message EventAckPayload {
   string controller_id = 3;
   string event_id = 4;
   uint64 accepted_at_unix_ms = 5;
+  string source_node_id = 6;
+  string event_digest_sha256 = 7;
 }
 
 message SignedEventAck {
