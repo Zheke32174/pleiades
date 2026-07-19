@@ -1,30 +1,23 @@
-# Third-Party Notices
+# Third-Party and Platform Notices
 
-## No Vendored Source
+The lean source release does not vendor a Gentoo stage3, Linux kernel, systemd, OpenSSL, PHP, container runtime, model, or third-party research-tool checkout.
 
-This repository does not contain vendored third-party source code.
+## Expected platform components
 
-All external tools referenced by Pleiades scripts are:
-- Cloned from their upstream repositories at setup time, OR
-- Installed from official package registries (pip, cargo, apt, etc.)
+The reviewed source is designed for a Gentoo Linux environment using systemd and ordinary operating-system packages. Runtime scripts may invoke platform tools such as Bash, OpenSSL, systemctl, journalctl, socket activation, and core utilities. Those components remain governed by their own licenses and distribution terms.
 
-No third-party source files are committed to this repository. Each external project remains entirely governed by its own license.
+## Related Pleiades repositories
 
-## Runtime Dependencies Cloned at Setup
+- `Zheke32174/pleiades-container` creates and supervises the Linux/Gentoo container substrate. It is not embedded in this archive.
+- `Zheke32174/pleiades-factory-stack` catalogs separately reviewed research-source projects. Those projects are not embedded in this archive.
+- Private evidence, factory, topology, and recovery repositories are not included.
 
-The following projects are cloned or downloaded when the relevant `install-*.sh` scripts are run. They are never present in this repository.
+## Historical and research material
 
-| Project | Upstream URL | License |
-|---------|-------------|---------|
-| llama.cpp | https://github.com/ggerganov/llama.cpp | MIT |
-| OpenHands | https://github.com/All-Hands-AI/OpenHands | MIT |
-| Aider | https://github.com/paul-gauthier/aider | Apache-2.0 |
-| box64 | https://github.com/ptitSeb/box64 | MIT |
-| Wasmtime | https://github.com/bytecodealliance/wasmtime | Apache-2.0 |
-| qemu-bsd-user-l4b | https://github.com/sobomax/qemu-bsd-user-l4b | MIT |
+Historical scripts and research references remaining elsewhere in the repository are outside the lean release archive. Their presence in repository history does not make them supported runtime dependencies or grant permission to redistribute third-party material without reviewing the applicable upstream license.
 
-If you are running Pleiades and have cloned any of these tools, please review their individual licenses in their respective repositories before use in your context.
+The old broad stack may reference projects such as llama.cpp, OpenHands, Aider, box64, Wasmtime, and qemu-bsd-user-l4b. They are not required by `lean/build.sh`, are not bundled in the lean source release, and remain governed by their upstream licenses.
 
-## License Compatibility
+## Downstream responsibility
 
-Pleiades scripts themselves are MIT-licensed. Because no third-party source is vendored, there are no GPL/AGPL mixing concerns in this repository. If you vendor any of the above tools into a derivative work, review the compatibility of their licenses with your distribution terms.
+The SPDX inventory identifies the exact first-party source files included in each release candidate. Downstream distributors remain responsible for reviewing the licenses of the operating system, packages, and external services they combine with Pleiades. Do not infer license compatibility merely from the absence of vendored source.
