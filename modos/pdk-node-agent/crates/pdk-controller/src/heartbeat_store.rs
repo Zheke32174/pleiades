@@ -168,12 +168,12 @@ impl ControllerHeartbeatStore {
         &self,
         envelope: &SignedHeartbeat,
     ) -> Result<Option<SignedHeartbeatAck>, HeartbeatAdmissionError> {
-        self.retry_ack_inner(envelope)
-            .await
-            .map_err(|error| match error.downcast_ref::<HeartbeatCollision>() {
+        self.retry_ack_inner(envelope).await.map_err(|error| {
+            match error.downcast_ref::<HeartbeatCollision>() {
                 Some(_) => HeartbeatAdmissionError::Collision,
                 None => HeartbeatAdmissionError::Storage(error),
-            })
+            }
+        })
     }
 
     async fn retry_ack_inner(
@@ -248,8 +248,14 @@ impl ControllerHeartbeatStore {
             .as_ref()
             .context("signed heartbeat acknowledgement payload missing")?;
         let digest = signed_heartbeat_digest_sha256(envelope);
-        anyhow::ensure!(ack.node_id == heartbeat.node_id, "heartbeat ACK node mismatch");
-        anyhow::ensure!(ack.boot_id == heartbeat.boot_id, "heartbeat ACK boot mismatch");
+        anyhow::ensure!(
+            ack.node_id == heartbeat.node_id,
+            "heartbeat ACK node mismatch"
+        );
+        anyhow::ensure!(
+            ack.boot_id == heartbeat.boot_id,
+            "heartbeat ACK boot mismatch"
+        );
         anyhow::ensure!(
             ack.accepted_sequence == heartbeat.sequence,
             "heartbeat ACK sequence mismatch"
@@ -419,9 +425,7 @@ mod tests {
     use prost::Message;
     use uuid::Uuid;
 
-    use super::{
-        ControllerHeartbeatStore, HeartbeatAdmission, HeartbeatAdmissionError,
-    };
+    use super::{ControllerHeartbeatStore, HeartbeatAdmission, HeartbeatAdmissionError};
 
     fn database_path(label: &str) -> PathBuf {
         std::env::temp_dir()
@@ -475,7 +479,9 @@ mod tests {
     #[tokio::test]
     async fn exact_retry_returns_original_acknowledgement() {
         let path = database_path("retry");
-        let store = ControllerHeartbeatStore::open(&path).await.expect("open store");
+        let store = ControllerHeartbeatStore::open(&path)
+            .await
+            .expect("open store");
         let heartbeat = heartbeat(1, "v1");
         let original = acknowledgement(&heartbeat, "ack/original", 20);
         store
@@ -495,7 +501,9 @@ mod tests {
     #[tokio::test]
     async fn same_sequence_with_different_content_is_collision() {
         let path = database_path("collision");
-        let store = ControllerHeartbeatStore::open(&path).await.expect("open store");
+        let store = ControllerHeartbeatStore::open(&path)
+            .await
+            .expect("open store");
         let first = heartbeat(1, "v1");
         let altered = heartbeat(1, "v2");
         store
@@ -514,7 +522,9 @@ mod tests {
     async fn rollback_is_rejected_after_reopen() {
         let path = database_path("rollback");
         {
-            let store = ControllerHeartbeatStore::open(&path).await.expect("open store");
+            let store = ControllerHeartbeatStore::open(&path)
+                .await
+                .expect("open store");
             let latest = heartbeat(3, "v3");
             store
                 .admit_new(&latest, &acknowledgement(&latest, "ack/latest", 30))
@@ -560,8 +570,13 @@ mod tests {
         );
         let first = first.expect("first admission");
         let second = second.expect("second admission");
-        assert!(matches!(first, HeartbeatAdmission::New(_)));
-        assert!(matches!(second, HeartbeatAdmission::Idempotent(_)));
+        let dispositions = [first.disposition(), second.disposition()];
+        assert!(dispositions.contains(&"new"));
+        assert!(dispositions.contains(&"idempotent"));
+        assert_eq!(
+            first.into_ack().encode_to_vec(),
+            second.into_ack().encode_to_vec()
+        );
         assert_eq!(store.heartbeat_count().await.expect("count"), 1);
         let _ = tokio::fs::remove_dir_all(path.parent().expect("parent")).await;
     }
@@ -569,7 +584,9 @@ mod tests {
     #[tokio::test]
     async fn failed_insert_commits_no_heartbeat() {
         let path = database_path("failure");
-        let store = ControllerHeartbeatStore::open(&path).await.expect("open store");
+        let store = ControllerHeartbeatStore::open(&path)
+            .await
+            .expect("open store");
         sqlx::query(
             r#"
             CREATE TRIGGER reject_heartbeat_insert
