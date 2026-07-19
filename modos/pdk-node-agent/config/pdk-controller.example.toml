@@ -3,6 +3,7 @@ controller_id = "controller://pleiades/alienware-primary"
 authority_mode = "single-authoritative-controller"
 bind = "0.0.0.0:7443"
 signing_key_file = "/etc/pleiades/keys/controller-signing.json"
+state_database_file = "/var/lib/pleiades/pdk-controller/controller-state.db"
 max_clock_skew_seconds = 30
 suggested_heartbeat_interval_seconds = 5
 

@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Context, Result, bail};
-use pdk_crypto::{verify_event_ack, verify_heartbeat_ack};
+use pdk_crypto::{signed_domain_event_digest_sha256, verify_event_ack, verify_heartbeat_ack};
 use pdk_protocol::v1::{
     SignedDomainEvent, SignedEventAck, SignedHeartbeat, SignedHeartbeatAck,
     control_plane_client::ControlPlaneClient,
@@ -72,12 +72,13 @@ impl ControlPlaneLink {
     }
 
     pub async fn submit_event(&self, event: SignedDomainEvent) -> Result<SignedEventAck> {
-        let expected_event_id = event
+        let payload = event
             .payload
             .as_ref()
-            .context("queued domain event payload missing")?
-            .event_id
-            .clone();
+            .context("queued domain event payload missing")?;
+        let expected_event_id = payload.event_id.clone();
+        let expected_source_node_id = payload.source_node_id.clone();
+        let expected_event_digest = signed_domain_event_digest_sha256(&event);
         let mut client = ControlPlaneClient::new(self.channel.clone());
         let ack = client
             .submit_event(event)
@@ -89,7 +90,15 @@ impl ControlPlaneLink {
             bail!("event ACK belongs to another domain");
         }
         if payload.event_id != expected_event_id {
-            bail!("event ACK does not match submitted event");
+            bail!("event ACK does not match submitted event ID");
+        }
+        if payload.source_node_id != expected_source_node_id
+            || payload.source_node_id != self.node_id
+        {
+            bail!("event ACK does not match submitted source node");
+        }
+        if payload.event_digest_sha256 != expected_event_digest {
+            bail!("event ACK does not match submitted signed event content");
         }
         let controller = self
             .trusted_controllers

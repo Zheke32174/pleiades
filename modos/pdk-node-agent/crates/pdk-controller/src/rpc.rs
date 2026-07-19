@@ -1,6 +1,9 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use pdk_crypto::{sign_event_ack, sign_heartbeat_ack, verify_domain_event, verify_heartbeat};
+use pdk_crypto::{
+    sign_event_ack, sign_heartbeat_ack, signed_domain_event_digest_sha256, verify_domain_event,
+    verify_heartbeat,
+};
 use pdk_protocol::{
     PROTOCOL_VERSION,
     v1::{
@@ -10,10 +13,13 @@ use pdk_protocol::{
 };
 use pdk_transport::peer_identity;
 use tonic::{Request, Response, Status};
-use tracing::info;
+use tracing::{error, info};
 use uuid::Uuid;
 
-use crate::state::{ControllerState, NodeObservation};
+use crate::{
+    state::{ControllerState, NodeObservation},
+    store::EventAdmissionError,
+};
 
 #[derive(Clone)]
 pub struct ControlPlaneService {
@@ -188,24 +194,56 @@ impl ControlPlane for ControlPlaneService {
                 "event timestamp is too far in the future",
             ));
         }
-        self.state
-            .accepted_events
-            .write()
-            .await
-            .entry(event.event_id.clone())
-            .or_insert_with(|| event.clone());
 
-        let ack = sign_event_ack(
+        let event_id = event.event_id.clone();
+        let source_node_id = event.source_node_id.clone();
+        let event_digest = signed_domain_event_digest_sha256(&envelope);
+        let candidate_ack = sign_event_ack(
             EventAckPayload {
                 ack_id: Uuid::new_v4().to_string(),
                 domain_id: self.state.config.domain_id.clone(),
                 controller_id: self.state.config.controller_id.clone(),
-                event_id: event.event_id.clone(),
+                event_id: event_id.clone(),
                 accepted_at_unix_ms: now,
+                source_node_id: source_node_id.clone(),
+                event_digest_sha256: event_digest.clone(),
             },
             &self.state.signing_key,
         );
-        info!(event_id = %event.event_id, source = %event.source_node_id, "accepted domain event");
+        let admission = match self
+            .state
+            .store
+            .admit_event(&envelope, &candidate_ack)
+            .await
+        {
+            Ok(admission) => admission,
+            Err(EventAdmissionError::Collision) => {
+                return Err(Status::already_exists(
+                    "event_id collides with different signed event content",
+                ));
+            }
+            Err(EventAdmissionError::Storage(storage_error)) => {
+                error!(
+                    event_id = %event_id,
+                    source = %source_node_id,
+                    error = %storage_error,
+                    "failed durable signed event admission"
+                );
+                return Err(Status::unavailable(
+                    "controller could not durably admit signed event",
+                ));
+            }
+        };
+        let disposition = admission.disposition();
+        let ack = admission.into_ack();
+        info!(
+            event_id = %event_id,
+            source = %source_node_id,
+            event_digest = %event_digest,
+            disposition,
+            peer_fingerprint = %peer.certificate_sha256,
+            "durably accepted signed domain event"
+        );
         Ok(Response::new(ack))
     }
 }

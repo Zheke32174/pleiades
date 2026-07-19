@@ -1,6 +1,7 @@
 mod config;
 mod rpc;
 mod state;
+mod store;
 
 use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc};
 
@@ -12,6 +13,7 @@ use pdk_protocol::v1::control_plane_server::ControlPlaneServer;
 use pdk_transport::{CertificateIdentityInterceptor, PeerRegistry, server_tls};
 use rpc::ControlPlaneService;
 use state::{ControllerState, TrustedNodeKey};
+use store::ControllerStateStore;
 use tokio::sync::RwLock;
 use tonic::transport::Server;
 use tracing::info;
@@ -37,6 +39,7 @@ async fn main() -> Result<()> {
         .with_context(|| format!("invalid controller bind address {}", config.bind))?;
     let signing_key = Arc::new(load_signing_key(&config.signing_key_file)?);
     let trusted_node_keys = Arc::new(build_node_key_store(&config)?);
+    let store = ControllerStateStore::open(&config.state_database_file).await?;
     let peer_registry = PeerRegistry::new(config.mtls_peers.clone())?;
     let interceptor = CertificateIdentityInterceptor::new(peer_registry).requiring_role("node");
     let tls = server_tls(&config.tls)?;
@@ -47,7 +50,7 @@ async fn main() -> Result<()> {
         trusted_node_keys,
         replay: Arc::new(RwLock::new(HashMap::new())),
         observations: Arc::new(RwLock::new(HashMap::new())),
-        accepted_events: Arc::new(RwLock::new(HashMap::new())),
+        store,
     };
 
     info!(
@@ -55,6 +58,7 @@ async fn main() -> Result<()> {
         domain_id = %state.config.domain_id,
         controller_id = %state.config.controller_id,
         authority_mode = %state.config.authority_mode,
+        state_database = %state.config.state_database_file.display(),
         "PDK control plane ready"
     );
 
