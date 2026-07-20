@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS action_receipts(operation_id TEXT PRIMARY KEY,work_or
   row=self.db.execute("SELECT * FROM capabilities WHERE capability_id=? AND version=? AND active=1",(cid,version)).fetchone()
   if not row:raise NotFound("capability")
   return row
+ def capabilities(self):
+  return self.db.execute("SELECT * FROM capabilities WHERE active=1 ORDER BY capability_id,version").fetchall()
  def by_idempotency(self,key):return self.db.execute("SELECT * FROM work_orders WHERE idempotency_key=?",(key,)).fetchone()
  def insert_order(self,request):
   m=request['metadata'];c=request['capability'];x=request['constraints'];d=digest(request);now=utc_now()
@@ -60,3 +62,6 @@ CREATE TABLE IF NOT EXISTS action_receipts(operation_id TEXT PRIMARY KEY,work_or
    self.order(m['workOrderId'])
    self.db.execute("INSERT INTO action_receipts VALUES(?,?,?,?,?,?,?,?,?)",(m['operationId'],m['workOrderId'],m['stageId'],m['idempotencyKey'],receipt['effect']['class'],receipt['state']['status'],d,canonical_bytes(receipt).decode(),now))
   return d
+ def receipts(self,wid):
+  self.order(wid)
+  return self.db.execute("SELECT * FROM action_receipts WHERE work_order_id=? ORDER BY observed_at,operation_id",(wid,)).fetchall()
