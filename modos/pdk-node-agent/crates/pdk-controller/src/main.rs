@@ -3,6 +3,10 @@ mod rpc;
 mod state;
 mod store;
 
+mod heartbeat_store {
+    pub use pdk_controller::heartbeat_store::*;
+}
+
 use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use anyhow::{Context, Result, bail};
