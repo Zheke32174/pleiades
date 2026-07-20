@@ -9,9 +9,12 @@
 /modos/ontology/ @Zheke32174
 /modos/governance/ @Zheke32174
 /modos/EXECUTIVE_AUTHORITY.md @Zheke32174
+/modos/ECOLOGY_PROGRESSION_100.md @Zheke32174
 /ci/validate-change-proposals.py @Zheke32174
 /ci/validate-promotion-evidence.py @Zheke32174
 /ci/validate-executive-authority.py @Zheke32174
+/ci/validate-executive-control-plane.py @Zheke32174
 /.github/workflows/change-proposal-contracts.yml @Zheke32174
 /.github/workflows/ontology-promotion-evidence.yml @Zheke32174
 /.github/workflows/executive-authority-contracts.yml @Zheke32174
+/.github/workflows/executive-control-plane.yml @Zheke32174
