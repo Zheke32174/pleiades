@@ -22,6 +22,7 @@
 /ci/validate-contract-catalog.py @Zheke32174
 /ci/validate-ecology.py @Zheke32174
 /ci/validate-stack-manifest.py @Zheke32174
+/ci/validate-convergence-metadata.py @Zheke32174
 /ci/validate-operator-runbooks.py @Zheke32174
 /ci/scan-public-history.py @Zheke32174
 /ci/public-history-sensitivity.json @Zheke32174
