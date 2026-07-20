@@ -60,6 +60,7 @@ def delivery(value=None, *, secret=SECRET, event="workflow_job"):
         "X-GitHub-Event": event,
         "X-GitHub-Delivery": "72d3162e-cc78-11e3-81ab-4c9367dc0958",
         "X-GitHub-Hook-ID": "292430182",
+        "Content-Type": "application/json",
     }
 
 
@@ -80,9 +81,7 @@ class GitHubWebhookAdmissionTests(unittest.TestCase):
         self.assertEqual(first.commitSha, SHA)
         self.assertFalse(first.arrivalOrderAuthoritative)
         self.assertFalse(first.workflowContentExecutable)
-        self.assertEqual(
-            first.labels, ("self-hosted", "pleiades", "linux")
-        )
+        self.assertEqual(first.labels, ("self-hosted", "pleiades", "linux"))
 
     def test_payload_change_changes_proposal_identity(self):
         body, headers = delivery()
@@ -94,9 +93,7 @@ class GitHubWebhookAdmissionTests(unittest.TestCase):
                 }
             )
         )
-        second = admit_workflow_job(
-            altered_body, altered_headers, SECRET
-        )
+        second = admit_workflow_job(altered_body, altered_headers, SECRET)
         self.assertNotEqual(first.payloadDigest, second.payloadDigest)
         self.assertNotEqual(first.proposalId, second.proposalId)
 
@@ -109,6 +106,26 @@ class GitHubWebhookAdmissionTests(unittest.TestCase):
         with self.assertRaises(SignatureError):
             admit_workflow_job(b"not-json", missing, SECRET)
 
+    def test_content_type_and_duplicate_json_keys_fail_closed(self):
+        body, headers = delivery()
+        with self.assertRaises(AdmissionError):
+            admit_workflow_job(
+                body,
+                {**headers, "Content-Type": "application/x-www-form-urlencoded"},
+                SECRET,
+            )
+        ordinary = json.dumps(payload(), sort_keys=True, separators=(",", ":"))
+        duplicate_body = (
+            '{"action":"queued","action":"completed",' + ordinary[1:]
+        ).encode()
+        duplicate_headers = dict(headers)
+        duplicate_headers["X-Hub-Signature-256"] = (
+            "sha256="
+            + hmac.new(SECRET, duplicate_body, hashlib.sha256).hexdigest()
+        )
+        with self.assertRaisesRegex(AdmissionError, "duplicate key"):
+            admit_workflow_job(duplicate_body, duplicate_headers, SECRET)
+
     def test_unsupported_event_action_and_oversize_fail_closed(self):
         body, headers = delivery()
         with self.assertRaises(AdmissionError):
@@ -117,13 +134,9 @@ class GitHubWebhookAdmissionTests(unittest.TestCase):
                 {**headers, "X-GitHub-Event": "push"},
                 SECRET,
             )
-        completed_body, completed_headers = delivery(
-            payload(action="completed")
-        )
+        completed_body, completed_headers = delivery(payload(action="completed"))
         with self.assertRaises(AdmissionError):
-            admit_workflow_job(
-                completed_body, completed_headers, SECRET
-            )
+            admit_workflow_job(completed_body, completed_headers, SECRET)
         with self.assertRaises(AdmissionError):
             admit_workflow_job(
                 body,
@@ -176,23 +189,16 @@ class GitHubStatusProjectionTests(unittest.TestCase):
                 )
                 self.assertEqual(projection["body"]["state"], expected)
                 self.assertEqual(
-                    projection["body"]["context"],
-                    "pleiades/ecology-closure",
+                    projection["body"]["context"], "pleiades/ecology-closure"
                 )
-                self.assertEqual(
-                    projection["authority"], "presentation-only"
-                )
+                self.assertEqual(projection["authority"], "presentation-only")
                 self.assertEqual(projection["method"], "POST")
 
     def test_exact_receipt_retry_is_deterministic(self):
         receipt = {"jobClass": "ecology-closure", "status": "success"}
         self.assertEqual(
-            project_commit_status(
-                "Zheke32174/pleiades", SHA, receipt
-            ),
-            project_commit_status(
-                "Zheke32174/pleiades", SHA, receipt
-            ),
+            project_commit_status("Zheke32174/pleiades", SHA, receipt),
+            project_commit_status("Zheke32174/pleiades", SHA, receipt),
         )
 
     def test_invalid_projection_inputs_are_rejected(self):
@@ -222,9 +228,7 @@ class GitHubStatusProjectionTests(unittest.TestCase):
         for repository, sha, value, url in bad_cases:
             with self.subTest(repository=repository, sha=sha, url=url):
                 with self.assertRaises(GitHubBridgeError):
-                    project_commit_status(
-                        repository, sha, value, target_url=url
-                    )
+                    project_commit_status(repository, sha, value, target_url=url)
 
     def test_module_has_no_execution_or_network_client_surface(self):
         import github_bridge
