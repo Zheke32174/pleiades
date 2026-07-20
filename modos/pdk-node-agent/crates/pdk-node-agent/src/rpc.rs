@@ -90,58 +90,8 @@ impl NodeAgent for NodeAgentService {
     ) -> Result<Response<CapabilityGrantAck>, Status> {
         let peer = peer_identity(&request)?.clone();
         let envelope = request.into_inner();
-        let signature_base64 = envelope.signature_base64.clone();
-        match self
-            .policy
-            .cache_signed_grant(envelope, &peer.identity)
-            .await
-        {
-            Ok(grant) => {
-                let event = DecisionEvent {
-                    decision: "allow",
-                    operation: "push_capability_grant",
-                    controller_id: &peer.identity,
-                    token_id: &grant.token_id,
-                    workload_id: &grant.subject_workload_id,
-                    detail: "signature, domain, target, validity interval, Connected state, durable sequence floor, token identity, and signed admission receipt verified",
-                };
-                let prepared = self
-                    .audit
-                    .prepare_event("capability.grant.cached", &grant.token_id, &event)
-                    .map_err(|error| {
-                        Status::internal(format!(
-                            "preparing signed capability admission receipt failed: {error}"
-                        ))
-                    })?;
-                let admission = self
-                    .authority_state
-                    .admit_grant(&grant, &signature_base64, &prepared)
-                    .await
-                    .map_err(|error| {
-                        Status::failed_precondition(format!(
-                            "transactional capability admission failed: {error}"
-                        ))
-                    })?;
-                let admission_state = match admission {
-                    GrantAdmission::New { .. } => "new",
-                    GrantAdmission::Recovered { .. } => "recovered",
-                    GrantAdmission::Idempotent { .. } => "idempotent",
-                };
-                info!(
-                    token_id = %grant.token_id,
-                    workload_id = %grant.subject_workload_id,
-                    controller = %peer.identity,
-                    admission_state,
-                    "committed signed capability grant with atomic authority and audit state"
-                );
-                Ok(Response::new(CapabilityGrantAck {
-                    token_id: grant.token_id,
-                    accepted: true,
-                    message: format!(
-                        "capability grant transactionally admitted ({admission_state})"
-                    ),
-                }))
-            }
+        let candidate = match self.policy.validate_signed_grant(envelope, &peer.identity) {
+            Ok(candidate) => candidate,
             Err(error) => {
                 let token_id = "rejected";
                 let event = DecisionEvent {
@@ -155,9 +105,63 @@ impl NodeAgent for NodeAgentService {
                 let _ = self
                     .audit_decision(token_id, "capability.grant.denied", &event)
                     .await;
-                Err(Status::permission_denied(error.to_string()))
+                return Err(Status::permission_denied(error.to_string()));
             }
-        }
+        };
+        let grant = candidate.payload().clone();
+        let signature_base64 = candidate.signature_base64().to_owned();
+        let event = DecisionEvent {
+            decision: "allow",
+            operation: "push_capability_grant",
+            controller_id: &peer.identity,
+            token_id: &grant.token_id,
+            workload_id: &grant.subject_workload_id,
+            detail: "deterministically validated, transactionally admitted with signed receipt, then installed into the active policy cache",
+        };
+        let prepared = self
+            .audit
+            .prepare_event("capability.grant.admitted", &grant.token_id, &event)
+            .map_err(|error| {
+                Status::internal(format!(
+                    "preparing signed capability admission receipt failed: {error}"
+                ))
+            })?;
+        let admission = self
+            .authority_state
+            .admit_grant(&grant, &signature_base64, &prepared)
+            .await
+            .map_err(|error| {
+                Status::failed_precondition(format!(
+                    "transactional capability admission failed: {error}"
+                ))
+            })?;
+        let admission_state = match admission {
+            GrantAdmission::New { .. } => "new",
+            GrantAdmission::Recovered { .. } => "recovered",
+            GrantAdmission::Idempotent { .. } => "idempotent",
+        };
+        self.policy
+            .install_durably_admitted_grant(candidate)
+            .await
+            .map_err(|error| {
+                Status::failed_precondition(format!(
+                    "durably admitted capability could not be installed into active policy: {error}"
+                ))
+            })?;
+        info!(
+            token_id = %grant.token_id,
+            workload_id = %grant.subject_workload_id,
+            controller = %peer.identity,
+            admission_state,
+            "committed signed capability grant before active policy installation"
+        );
+        Ok(Response::new(CapabilityGrantAck {
+            token_id: grant.token_id,
+            accepted: true,
+            message: format!(
+                "capability grant transactionally admitted and activated ({admission_state})"
+            ),
+        }))
     }
 
     async fn spawn_workload(
