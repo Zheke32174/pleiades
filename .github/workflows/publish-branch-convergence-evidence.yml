@@ -86,6 +86,11 @@ jobs:
           frontier = load('artifacts/intervention-frontier.json')
           package = load('artifacts/validation-package-receipt.json')
           ecology = load('artifacts/public-ecology-ontology-receipt.json')
+          failure_details = {}
+          if suite:
+              for result in suite.get('results', []):
+                  if result.get('status') == 'fail':
+                      failure_details[result['id']] = result.get('diagnostics', {})
 
           summary = {
               'apiVersion': 'modos.pleiades/v1alpha1',
@@ -96,6 +101,7 @@ jobs:
                   'status': suite.get('status') if suite else 'missing',
                   'receiptDigest': suite.get('receiptDigest') if suite else None,
                   'failures': suite.get('failures', []) if suite else ['receipt-missing'],
+                  'failureDetails': failure_details,
                   'notRun': suite.get('notRun', []) if suite else [],
                   'executedCount': suite.get('executedCount', 0) if suite else 0,
                   'commandCount': suite.get('commandCount', 0) if suite else 0,
@@ -111,6 +117,7 @@ jobs:
               'currentTreeSensitivity': {
                   'status': current.get('status') if current else 'missing',
                   'findingCount': current.get('findingCount') if current else None,
+                  'findings': current.get('findings', []) if current else [],
                   'receiptDigest': current.get('receiptDigest') if current else None,
               },
               'reachableHistorySensitivity': {
