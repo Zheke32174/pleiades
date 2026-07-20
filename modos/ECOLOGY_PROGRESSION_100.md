@@ -91,16 +91,16 @@ No item in this ledger silently grants canonical authority, issues a live grant,
 
 ## Phase G — Distributed substrate admission
 
-61. `queued` Define a node capability registry for admission executors.
-62. `queued` Bind executor identity to hardware, service, and key provenance.
-63. `queued` Define per-node authority ceilings and write scopes.
-64. `queued` Define multi-node rollout plans with canary ordering.
-65. `queued` Define staged admission with health gates between stages.
-66. `queued` Define cross-node rollback coordination.
-67. `queued` Define network-partition behavior and local autonomy ceilings.
-68. `queued` Define replay protection for mandates and receipts.
-69. `queued` Define idempotent admission transactions.
-70. `queued` Emit distributed rollout closure receipts.
+61. `implemented` Define a node capability registry for admission executors.
+62. `implemented` Bind executor identity to hardware, service, and key provenance.
+63. `implemented` Define per-node authority ceilings and write scopes.
+64. `implemented` Define multi-node rollout plans with canary ordering.
+65. `implemented` Define staged admission with health gates between stages.
+66. `implemented` Define cross-node rollback coordination.
+67. `implemented` Define network-partition behavior and local autonomy ceilings.
+68. `implemented` Define replay protection for mandates and receipts.
+69. `implemented` Define idempotent admission transactions.
+70. `implemented` Emit distributed rollout closure receipts.
 
 ## Phase H — Memory, evidence, and learning spine
 
@@ -143,4 +143,4 @@ No item in this ledger silently grants canonical authority, issues a live grant,
 
 ## Current tranche
 
-The stacked control-plane and workspace/recovery branches implement points 1–60 as deterministic contract and validation slices. They do not execute a live grant, mutation, rollback, emergency action, competence change, or authority adjustment. Points 61–100 remain ordered after these foundations.
+The stacked governance branches implement points 1–70 as deterministic contract and validation slices. They do not execute a live grant, mutation, rollback, emergency action, distributed rollout, competence change, or authority adjustment. Points 71–100 remain ordered after these foundations.
