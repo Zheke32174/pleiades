@@ -25,11 +25,11 @@ class SyntheticRehearsalTests(unittest.TestCase):
         self.public = load(ROOT / "modos" / "ecology" / "public-ecology.json")
         self.schema = load(ROOT / "modos" / "contracts" / "ecology-registry.schema.json")
 
-    def run(self, public=None):
+    def rehearse(self, public=None):
         return synthetic_rehearsal.run_rehearsal(public or self.public, self.schema)
 
     def test_complete_rehearsal_passes_without_live_or_authority_mutation(self):
-        receipt = self.run()
+        receipt = self.rehearse()
         self.assertEqual(receipt["status"], "pass")
         self.assertEqual(receipt["scope"], "synthetic-two-scope")
         self.assertEqual(receipt["mergedObjectCount"], 28)
@@ -43,16 +43,16 @@ class SyntheticRehearsalTests(unittest.TestCase):
         self.assertFalse(receipt["constitutionalMutationApplied"])
 
     def test_rehearsal_is_deterministic_for_identical_source_evidence(self):
-        first = self.run()
-        second = self.run()
+        first = self.rehearse()
+        second = self.rehearse()
         self.assertEqual(compiler.canonical_bytes(first), compiler.canonical_bytes(second))
 
     def test_reordering_public_ecology_preserves_semantics_but_changes_source_evidence(self):
         reordered = copy.deepcopy(self.public)
         for field in ("groups", "components", "capabilities", "relations"):
             reordered["spec"][field].reverse()
-        first = self.run()
-        second = self.run(reordered)
+        first = self.rehearse()
+        second = self.rehearse(reordered)
         self.assertEqual(first["mergedSnapshotDigest"], second["mergedSnapshotDigest"])
         self.assertEqual(first["mergedObjectCount"], second["mergedObjectCount"])
         self.assertEqual(first["mergedRelationCount"], second["mergedRelationCount"])
@@ -67,7 +67,7 @@ class SyntheticRehearsalTests(unittest.TestCase):
         self.assertEqual(registry["metadata"]["owner"], "SyntheticLab")
 
     def test_synthetic_private_receipt_cannot_satisfy_live_private_blocker(self):
-        receipt = self.run()
+        receipt = self.rehearse()
         self.assertIn("live-private-exhaustive-registry-not-supplied", receipt["remainingBlockers"])
 
     def test_public_dangling_relation_aborts_rehearsal(self):
@@ -82,7 +82,7 @@ class SyntheticRehearsalTests(unittest.TestCase):
             }
         )
         with self.assertRaisesRegex(compiler.OntologyCompileError, "dangling relation target"):
-            self.run(public)
+            self.rehearse(public)
 
 
 if __name__ == "__main__":
