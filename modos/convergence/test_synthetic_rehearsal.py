@@ -42,19 +42,22 @@ class SyntheticRehearsalTests(unittest.TestCase):
         self.assertFalse(receipt["grantMutationApplied"])
         self.assertFalse(receipt["constitutionalMutationApplied"])
 
-    def test_rehearsal_is_deterministic(self):
+    def test_rehearsal_is_deterministic_for_identical_source_evidence(self):
         first = self.run()
         second = self.run()
         self.assertEqual(compiler.canonical_bytes(first), compiler.canonical_bytes(second))
 
-    def test_reordering_public_ecology_does_not_change_rehearsal(self):
+    def test_reordering_public_ecology_preserves_semantics_but_changes_source_evidence(self):
         reordered = copy.deepcopy(self.public)
         for field in ("groups", "components", "capabilities", "relations"):
             reordered["spec"][field].reverse()
         first = self.run()
         second = self.run(reordered)
         self.assertEqual(first["mergedSnapshotDigest"], second["mergedSnapshotDigest"])
-        self.assertEqual(first["receiptDigest"], second["receiptDigest"])
+        self.assertEqual(first["mergedObjectCount"], second["mergedObjectCount"])
+        self.assertEqual(first["mergedRelationCount"], second["mergedRelationCount"])
+        self.assertNotEqual(first["publicRegistryDigest"], second["publicRegistryDigest"])
+        self.assertNotEqual(first["receiptDigest"], second["receiptDigest"])
 
     def test_synthetic_private_registry_contains_no_real_project_owner(self):
         registry = synthetic_rehearsal.synthetic_private_registry()
