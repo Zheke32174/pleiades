@@ -23,24 +23,24 @@ jobs:
       - name: Replace identity-bearing profile paths with runtime discovery
         run: |
           python - <<'PY'
-          import re
           from pathlib import Path
 
           path = Path('scripts/pleiades-install-host-autostart.sh')
-          text = path.read_text()
-          if 'detect_windows_profile()' in text:
+          lines = path.read_text().splitlines(keepends=True)
+          if any('detect_windows_profile()' in line for line in lines):
               raise SystemExit('profile discovery is already present')
 
-          root_check = '[[ "${EUID:-$(id -u)}" -ne 0 ]] && die "Must run as root (try: sudo bash $0)"\n'
-          if text.count(root_check) != 1:
-              raise SystemExit('root-check insertion point is not unique')
+          root_line = '[[ "${EUID:-$(id -u)}" -ne 0 ]] && die "Must run as root (try: sudo bash $0)"\n'
+          root_indexes = [index for index, line in enumerate(lines) if line == root_line]
+          if len(root_indexes) != 1:
+              raise SystemExit(f'expected one root-check line, found {len(root_indexes)}')
 
-          block = r'''
+          block = '''
 
 detect_windows_profile() {
   local raw_profile=""
   if command -v cmd.exe >/dev/null 2>&1 && command -v wslpath >/dev/null 2>&1; then
-    raw_profile="$(cmd.exe /C 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r\n')"
+    raw_profile="$(cmd.exe /C 'echo %USERPROFILE%' 2>/dev/null | tr -d '\\r\\n')"
     if [[ -n "$raw_profile" && "$raw_profile" != "%USERPROFILE%" ]]; then
       wslpath -u "$raw_profile"
       return 0
@@ -52,7 +52,7 @@ detect_windows_profile() {
     case "${candidate##*/}" in
       Public|Default|"Default User"|"All Users") continue ;;
     esac
-    printf '%s\n' "$candidate"
+    printf '%s\\n' "$candidate"
     return 0
   done < <(find /mnt/c/Users -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | sort)
   return 1
@@ -62,30 +62,32 @@ WINDOWS_PROFILE="$(detect_windows_profile)" || die "Unable to determine the Wind
 WINDOWS_USER="${WINDOWS_PROFILE##*/}"
 VBS_DIR="$WINDOWS_PROFILE/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup"
 VBS_PATH="$VBS_DIR/Pleiades-WSL-Start.vbs"
-'''
-          text = text.replace(root_check, root_check + block, 1)
+'''.splitlines(keepends=True)
+          insert_at = root_indexes[0] + 1
+          lines[insert_at:insert_at] = block
 
-          text, removed_uninstall = re.subn(
-              r'^  VBS_PATH="/mnt/c/Users/[^"\n]+/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup/Pleiades-WSL-Start\.vbs"\n',
-              '',
-              text,
-              count=1,
-              flags=re.MULTILINE,
-          )
-          if removed_uninstall != 1:
-              raise SystemExit(f'expected one hardcoded uninstall path, removed {removed_uninstall}')
+          uninstall_indexes = [
+              index for index, line in enumerate(lines)
+              if line.startswith('  VBS_PATH="/mnt/c/Users/') and line.rstrip().endswith('/Pleiades-WSL-Start.vbs"')
+          ]
+          if len(uninstall_indexes) != 1:
+              raise SystemExit(f'expected one hardcoded uninstall path, found {len(uninstall_indexes)}')
+          del lines[uninstall_indexes[0]]
 
-          text, removed_detection = re.subn(
-              r'^WINDOWS_USER="Fixxia"\nWINDOWS_PROFILE="/mnt/c/Users/\$WINDOWS_USER"\n.*?^VBS_PATH="\$VBS_DIR/Pleiades-WSL-Start\.vbs"\n',
-              'log "Windows user: $WINDOWS_USER"\n',
-              text,
-              count=1,
-              flags=re.MULTILINE | re.DOTALL,
-          )
-          if removed_detection != 1:
-              raise SystemExit(f'expected one legacy profile block, removed {removed_detection}')
+          start_indexes = [index for index, line in enumerate(lines) if line == 'WINDOWS_USER="Fixxia"\n']
+          if len(start_indexes) != 1:
+              raise SystemExit(f'expected one legacy Windows user line, found {len(start_indexes)}')
+          start = start_indexes[0]
+          end = None
+          for index in range(start, min(start + 20, len(lines))):
+              if lines[index] == 'VBS_PATH="$VBS_DIR/Pleiades-WSL-Start.vbs"\n':
+                  end = index
+                  break
+          if end is None:
+              raise SystemExit('legacy profile block end was not found')
+          lines[start:end + 1] = ['log "Windows user: $WINDOWS_USER"\n']
 
-          path.write_text(text)
+          path.write_text(''.join(lines))
           PY
       - name: Verify syntax and current-tree privacy
         run: |
