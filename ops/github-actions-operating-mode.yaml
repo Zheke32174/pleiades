@@ -1,0 +1,74 @@
+apiVersion: pleiades.io/v1alpha1
+kind: GitHubActionsOperatingMode
+metadata:
+  name: private-actions-targeted-semi-automatic
+  effectiveDate: 2026-07-19
+spec:
+  status: active
+  reason: >-
+    GitHub-hosted Actions jobs in private repositories are currently being rejected
+    before step 1, while equivalent public workflows execute. Private workflow
+    attempts must therefore express explicit build or release intent instead of
+    running on every ordinary repository change.
+  publicRepositories:
+    mode: automatic
+  privateRepositories:
+    mode: intent-gated
+    normalDevelopmentBranches:
+      behavior: source-progress-without-hosted-runner-attempt
+      examples: [main, master, dev]
+    automaticIntentBranches:
+      buildAndTest: [ci/**]
+      buildTestAndPublish: [release/**]
+    manualExecution:
+      workflowDispatch: true
+      publishRequiresExplicitBooleanInput: true
+    disabledAmbientTriggers:
+      - unrestricted-push
+      - pull_request
+      - workflow_run
+      - repository_dispatch
+      - release-tag-self-trigger
+    preservedCapabilities:
+      - normal source commits and agent progress
+      - targeted automatic build and test
+      - targeted automatic release publication
+      - manual workflow_dispatch execution
+      - existing build, test, signing, and asset-verification logic
+      - source history and workflow provenance
+  intentContract:
+    ciBranch:
+      pattern: ci/**
+      actions: [assemble, test, upload-ephemeral-ci-artifacts]
+      forbidden: [mutate-github-release, move-release-tags]
+    releaseBranch:
+      pattern: release/**
+      actions: [assemble, test, publish-or-update-release, verify-apk-assets, verify-checksums, verify-source-archives]
+    manualDispatch:
+      default: build-and-test-only
+      publishInput: publish_release
+  releasePolicy:
+    existingReleasesRemainAuthoritativeUntilRebuilt: true
+    doNotClaimFreshPrivateArtifactsWithoutSuccessfulExecution: true
+  transitionCriteria:
+    anyOf:
+      - custom-private-github-actions-plugin-operational
+      - isolated-self-hosted-runner-pool-operational
+      - github-private-hosted-runner-restriction-cleared-and-verified
+  futurePluginContract:
+    requiredOperations:
+      - enumerate-private-workflows
+      - create-or-advance-ci-intent-branch
+      - create-or-advance-release-intent-branch
+      - dispatch-selected-workflow
+      - read-run-and-job-failure-reasons
+      - download-build-artifacts
+      - create-or-update-release-assets
+      - verify-checksums-and-source-archives
+      - maintain-central-ci-ledger
+    safety:
+      - no-ambient-cross-repository-write
+      - explicit-repository-and-workflow-selection
+      - least-privilege-token-scopes
+      - immutable-operation-receipts
+      - no-success-without-asset-verification
