@@ -8,6 +8,7 @@ on:
     paths:
       - 'modos/pdk-node-agent/**'
       - '.github/workflows/pdk-diagnostics.yml'
+      - 'checkpoints/apply-use-intent-atomicity.py'
   pull_request:
     branches:
       - main
@@ -16,16 +17,88 @@ on:
     paths:
       - 'modos/pdk-node-agent/**'
       - '.github/workflows/pdk-diagnostics.yml'
+      - 'checkpoints/apply-use-intent-atomicity.py'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: pdk-diagnostics-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  apply-use-intent-atomicity:
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'modos/checkpoint-use-intent-atomicity') ||
+      (github.event_name == 'pull_request' && github.head_ref == 'modos/checkpoint-use-intent-atomicity')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+          show-progress: false
+      - name: Install stable Rust, rustfmt, Clippy, and protobuf
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq protobuf-compiler
+      - name: Capture complete atomic operation intent validation
+        id: validation
+        shell: bash
+        run: |
+          set +e
+          (
+            set -euo pipefail
+            set -x
+            python3 checkpoints/apply-use-intent-atomicity.py
+            cargo fmt --all --manifest-path modos/pdk-node-agent/Cargo.toml
+            cargo clippy --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- -D warnings
+            cargo test --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- --nocapture
+            git diff --check
+            grep -Fq 'consume_use_with_intent' modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs
+            grep -Fq 'capability_operation_intent' modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs
+            ! grep -Fq 'consume_durable_use' modos/pdk-node-agent/crates/pdk-node-agent/src/rpc.rs
+            grep -Fq 'OperationIntentReceipt intent = 7;' modos/pdk-node-agent/proto/pdk/v1/pdk.proto
+          ) > use-intent-validation.log 2>&1
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          tail -n 240 use-intent-validation.log
+          exit 0
+      - name: Upload atomic intent validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: use-intent-validation-${{ github.sha }}
+          path: use-intent-validation.log
+          if-no-files-found: error
+          retention-days: 14
+      - name: Enforce atomic intent validation
+        env:
+          VALIDATION_EXIT: ${{ steps.validation.outputs.exit_code }}
+        run: test "$VALIDATION_EXIT" = 0
+      - name: Commit permanent source changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          target_branch="${{ github.head_ref || github.ref_name }}"
+          git rm checkpoints/apply-use-intent-atomicity.py
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs \
+            modos/pdk-node-agent/crates/pdk-node-agent/src/runtime/systemd.rs
+          git commit -m 'feat: persist capability use with signed operation intent'
+          git push origin "HEAD:${target_branch}"
+
   rust-report:
+    if: >-
+      !(
+        (github.event_name == 'push' && github.ref_name == 'modos/checkpoint-use-intent-atomicity') ||
+        (github.event_name == 'pull_request' && github.head_ref == 'modos/checkpoint-use-intent-atomicity')
+      )
     runs-on: ubuntu-latest
     defaults:
       run:
