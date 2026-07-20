@@ -1,0 +1,37 @@
+name: Test work-order controller
+
+on:
+  push:
+    paths:
+      - 'modos/work-order-controller/**'
+      - '.github/workflows/work-order-controller.yml'
+  pull_request:
+    paths:
+      - 'modos/work-order-controller/**'
+      - '.github/workflows/work-order-controller.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: work-order-controller-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: modos/work-order-controller
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile
+        run: python -m py_compile model.py store.py controller.py test_smoke.py
+      - name: Test durable state and authority boundaries
+        run: python -m unittest -v test_smoke.py
