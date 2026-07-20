@@ -4,33 +4,35 @@ metadata:
   name: pleiades-defensive-substrate
   repository: Zheke32174/pleiades
   visibility: public
-  lifecycle: operational
+  lifecycle: canonical
   defaultBranch: main
+  labels:
+    ecology-scope: public-constitution
+    organ-class: governance-substrate
 spec:
   roles:
-    - public-integration-surface
+    - public-constitutional-surface
     - defensive-node-substrate
-    - pdk-reference-implementation
+    - ecology-schema-owner
     - forensic-event-source
   authority: local-enforcement
   inputs:
     - signed-domain-instructions
     - host-and-container-telemetry
     - steward-approved-configuration
+    - ecology-change-proposals
   outputs:
     - signed-audit-events
-    - node-inventory
-    - workload-status
     - defensive-observations
+    - public-contract-schemas
+    - ecology-validation-receipts
   capabilitiesProvided:
-    - node.inventory
-    - workload.native.systemd
-    - audit.append
-    - telemetry.defensive
+    - governance.contract.validate@v1alpha1
+    - telemetry.defensive@v1alpha1
+    - audit.append@v1alpha1
   capabilitiesRequired:
-    - host.kernel.local
-    - filesystem.local
-    - network.mtls
+    - host.kernel.local@v1alpha1
+    - filesystem.local@v1alpha1
   dataClasses:
     - public
     - internal
@@ -38,4 +40,25 @@ spec:
     - untrusted
   failurePolicy: degrade-local
   promotionPolicy: evidence-gated
-  notes: Existing honeypot and defensive automation remain intact; MODOS is added as a governed integration layer.
+  relations:
+    - type: canonical-for
+      targetRef: scope:constitution/public-modos-contracts
+      scope: governance
+      required: true
+    - type: supports
+      targetRef: repo:Zheke32174/undergrowth
+      scope: governance
+      required: true
+    - type: provides-capability
+      targetRef: capability:governance.contract.validate@v1alpha1
+      scope: governance
+      required: true
+    - type: provides-capability
+      targetRef: capability:telemetry.defensive@v1alpha1
+      scope: observation
+      required: true
+  notes: >-
+    Pleiades owns the public constitutional vocabulary and the local defensive
+    substrate. Catalog membership never grants execution authority. The compiled
+    PDK reference remains a separately promoted implementation surface until its
+    live-system gates are satisfied.
