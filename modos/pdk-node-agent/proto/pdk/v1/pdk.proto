@@ -216,6 +216,14 @@ message GetWorkloadStatusRequest {
   string workload_id = 3;
 }
 
+message OperationIntentReceipt {
+  string event_id = 1;
+  string trace_id = 2;
+  string request_digest_sha256 = 3;
+  uint32 committed_use = 4;
+  bool replayed = 5;
+}
+
 message WorkloadReceipt {
   string workload_id = 1;
   string runtime = 2;
@@ -223,6 +231,7 @@ message WorkloadReceipt {
   WorkloadState state = 4;
   uint64 observed_at_unix_ms = 5;
   string detail = 6;
+  OperationIntentReceipt intent = 7;
 }
 
 message DomainEventPayload {
