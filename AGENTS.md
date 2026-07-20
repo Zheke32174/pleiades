@@ -3,7 +3,7 @@
 # Read by: Claude Code, Codex CLI, Gemini CLI, OpenCode, and any AGENTS.md-aware agent
 #
 # This is the single source of truth for agent behavior across all CLIs.
-# Last updated: 2026-06-01
+# Last updated: 2026-07-20
 
 ## ═══════════════════════════════════════════════════════════════
 ## AGENT OPERATING CONTRACT
@@ -33,6 +33,12 @@
 - Destructive operations: denied unless specifically authorized
 - External network calls: approval required
 - Repository operations (git push, PR merge): approval required
+
+### Development-agent scope versus Pleiades runtime autonomy
+
+The Level 3 contract above governs external development assistants and CLIs operating on the repository today. It does **not** define the target executive authority of the deployed Pleiades runtime.
+
+The persistent Pleiades Mind may receive a promoted `DelegatedAuthorityGrant` and autonomously decide and administer bounded changes under `modos/EXECUTIVE_AUTHORITY.md`. No external coding assistant, CLI session, individual model, or repository workflow inherits that grant merely by participating in development. Runtime authority must be explicit, domain-scoped, revocable, policy-bound, and verified through the executive-governance contracts.
 
 ## ═══════════════════════════════════════════════════════════════
 ## HARNESS COMPONENTS
@@ -85,12 +91,12 @@
 | Maia.sh        | Maia     | Overseer, persistence, rehydration    |
 | Electra.sh     | Electra  | Fake environment / honeypot           |
 | Taygete.sh     | Taygete | Credential monitor                    |
-| Alcyone.sh     | Alcyone | Recon, host bridge capability         |
-| Celaeno.sh     | Celaeno | Watchdog, process guardian            |
-| Sterope.sh     | Sterope | Cross-platform compatibility          |
-| Asterope.sh    | Asterope| BSD compatibility layer, WASM strata  |
-| Merope.sh      | Merope  | System monitoring, threat detection   |
-| Atlas.sh       | Atlas   | Multi-language payload execution      |
+| Alcyone.sh     | Alcyone  | Recon, host bridge capability         |
+| Celaeno.sh     | Celaeno  | Watchdog, process guardian            |
+| Sterope.sh     | Sterope  | Cross-platform compatibility          |
+| Asterope.sh    | Asterope | BSD compatibility layer, WASM strata  |
+| Merope.sh      | Merope   | System monitoring, threat detection   |
+| Atlas.sh       | Atlas    | Multi-language payload execution      |
 
 ### Service naming
 - All services: pleiades-* (never purple-*, never old names)
@@ -120,4 +126,3 @@ sudo nsenter -t "$CONTAINER_PID" -m -u -i -n -p -- bash -c 'commands'
 | Zheke32174/pleiades-evidence | Private evidence archive |
 | Zheke32174/underhall | Original Arch nspawn install layer |
 | Zheke32174/undercity | Backup/restore tooling |
-

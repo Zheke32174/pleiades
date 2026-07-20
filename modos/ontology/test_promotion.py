@@ -39,12 +39,43 @@ class PromotionGateTests(unittest.TestCase):
         self.assertFalse(report["authority"]["canonicalMutationApplied"])
         self.assertTrue(report["authority"]["promotionTransactionRequired"])
 
-    def test_candidate_without_blockers_is_only_eligible_for_steward_review(self):
+    def test_candidate_without_blockers_is_eligible_for_authorized_decision(self):
         candidate = copy.deepcopy(self.candidate)
         candidate["blockingIssues"] = []
         report = self.evaluate(candidate=candidate)
-        self.assertEqual(report["status"], "eligible-for-steward-review")
+        self.assertEqual(report["status"], "eligible-for-authorized-decision")
         self.assertEqual(report["authority"]["ceiling"], "none")
+
+    def test_delegated_machine_executive_policy_can_require_zero_human_approvals(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["blockingIssues"] = []
+        candidate["authorizationPolicy"] = {
+            "authorizationMode": "delegated-machine-executive",
+            "requiredHumanApprovals": 0,
+            "machineExecutiveDecisionRequired": True,
+            "delegatedAuthorityGrantRequired": True,
+            "codeownersRequired": True,
+            "rulesetReviewRequired": True,
+            "artifactAttestationRequired": False,
+            "signedPromotionTransactionRequired": True,
+        }
+        report = self.evaluate(candidate=candidate)
+        self.assertEqual(report["status"], "eligible-for-authorized-decision")
+
+    def test_machine_executive_policy_rejects_hidden_human_gate(self):
+        candidate = copy.deepcopy(self.candidate)
+        candidate["authorizationPolicy"] = {
+            "authorizationMode": "delegated-machine-executive",
+            "requiredHumanApprovals": 1,
+            "machineExecutiveDecisionRequired": True,
+            "delegatedAuthorityGrantRequired": True,
+            "codeownersRequired": True,
+            "rulesetReviewRequired": True,
+            "artifactAttestationRequired": False,
+            "signedPromotionTransactionRequired": True,
+        }
+        with self.assertRaisesRegex(promotion.PromotionEvidenceError, "zero human approvals"):
+            self.evaluate(candidate=candidate)
 
     def test_placeholder_digest_is_rejected(self):
         candidate = copy.deepcopy(self.candidate)

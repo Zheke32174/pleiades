@@ -1,10 +1,21 @@
 {
   "apiVersion": "modos.pleiades/v1alpha1",
   "authority": {
-    "admissionExecutor": "external-steward",
+    "admissionExecutor": "capability-bound-service",
+    "authorizationSource": "policy-and-delegated-authority",
     "canonicalMutation": "forbidden",
     "ceiling": "none",
-    "selfAdmissionAllowed": false
+    "proposalSelfAdmissionAllowed": false
+  },
+  "authorizationPolicy": {
+    "artifactAttestationRequired": false,
+    "authorizationMode": "mixed-quorum",
+    "codeownersRequired": true,
+    "delegatedAuthorityGrantRequired": true,
+    "machineExecutiveDecisionRequired": true,
+    "requiredHumanApprovals": 1,
+    "rulesetReviewRequired": true,
+    "signedPromotionTransactionRequired": true
   },
   "blockingIssues": [
     "github:Zheke32174/pleiades#42"
@@ -20,7 +31,7 @@
   ],
   "governanceEvidence": [
     {
-      "digest": "sha256:1cf702a8b3166d81a949169f452fbb659c9266937a89fafad4f61be81e0bf06d",
+      "digest": "sha256:e4994ce88c9660a175f724d0329779a5b0d9b5ab13e20dee42d3f8adf8362f69",
       "locator": ".github/CODEOWNERS",
       "type": "codeowners",
       "verified": true
@@ -29,13 +40,6 @@
   "kind": "OntologyPromotionCandidate",
   "mindId": "mind:pleiades",
   "repository": "Zheke32174/pleiades",
-  "reviewPolicy": {
-    "artifactAttestationRequired": false,
-    "codeownersRequired": true,
-    "requiredApprovals": 1,
-    "rulesetReviewRequired": true,
-    "signedPromotionTransactionRequired": true
-  },
   "schemaVersion": "v1alpha1",
   "semanticDiffDigest": "sha256:dab46271705556cb4572afbad2f54c8639aa26e4970aed8dbdaed7be149655bf",
   "sourceManifestDigest": "sha256:80e975416d93e2935f12f041c338ec8cc2dd49de5cab43b58a3b40b00f5d60f8",
