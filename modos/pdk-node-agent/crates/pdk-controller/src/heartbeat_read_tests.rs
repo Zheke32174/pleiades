@@ -75,7 +75,9 @@ fn epoch(boot_id: &str, generation: u64, transition_id: &str) -> BootEpochRecord
 async fn latest_for_boot_reconstructs_exact_durable_envelope() {
     let path = database_path("latest");
     let writer = ControllerHeartbeatStore::open(&path).await.expect("writer");
-    let reader = ControllerHeartbeatReadStore::open(&path).await.expect("reader");
+    let reader = ControllerHeartbeatReadStore::open(&path)
+        .await
+        .expect("reader");
     let first = heartbeat("boot/one", 1, "v1");
     let latest = heartbeat("boot/one", 2, "v2");
     writer
@@ -94,7 +96,10 @@ async fn latest_for_boot_reconstructs_exact_durable_envelope() {
         .expect("observation");
     assert_eq!(observed.sequence, 2);
     assert_eq!(observed.envelope.encode_to_vec(), latest.encode_to_vec());
-    assert_eq!(observed.acknowledgement.encode_to_vec(), latest_ack.encode_to_vec());
+    assert_eq!(
+        observed.acknowledgement.encode_to_vec(),
+        latest_ack.encode_to_vec()
+    );
     let _ = tokio::fs::remove_dir_all(path.parent().expect("parent")).await;
 }
 
@@ -102,14 +107,19 @@ async fn latest_for_boot_reconstructs_exact_durable_envelope() {
 async fn explicit_boot_epoch_prevents_delayed_old_boot_from_becoming_current() {
     let path = database_path("epoch");
     let writer = ControllerHeartbeatStore::open(&path).await.expect("writer");
-    let reader = ControllerHeartbeatReadStore::open(&path).await.expect("reader");
+    let reader = ControllerHeartbeatReadStore::open(&path)
+        .await
+        .expect("reader");
     let old = heartbeat("boot/old", 1, "old");
     writer
         .admit_new(&old, &acknowledgement(&old, "ack/old", 20))
         .await
         .expect("old");
     assert_eq!(
-        reader.activate_boot_epoch(&epoch("boot/old", 1, "transition/1")).await.expect("activate old"),
+        reader
+            .activate_boot_epoch(&epoch("boot/old", 1, "transition/1"))
+            .await
+            .expect("activate old"),
         BootEpochActivation::New
     );
 
@@ -144,7 +154,9 @@ async fn explicit_boot_epoch_prevents_delayed_old_boot_from_becoming_current() {
 async fn boot_epoch_transition_is_idempotent_and_rejects_regression() {
     let path = database_path("retry");
     let writer = ControllerHeartbeatStore::open(&path).await.expect("writer");
-    let reader = ControllerHeartbeatReadStore::open(&path).await.expect("reader");
+    let reader = ControllerHeartbeatReadStore::open(&path)
+        .await
+        .expect("reader");
     let observed = heartbeat("boot/one", 1, "v1");
     writer
         .admit_new(&observed, &acknowledgement(&observed, "ack/one", 20))
@@ -161,8 +173,13 @@ async fn boot_epoch_transition_is_idempotent_and_rejects_regression() {
     );
     let regression = epoch("boot/one", 1, "transition/different");
     assert!(matches!(
-        reader.activate_boot_epoch(&regression).await.expect_err("regression"),
-        BootEpochActivationError::Regression { current_generation: 1 }
+        reader
+            .activate_boot_epoch(&regression)
+            .await
+            .expect_err("regression"),
+        BootEpochActivationError::Regression {
+            current_generation: 1
+        }
     ));
     let _ = tokio::fs::remove_dir_all(path.parent().expect("parent")).await;
 }
@@ -171,9 +188,14 @@ async fn boot_epoch_transition_is_idempotent_and_rejects_regression() {
 async fn boot_epoch_requires_an_accepted_heartbeat() {
     let path = database_path("missing");
     let _writer = ControllerHeartbeatStore::open(&path).await.expect("writer");
-    let reader = ControllerHeartbeatReadStore::open(&path).await.expect("reader");
+    let reader = ControllerHeartbeatReadStore::open(&path)
+        .await
+        .expect("reader");
     assert!(matches!(
-        reader.activate_boot_epoch(&epoch("boot/missing", 1, "transition/missing")).await.expect_err("missing"),
+        reader
+            .activate_boot_epoch(&epoch("boot/missing", 1, "transition/missing"))
+            .await
+            .expect_err("missing"),
         BootEpochActivationError::BootNotObserved
     ));
     let _ = tokio::fs::remove_dir_all(path.parent().expect("parent")).await;
@@ -189,13 +211,17 @@ async fn current_boot_epoch_survives_reader_restart() {
         .await
         .expect("heartbeat");
     {
-        let reader = ControllerHeartbeatReadStore::open(&path).await.expect("reader");
+        let reader = ControllerHeartbeatReadStore::open(&path)
+            .await
+            .expect("reader");
         reader
             .activate_boot_epoch(&epoch("boot/one", 1, "transition/1"))
             .await
             .expect("activate");
     }
-    let reopened = ControllerHeartbeatReadStore::open(&path).await.expect("reopen");
+    let reopened = ControllerHeartbeatReadStore::open(&path)
+        .await
+        .expect("reopen");
     let current = reopened
         .current_for_node("node://test/source")
         .await
