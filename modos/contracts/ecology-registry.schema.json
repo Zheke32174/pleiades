@@ -1,0 +1,141 @@
+{
+  "$id": "https://pleiades.local/schemas/modos-ecology-registry-v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "EcologyRegistry"},
+    "metadata": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {"pattern": "^[a-z0-9][a-z0-9._-]*$", "type": "string"},
+        "notes": {"type": "string"},
+        "observedAt": {"format": "date-time", "type": "string"},
+        "owner": {"type": "string"},
+        "source": {"type": "string"},
+        "sourceDigest": {"pattern": "^sha256:[0-9a-f]{64}$", "type": "string"},
+        "visibility": {"enum": ["public", "private"]}
+      },
+      "required": ["name", "owner", "observedAt", "visibility", "source"],
+      "type": "object"
+    },
+    "spec": {
+      "additionalProperties": false,
+      "properties": {
+        "precedence": {"items": {"type": "string"}, "minItems": 1, "type": "array", "uniqueItems": true},
+        "inventory": {
+          "additionalProperties": false,
+          "properties": {
+            "expectedCount": {"minimum": 1, "type": "integer"},
+            "repositories": {"items": {"pattern": "^[^/]+/[^/]+$", "type": "string"}, "minItems": 1, "type": "array", "uniqueItems": true}
+          },
+          "required": ["expectedCount", "repositories"],
+          "type": "object"
+        },
+        "groups": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {"pattern": "^[a-z0-9][a-z0-9._-]*$", "type": "string"},
+              "description": {"minLength": 1, "type": "string"},
+              "lifecycle": {"enum": ["canonical", "operational", "experimental", "reference", "backup", "quarantined", "parked", "human-only"]},
+              "disposition": {"enum": ["canonical", "active", "active-supporting", "reference", "archive-only", "parked", "human-only", "delete-candidate"]},
+              "subsystem": {"pattern": "^[a-z0-9][a-z0-9._-]*$", "type": "string"},
+              "authorityCeiling": {"enum": ["none", "proposal", "local-enforcement", "domain-control", "steward-only"]},
+              "repositories": {"items": {"pattern": "^[^/]+/[^/]+$", "type": "string"}, "minItems": 1, "type": "array", "uniqueItems": true}
+            },
+            "required": ["id", "description", "lifecycle", "disposition", "subsystem", "authorityCeiling", "repositories"],
+            "type": "object"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "canonicalScopes": {
+          "additionalProperties": {"pattern": "^repo:[^/\\s]+/[^/\\s]+$", "type": "string"},
+          "minProperties": 1,
+          "type": "object"
+        },
+        "components": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "componentId": {"pattern": "^[a-z0-9][a-z0-9._-]*$", "type": "string"},
+              "repository": {"pattern": "^[^/]+/[^/]+$", "type": "string"},
+              "manifestPath": {"type": "string"},
+              "manifestState": {"enum": ["present", "branch-only", "planned", "exempt"]},
+              "sourceRef": {"type": "string"},
+              "notes": {"type": "string"}
+            },
+            "required": ["componentId", "repository", "manifestPath", "manifestState"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "capabilities": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {"pattern": "^[a-z0-9][a-z0-9._-]*$", "type": "string"},
+              "version": {"minLength": 1, "type": "string"},
+              "providerRef": {"pattern": "^(?:repo:[^/\\s]+/[^/\\s]+|component:[a-z0-9][a-z0-9._-]*|capability:[a-z0-9][a-z0-9._-]*(?:@[A-Za-z0-9._*+\\-<>=^~]+)?|scope:[a-z0-9][a-z0-9._-]*)$", "type": "string"},
+              "status": {"enum": ["canonical", "operational", "experimental", "reference", "planned"]},
+              "compatibility": {"type": "string"}
+            },
+            "required": ["id", "version", "providerRef", "status"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "relations": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "type": {"enum": ["part-of", "depends-on", "implements", "governed-by", "derived-from", "supersedes", "mirror-of", "archive-of", "canonical-for", "supports", "overlays", "produced-by", "evidence-for", "human-interface-for", "requires-capability", "provides-capability"]},
+              "sourceRef": {"pattern": "^(?:repo:[^/\\s]+/[^/\\s]+|component:[a-z0-9][a-z0-9._-]*|capability:[a-z0-9][a-z0-9._-]*(?:@[A-Za-z0-9._*+\\-<>=^~]+)?|scope:[a-z0-9][a-z0-9._-]*)$", "type": "string"},
+              "targetRef": {"pattern": "^(?:repo:[^/\\s]+/[^/\\s]+|component:[a-z0-9][a-z0-9._-]*|capability:[a-z0-9][a-z0-9._-]*(?:@[A-Za-z0-9._*+\\-<>=^~]+)?|scope:[a-z0-9][a-z0-9._-]*)$", "type": "string"},
+              "scope": {"enum": ["runtime", "build", "governance", "provenance", "deployment", "historical", "evidence", "human"]},
+              "required": {"type": "boolean"},
+              "versionConstraint": {"type": "string"},
+              "evidenceRef": {"type": "string"}
+            },
+            "required": ["type", "sourceRef", "targetRef", "scope", "required"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "invariants": {
+          "additionalProperties": false,
+          "properties": {
+            "completeInventory": {"const": true},
+            "uniqueMembership": {"const": true},
+            "singleCanonicalProvider": {"const": true},
+            "archiveIsolation": {"const": true},
+            "authorityMonotonicity": {"const": true},
+            "noDanglingRequiredRelations": {"const": true}
+          },
+          "required": ["completeInventory", "uniqueMembership", "singleCanonicalProvider", "archiveIsolation", "authorityMonotonicity", "noDanglingRequiredRelations"],
+          "type": "object"
+        },
+        "exceptions": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "subjectRef": {"pattern": "^(?:repo:[^/\\s]+/[^/\\s]+|component:[a-z0-9][a-z0-9._-]*|capability:[a-z0-9][a-z0-9._-]*(?:@[A-Za-z0-9._*+\\-<>=^~]+)?|scope:[a-z0-9][a-z0-9._-]*)$", "type": "string"},
+              "reason": {"minLength": 1, "type": "string"},
+              "expiresAt": {"format": "date-time", "type": "string"},
+              "issueRef": {"type": "string"}
+            },
+            "required": ["subjectRef", "reason", "expiresAt"],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["precedence", "inventory", "groups", "canonicalScopes", "components", "capabilities", "relations", "invariants"],
+      "type": "object"
+    }
+  },
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "title": "MODOS Ecology Registry",
+  "type": "object"
+}
