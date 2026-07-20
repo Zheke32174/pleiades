@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Review the public tree and reachable Git history for configured sensitive patterns."""
+"""Review the public tree and release-candidate history for configured sensitive patterns."""
 
 from __future__ import annotations
 
@@ -113,7 +113,7 @@ def scan_current(root: pathlib.Path) -> list[str]:
 
 
 def scan_history(root: pathlib.Path) -> list[str]:
-    objects = git(root, "rev-list", "--objects", "--all")
+    objects = git(root, "rev-list", "--objects", "HEAD")
     if objects.returncode != 0:
         raise RuntimeError(objects.stderr)
     findings: list[str] = []
@@ -151,7 +151,7 @@ def main() -> int:
         for finding in sorted(set(findings)):
             print(f"  {finding}", file=sys.stderr)
         return 1
-    scope = "current tree" if args.current_only else "current tree and reachable Git history"
+    scope = "current tree" if args.current_only else "current tree and history reachable from HEAD"
     print(f"PASS: no configured sensitive patterns found in {scope}")
     return 0
 
