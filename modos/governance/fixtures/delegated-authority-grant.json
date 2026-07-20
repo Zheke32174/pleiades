@@ -1,0 +1,53 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "authoritySourceRef": "modos/EXECUTIVE_AUTHORITY.md#risk-ladder",
+  "autonomyMode": "execute-within-grant",
+  "constraints": {
+    "authorityExpansionAllowed": false,
+    "constitutionalMutationAllowed": false,
+    "externalSideEffectsAllowed": false,
+    "maxActionsPerDecision": 8,
+    "maxExecutionSeconds": 900,
+    "maxObjectsChanged": 64,
+    "reversibilityRequired": true,
+    "rollbackRequired": true
+  },
+  "delegation": {
+    "mayDelegate": false,
+    "maySelfExpand": false,
+    "revocable": true
+  },
+  "domains": [
+    "ontology"
+  ],
+  "grantId": "grant:mind-pleiades:ontology-bounded-v1",
+  "issuerRef": "sovereign:pleiades-constitutional-process",
+  "kind": "DelegatedAuthorityGrant",
+  "permissions": [
+    "approve-candidate",
+    "reject-candidate",
+    "defer-candidate",
+    "authorize-admission",
+    "authorize-rollback",
+    "suspend-executor",
+    "revoke-mandate"
+  ],
+  "provenance": {
+    "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "evidenceRefs": [
+      "modos/EXECUTIVE_AUTHORITY.md",
+      "github:Zheke32174/pleiades#53"
+    ],
+    "issuedAt": "2026-07-20T20:30:00Z"
+  },
+  "riskCeiling": "bounded-persistent",
+  "status": "active",
+  "subject": {
+    "principalRef": "mind:pleiades",
+    "principalType": "mind"
+  },
+  "validity": {
+    "notAfter": "2027-07-20T00:00:00Z",
+    "notBefore": "2026-07-20T00:00:00Z"
+  }
+}
