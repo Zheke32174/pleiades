@@ -8,6 +8,7 @@
 /modos/contracts/admission-mandate.schema.json @Zheke32174
 /modos/contracts/workspace-emergency-recovery.schema.json @Zheke32174
 /modos/contracts/distributed-admission.schema.json @Zheke32174
+/modos/contracts/learning-spine.schema.json @Zheke32174
 /modos/ontology/ @Zheke32174
 /modos/governance/ @Zheke32174
 /modos/EXECUTIVE_AUTHORITY.md @Zheke32174
@@ -18,9 +19,11 @@
 /ci/validate-executive-control-plane.py @Zheke32174
 /ci/validate-workspace-emergency.py @Zheke32174
 /ci/validate-distributed-admission.py @Zheke32174
+/ci/validate-learning-spine.py @Zheke32174
 /.github/workflows/change-proposal-contracts.yml @Zheke32174
 /.github/workflows/ontology-promotion-evidence.yml @Zheke32174
 /.github/workflows/executive-authority-contracts.yml @Zheke32174
 /.github/workflows/executive-control-plane.yml @Zheke32174
 /.github/workflows/workspace-emergency-recovery.yml @Zheke32174
 /.github/workflows/distributed-admission.yml @Zheke32174
+/.github/workflows/learning-spine.yml @Zheke32174
