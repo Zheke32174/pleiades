@@ -109,6 +109,7 @@
       "authorityClass": "evidence-and-handoff-contract",
       "currentVersion": "v1alpha1",
       "paths": [
+        "modos/contracts/operator-input-candidate.schema.json",
         "modos/contracts/operator-intervention-bundle.schema.json",
         "modos/contracts/validation-package.schema.json"
       ]
