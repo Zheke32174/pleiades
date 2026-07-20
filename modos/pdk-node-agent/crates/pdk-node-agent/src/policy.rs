@@ -28,13 +28,37 @@ pub struct PolicyEnforcer {
     max_clock_skew_ms: u64,
     trusted_controllers: Arc<HashMap<String, TrustedControllerKey>>,
     grants: Arc<RwLock<HashMap<String, CachedGrant>>>,
-    highest_sequences: Arc<RwLock<HashMap<String, u64>>>,
+    highest_sequences: Arc<RwLock<HashMap<String, HighestSequence>>>,
 }
 
 #[derive(Clone)]
 struct CachedGrant {
     envelope: SignedCapabilityGrant,
     payload: CapabilityGrantPayload,
+}
+
+#[derive(Clone)]
+struct HighestSequence {
+    sequence: u64,
+    token_id: String,
+    signature_base64: String,
+}
+
+#[derive(Clone)]
+pub struct ValidatedGrant {
+    envelope: SignedCapabilityGrant,
+    payload: CapabilityGrantPayload,
+    sequence_key: String,
+}
+
+impl ValidatedGrant {
+    pub fn payload(&self) -> &CapabilityGrantPayload {
+        &self.payload
+    }
+
+    pub fn signature_base64(&self) -> &str {
+        &self.envelope.signature_base64
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -63,11 +87,11 @@ impl PolicyEnforcer {
         }
     }
 
-    pub async fn cache_signed_grant(
+    pub fn validate_signed_grant(
         &self,
         envelope: SignedCapabilityGrant,
         authenticated_controller_id: &str,
-    ) -> Result<CapabilityGrantPayload> {
+    ) -> Result<ValidatedGrant> {
         if !self.autonomy.allows_new_global_grant() {
             bail!("new capability grants require Connected state");
         }
@@ -109,36 +133,62 @@ impl PolicyEnforcer {
             bail!("capability grant is missing a required identity or nonce");
         }
 
-        let token_id = payload.token_id.clone();
-        let sequence_key = grant_sequence_key(&payload);
+        Ok(ValidatedGrant {
+            sequence_key: grant_sequence_key(&payload),
+            envelope,
+            payload,
+        })
+    }
+
+    pub async fn install_durably_admitted_grant(
+        &self,
+        candidate: ValidatedGrant,
+    ) -> Result<CapabilityGrantPayload> {
+        let token_id = candidate.payload.token_id.clone();
+        let signature_base64 = candidate.envelope.signature_base64.clone();
         let mut grants = self.grants.write().await;
         if let Some(existing) = grants.get(&token_id) {
-            if existing.envelope.signature_base64 != envelope.signature_base64 {
+            if existing.envelope.signature_base64 != signature_base64 {
                 bail!("token ID collision with different signed content");
             }
             return Ok(existing.payload.clone());
         }
 
         let mut highest_sequences = self.highest_sequences.write().await;
-        if let Some(highest) = highest_sequences.get(&sequence_key)
-            && payload.grant_sequence <= *highest
-        {
-            bail!(
-                "capability grant sequence {} is not newer than accepted sequence {}",
-                payload.grant_sequence,
-                highest
-            );
+        if let Some(highest) = highest_sequences.get(&candidate.sequence_key) {
+            if candidate.payload.grant_sequence < highest.sequence {
+                bail!(
+                    "capability grant sequence {} is older than active projection sequence {}",
+                    candidate.payload.grant_sequence,
+                    highest.sequence
+                );
+            }
+            if candidate.payload.grant_sequence == highest.sequence
+                && (highest.token_id != token_id || highest.signature_base64 != signature_base64)
+            {
+                bail!(
+                    "capability grant sequence {} collides with another admitted identity",
+                    candidate.payload.grant_sequence
+                );
+            }
         }
 
+        highest_sequences.insert(
+            candidate.sequence_key,
+            HighestSequence {
+                sequence: candidate.payload.grant_sequence,
+                token_id: token_id.clone(),
+                signature_base64,
+            },
+        );
         grants.insert(
             token_id,
             CachedGrant {
-                envelope,
-                payload: payload.clone(),
+                envelope: candidate.envelope,
+                payload: candidate.payload.clone(),
             },
         );
-        highest_sequences.insert(sequence_key, payload.grant_sequence);
-        Ok(payload)
+        Ok(candidate.payload)
     }
 
     pub async fn authorize_spawn(
@@ -511,10 +561,44 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn rejects_sequence_rollback_for_same_subject() {
+    async fn validation_is_side_effect_free_until_durable_installation() {
         let (enforcer, key, _) = fixture();
+        let candidate = enforcer
+            .validate_signed_grant(
+                signed_grant(
+                    &key,
+                    "token-candidate",
+                    20,
+                    1,
+                    OfflinePolicy::BoundedCache,
+                    CapabilityAction::StatusWorkload,
+                ),
+                "controller-1",
+            )
+            .expect("candidate should pass deterministic validation");
+
+        assert_eq!(enforcer.cached_count().await, 0);
         enforcer
-            .cache_signed_grant(
+            .authorize_status("token-candidate", "workload-1")
+            .await
+            .expect_err("validated but uncommitted candidate must not become active");
+
+        enforcer
+            .install_durably_admitted_grant(candidate)
+            .await
+            .expect("durably admitted candidate should become active");
+        assert_eq!(enforcer.cached_count().await, 1);
+        enforcer
+            .authorize_status("token-candidate", "workload-1")
+            .await
+            .expect("installed grant should authorize policy checks");
+    }
+
+    #[tokio::test]
+    async fn active_projection_rejects_rollback_and_same_sequence_collision() {
+        let (enforcer, key, _) = fixture();
+        let newest = enforcer
+            .validate_signed_grant(
                 signed_grant(
                     &key,
                     "token-new",
@@ -525,10 +609,14 @@ mod tests {
                 ),
                 "controller-1",
             )
+            .expect("new grant should validate");
+        enforcer
+            .install_durably_admitted_grant(newest)
             .await
-            .expect("new grant should be accepted");
-        let error = enforcer
-            .cache_signed_grant(
+            .expect("new grant should install");
+
+        let older = enforcer
+            .validate_signed_grant(
                 signed_grant(
                     &key,
                     "token-old",
@@ -539,16 +627,66 @@ mod tests {
                 ),
                 "controller-1",
             )
+            .expect("sequence continuity belongs to durable admission, not validation");
+        let error = enforcer
+            .install_durably_admitted_grant(older)
             .await
-            .expect_err("older sequence must be rejected");
-        assert!(error.to_string().contains("not newer"));
+            .expect_err("older durable projection must be rejected defensively");
+        assert!(error.to_string().contains("older than active projection"));
+
+        let collision = enforcer
+            .validate_signed_grant(
+                signed_grant(
+                    &key,
+                    "token-collision",
+                    20,
+                    1,
+                    OfflinePolicy::BoundedCache,
+                    CapabilityAction::StatusWorkload,
+                ),
+                "controller-1",
+            )
+            .expect("same-sequence candidate should validate cryptographically");
+        let error = enforcer
+            .install_durably_admitted_grant(collision)
+            .await
+            .expect_err("same sequence with another identity must be rejected");
+        assert!(error.to_string().contains("collides"));
+    }
+
+    #[tokio::test]
+    async fn exact_install_retry_is_idempotent() {
+        let (enforcer, key, _) = fixture();
+        let envelope = signed_grant(
+            &key,
+            "token-retry",
+            21,
+            1,
+            OfflinePolicy::BoundedCache,
+            CapabilityAction::StatusWorkload,
+        );
+        let first = enforcer
+            .validate_signed_grant(envelope.clone(), "controller-1")
+            .expect("first candidate should validate");
+        let second = enforcer
+            .validate_signed_grant(envelope, "controller-1")
+            .expect("retry candidate should validate without cache mutation");
+        enforcer
+            .install_durably_admitted_grant(first)
+            .await
+            .expect("first install should succeed");
+        enforcer
+            .install_durably_admitted_grant(second)
+            .await
+            .expect("exact retry should be idempotent");
+        assert_eq!(enforcer.cached_count().await, 1);
     }
 
     #[tokio::test]
     async fn subject_validation_does_not_consume_the_durable_budget() {
         let (enforcer, key, _) = fixture();
-        enforcer
-            .cache_signed_grant(
+        let candidate = enforcer
+            .validate_signed_grant(
                 signed_grant(
                     &key,
                     "token-budget",
@@ -559,8 +697,11 @@ mod tests {
                 ),
                 "controller-1",
             )
+            .expect("grant should validate");
+        enforcer
+            .install_durably_admitted_grant(candidate)
             .await
-            .expect("grant should be accepted");
+            .expect("durably admitted grant should install");
 
         enforcer
             .authorize_status("token-budget", "wrong-workload")
