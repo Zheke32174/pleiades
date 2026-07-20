@@ -11,7 +11,7 @@
     "receiptDigest": "sha256:0b5b48e2331283ee960263209e081f0f337b0bd44bd826105b5d6e3653b89c3c",
     "status": "clear"
   },
-  "evidenceDigest": "sha256:17b4af85124a86441b39f031242887127e565989610ae4e8b46df294ebc7093e",
+  "evidenceDigest": "sha256:09058a0d5c776763e2774ff0efc9d29c52ceac2df8211ccc648ae1a1d2531281",
   "interventionFrontier": {
     "autonomousActionCount": 0,
     "operatorActionCount": 11,
@@ -43,7 +43,7 @@
     "failureDetails": {},
     "failures": [],
     "notRun": [],
-    "receiptDigest": "sha256:5f2a358b907265622b680521d69f85740fdd400fd204fc17cec31884b488ffeb",
+    "receiptDigest": "sha256:6a297c76c0982b079ca13e71bafcbce2316ef6ed3daf5c8d027b3549d054820a",
     "status": "pass"
   },
   "syntheticRehearsal": {
@@ -55,12 +55,12 @@
     ],
     "status": "pass"
   },
-  "validatedCommit": "2af0b44d708a9cddfe45821b413d21933ae98c13",
+  "validatedCommit": "bb127e9d4eb8819dd7a592df1c4c762821b9a650",
   "validationPackage": {
-    "manifestDigest": "sha256:e97889ecedfb78c34fbc7fe47ca2bd16e934c719a08f72a6ea684c94601016de",
-    "packageDigest": "sha256:4683be1ef0beeb66b6c28811d2f6ca806d7a2155660e558c9ba678a867835e5a",
+    "manifestDigest": "sha256:e3f9db180555148ac2115b15bb7f54cc3924396720bfafc250d119b49d9311cd",
+    "packageDigest": "sha256:261cbba213a6c3a09a9090b671f1e207463d9a9ec93f67abb4285f2804a8b3bf",
     "privateMaterialIncluded": false,
-    "receiptDigest": "sha256:ace1d9a5af8cb928f8ea943ab959bf43ab6c0d919910627aa99b6f221d5e1934",
-    "sbomDigest": "sha256:9b8fdbea682b0e626cb7010d0e22c6988f7408ed943fa6dbd7173fa7a27de0df"
+    "receiptDigest": "sha256:0c6fda8b6649c9ca4cb5d57b09653ece46c598fc2ddc75dafe49cf8f75f00a9f",
+    "sbomDigest": "sha256:1b2c68f6aae5ab0678addb29a32993899aef68d4350ce873699d67b8b7cd9de3"
   }
 }
