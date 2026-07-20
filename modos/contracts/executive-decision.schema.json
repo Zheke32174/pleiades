@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/executive-decision-v1.json",
+  "title": "Pleiades Executive Decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "decisionId",
+    "mindId",
+    "proposalRef",
+    "proposalDigest",
+    "policyRef",
+    "policyDigest",
+    "authorityGrantRefs",
+    "classification",
+    "deliberation",
+    "decision",
+    "rationaleDigest",
+    "conditions",
+    "rollback",
+    "executionWindow",
+    "separationOfDuties",
+    "authority"
+  ],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "ExecutiveDecision"},
+    "decisionId": {"type": "string", "minLength": 1, "maxLength": 256},
+    "mindId": {"type": "string", "minLength": 1, "maxLength": 128},
+    "proposalRef": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "proposalDigest": {"$ref": "#/$defs/sha256"},
+    "policyRef": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "policyDigest": {"$ref": "#/$defs/sha256"},
+    "authorityGrantRefs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 256}
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["domain", "action", "riskTier", "changeClass"],
+      "properties": {
+        "domain": {"type": "string", "minLength": 1, "maxLength": 256},
+        "action": {
+          "enum": [
+            "approve-candidate",
+            "reject-candidate",
+            "defer-candidate",
+            "authorize-admission",
+            "authorize-rollback",
+            "suspend-executor",
+            "revoke-mandate"
+          ]
+        },
+        "riskTier": {
+          "enum": ["observe-only", "reversible-local", "bounded-persistent", "high-impact", "constitutional"]
+        },
+        "changeClass": {
+          "enum": ["observation", "maintenance", "repair", "optimization", "evolution", "governance"]
+        }
+      }
+    },
+    "deliberation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "assemblyRef", "contributions", "dissentPreserved", "dissentSummary"],
+      "properties": {
+        "mode": {"const": "polycentric-recurrent"},
+        "assemblyRef": {"type": "string", "minLength": 1, "maxLength": 256},
+        "contributions": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["principalRef", "role", "firstPassIndependent", "position", "evidenceRefs"],
+            "properties": {
+              "principalRef": {"type": "string", "minLength": 1, "maxLength": 256},
+              "role": {
+                "enum": ["proposal", "critique", "risk", "evidence", "policy", "operations", "dissent"]
+              },
+              "firstPassIndependent": {"const": true},
+              "position": {"enum": ["support", "oppose", "abstain"]},
+              "evidenceRefs": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+              }
+            }
+          }
+        },
+        "dissentPreserved": {"const": true},
+        "dissentSummary": {"type": "string", "minLength": 1, "maxLength": 4096}
+      }
+    },
+    "decision": {"enum": ["approve", "reject", "defer", "escalate"]},
+    "rationaleDigest": {"$ref": "#/$defs/sha256"},
+    "conditions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+    },
+    "rollback": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "planRef", "planDigest", "predecessorDigest"],
+      "properties": {
+        "required": {"type": "boolean"},
+        "planRef": {"type": "string", "minLength": 1, "maxLength": 1024},
+        "planDigest": {"$ref": "#/$defs/sha256"},
+        "predecessorDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "executionWindow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["notBefore", "expiresAt"],
+      "properties": {
+        "notBefore": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "separationOfDuties": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["proposerNotSoleDecider", "executorHasNoDecisionAuthority", "authorityExpansionDecision"],
+      "properties": {
+        "proposerNotSoleDecider": {"const": true},
+        "executorHasNoDecisionAuthority": {"const": true},
+        "authorityExpansionDecision": {"const": false}
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grantBound", "selfExpansionApplied", "constitutionalMutationApplied"],
+      "properties": {
+        "grantBound": {"const": true},
+        "selfExpansionApplied": {"const": false},
+        "constitutionalMutationApplied": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:(?!0{64}$)[0-9a-f]{64}$"
+    }
+  }
+}
