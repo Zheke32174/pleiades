@@ -69,8 +69,9 @@ def main():
     proposal_schema = load(CONTRACTS / "change-proposal.schema.json")
     snapshot_schema = load(CONTRACTS / "ontology-snapshot.schema.json")
     receipt_schema = load(CONTRACTS / "ontology-closure-receipt.schema.json")
+    projection_schema = load(CONTRACTS / "ontology-projection-bundle.schema.json")
     domain_schema = load(CONTRACTS / "domain-object.schema.json")
-    for schema in (proposal_schema, snapshot_schema, receipt_schema):
+    for schema in (proposal_schema, snapshot_schema, receipt_schema, projection_schema):
         Draft202012Validator.check_schema(schema)
 
     proposal_validator = Draft202012Validator(proposal_schema, format_checker=checker)
@@ -110,14 +111,25 @@ def main():
         if compiler.snapshot_digest(result) != receipt["resultSnapshotDigest"]:
             failures.append("closure receipt resultSnapshotDigest does not match compiled snapshot")
         if not failures:
-            print("compiler accepted: deterministic closed snapshot and receipt")
+            projection_spec = importlib.util.spec_from_file_location("pleiades_ontology_projection", ONTOLOGY / "projection.py")
+            if projection_spec is None or projection_spec.loader is None:
+                failures.append("cannot load ontology projection module")
+            else:
+                projection_module = importlib.util.module_from_spec(projection_spec)
+                sys.modules[projection_spec.name] = projection_module
+                projection_spec.loader.exec_module(projection_module)
+                projection_bundle = projection_module.build_projection_bundle(result, receipt)
+                projection_errors = list(Draft202012Validator(projection_schema, format_checker=checker).iter_errors(projection_bundle))
+                failures.extend(f"projection bundle: {error.message}" for error in projection_errors)
+                if not failures:
+                    print("compiler accepted: deterministic closed snapshot, receipt, and read projection")
 
     if failures:
         print("validation failures:", file=sys.stderr)
         for failure in failures:
             print("-", failure, file=sys.stderr)
         return 1
-    print(f"validated 3 ontology schemas, {len(bundle['cases'])} proposal cases, and one compiled closure receipt")
+    print(f"validated 4 ontology schemas, {len(bundle['cases'])} proposal cases, and one compiled closure receipt")
     return 0
 
 

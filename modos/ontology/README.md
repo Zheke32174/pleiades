@@ -47,3 +47,14 @@ Hosted Actions are optional and may be unavailable. Review does not infer a
 green result from a queued or failed runner. Reproduce the checked-in receipt
 locally, compare the recorded SHA-256 file identities, and attach any later
 runner result as additional evidence rather than as the sole truth source.
+
+## Derived read projections
+
+`projection.py` converts an exact closed snapshot and closure receipt into a
+deterministic `OntologyProjectionBundle`. The bundle is explicitly
+non-canonical and forbids write-back.
+
+`sql/001_ontology_projection.sql` creates a separate Postgres/Supabase read
+schema with RLS enabled, consumer roles limited to `SELECT`, no consumer write
+policies, and no `SECURITY DEFINER` mutation function. Publication remains a
+privileged external operation bound to the exact compiled snapshot and receipt.

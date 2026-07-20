@@ -1,11 +1,12 @@
 {
   "apiVersion": "modos.pleiades/v1alpha1",
   "authorityCeiling": "none",
-  "baseHeadSha": "5857b9e3de4536116f0f3421fff9b8838d9aff4e",
+  "baseHeadSha": "c54363f00ca10fa57900b3ee722b156d92c6c664",
   "commands": [
     "python ci/validate-change-proposals.py",
     "python modos/ontology/test_compiler.py",
-    "python -m py_compile ci/validate-change-proposals.py modos/ontology/compiler.py modos/ontology/test_compiler.py"
+    "python modos/ontology/test_projection.py",
+    "python -m py_compile ci/validate-change-proposals.py modos/ontology/compiler.py modos/ontology/projection.py modos/ontology/test_compiler.py modos/ontology/test_projection.py"
   ],
   "dependencyGitBlobs": [
     {
@@ -29,17 +30,19 @@
   "kind": "LocalValidationReceipt",
   "limitations": [
     "No hosted runner receipt.",
+    "No live Supabase migration was applied.",
     "No default branch change.",
-    "No live Supabase, Drive, Replit, model, or substrate mutation.",
+    "No live Drive, Replit, model, or substrate mutation.",
     "This receipt is review evidence and grants no canonical authority."
   ],
   "promotionTransactionRequired": true,
   "results": [
     {
       "compiledReceipts": 1,
-      "name": "ontology-schema-and-proposal-validation",
+      "name": "ontology-schema-proposal-compiler-projection-validation",
+      "projectionBundles": 1,
       "proposalCases": 3,
-      "schemas": 3,
+      "schemas": 4,
       "status": "pass"
     },
     {
@@ -48,18 +51,23 @@
       "tests": 11
     },
     {
-      "files": 3,
+      "name": "ontology-projection-unit-tests",
+      "status": "pass",
+      "tests": 6
+    },
+    {
+      "files": 5,
       "name": "python-bytecode-compilation",
       "status": "pass"
     }
   ],
   "runnerAssumption": "hosted-runners-unavailable",
-  "validatedAt": "2026-07-20T19:36:43Z",
+  "validatedAt": "2026-07-20T19:49:30Z",
   "validatedFiles": [
     {
-      "bytes": 5542,
+      "bytes": 6557,
       "path": "ci/validate-change-proposals.py",
-      "sha256": "52211a88c536e0be6f8f48bbd611da9e1380d77d6a130df53e93a34b9c83bb30"
+      "sha256": "aa8aa09617eaebccb4b2f25191c32d2f5bac4da8ff8697acfb942863da23436e"
     },
     {
       "bytes": 2523,
@@ -67,9 +75,9 @@
       "sha256": "f502d3e4965770b6ce2ad1aa8ed3fc7da3938f574c88cdb63a62fb467911b6e8"
     },
     {
-      "bytes": 694,
+      "bytes": 748,
       "path": ".github/workflows/change-proposal-contracts.yml",
-      "sha256": "04da3877d481967ac581e2e583ba9c9fb9c9f2a797dac10c526d5c98b59c5143"
+      "sha256": "4d71e7ff131f02406b19511dac15070db11b386fe8413dbc4a7be5384703e517"
     },
     {
       "bytes": 1228,
@@ -82,9 +90,14 @@
       "sha256": "8b95b9afd8f5ccf9b78c2326755b5dd9bd6ec9fef91f277ef95fb6ba3ffc43e0"
     },
     {
-      "bytes": 2101,
+      "bytes": 1512,
+      "path": "modos/contracts/ontology-projection-bundle.schema.json",
+      "sha256": "f7647d4e0033ed95ff6d224e9b60ca6d12a64d7ffdebac4bf028fe882e741954"
+    },
+    {
+      "bytes": 2626,
       "path": "modos/ontology/README.md",
-      "sha256": "b5ff0a8a6378cb422ebc01518af96644da1f1e347c268ee2c815f99e92bed6de"
+      "sha256": "debc7e434aa159f4417ac37738c47d2caf368bbfacc256a6fd2db7b142884082"
     },
     {
       "bytes": 18095,
@@ -92,9 +105,24 @@
       "sha256": "cda01acce3afac4c970c18f6710c4cadd41cda078df71aa07da97d5c3b02ddca"
     },
     {
+      "bytes": 4551,
+      "path": "modos/ontology/projection.py",
+      "sha256": "f6ce3953ef7b47dcffdff36adf426d5b28287e5e2d4ef8634890f82f069d0671"
+    },
+    {
       "bytes": 4929,
       "path": "modos/ontology/test_compiler.py",
       "sha256": "d3b158c039b321843528c21432e3971315af491a65eec5fd734085b3df6ac992"
+    },
+    {
+      "bytes": 3123,
+      "path": "modos/ontology/test_projection.py",
+      "sha256": "a6e0b7b448631a0db570a61151fce897aee493b81e5a28aae7edc307b81866f5"
+    },
+    {
+      "bytes": 2665,
+      "path": "modos/ontology/sql/001_ontology_projection.sql",
+      "sha256": "ef5f3b905329c1e366b23db63aefcc72a5f2551b43943edf690c59028099ed9c"
     },
     {
       "bytes": 1857,
@@ -135,6 +163,11 @@
       "bytes": 1865,
       "path": "modos/ontology/fixtures/expected-closure-receipt.json",
       "sha256": "ffd26496cb3ff775cf4e5f50eaa4ded220bbeabd28f330e75ffb8ae5df6e831c"
+    },
+    {
+      "bytes": 5680,
+      "path": "modos/ontology/fixtures/expected-projection-bundle.json",
+      "sha256": "ae47941b92b74d1075bd46d355b112152ab5c681b3dc2225fe3ae2b31df8deef"
     }
   ]
 }
