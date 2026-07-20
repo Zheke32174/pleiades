@@ -104,16 +104,16 @@ No item in this ledger silently grants canonical authority, issues a live grant,
 
 ## Phase H — Memory, evidence, and learning spine
 
-71. `queued` Persist every observation, decision, mandate, outcome, correction, and provenance edge.
-72. `queued` Add episodic executive memory keyed by domain and objective.
-73. `queued` Add semantic retrieval over prior decisions and outcomes.
-74. `queued` Separate evidence memory from narrative summaries.
-75. `queued` Define retention and visibility policy for executive evidence.
-76. `queued` Define contradiction detection across memory sources.
-77. `queued` Define correction propagation without historical erasure.
-78. `queued` Build feedback datasets only from verified outcomes.
-79. `queued` Prevent blind continual training from unverified self-generated traces.
-80. `queued` Emit learning-spine integrity receipts.
+71. `implemented` Persist every observation, decision, mandate, outcome, correction, and provenance edge.
+72. `implemented` Add episodic executive memory keyed by domain and objective.
+73. `implemented` Add semantic retrieval over prior decisions and outcomes.
+74. `implemented` Separate evidence memory from narrative summaries.
+75. `implemented` Define retention and visibility policy for executive evidence.
+76. `implemented` Define contradiction detection across memory sources.
+77. `implemented` Define correction propagation without historical erasure.
+78. `implemented` Build feedback datasets only from verified outcomes.
+79. `implemented` Prevent blind continual training from unverified self-generated traces.
+80. `implemented` Emit learning-spine integrity receipts.
 
 ## Phase I — Constitutional evolution and institutional plurality
 
@@ -138,9 +138,9 @@ No item in this ledger silently grants canonical authority, issues a live grant,
 96. `queued` Add ordinary-person-noticeable improvement evaluation where applicable.
 97. `queued` Add machine-measurable and steward-verifiable promotion criteria.
 98. `queued` Define cross-Mind and external-agent treaty interfaces.
-99. `queued` Complete live substrate admission, observation, rollback, and continual improvement loops.
-100. `queued` Demonstrate sustained bounded autonomous operation with constitutional integrity, recoverability, and evidence-backed authority growth.
+99. `blocked` Complete live substrate admission, observation, rollback, and continual improvement loops.
+100. `blocked` Demonstrate sustained bounded autonomous operation with constitutional integrity, recoverability, and evidence-backed authority growth.
 
 ## Current tranche
 
-The stacked governance branches implement points 1–70 as deterministic contract and validation slices. They do not execute a live grant, mutation, rollback, emergency action, distributed rollout, competence change, or authority adjustment. Points 71–100 remain ordered after these foundations.
+The stacked governance branches implement points 1–80 as deterministic contract and validation slices. Points 81–98 remain ordered for further implementation. Points 99–100 require the actual live substrate and cannot honestly be marked complete in repository-only work.
