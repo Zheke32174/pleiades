@@ -21,6 +21,8 @@ class WorkOrderController:
   if c.arbitrary_shell:raise InvalidRequest("arbitrary shell forbidden")
   if c.external_irreversible_effect:raise InvalidRequest("irreversible external effect forbidden")
   return self.store.put_capability({'capabilityId':c.capability_id,'version':c.version,'operations':sorted(set(c.operations)),'maximumRisk':c.maximum_risk,'canonicalWrite':c.canonical_write})
+ def list_capabilities(self):
+  return [self._capability_view(x) for x in self.store.capabilities()]
  def create_work_order(self,r:dict[str,Any]):
   self._shape(r);m=r['metadata'];c=r['capability'];x=r['constraints'];d=digest(r)
   old=self.store.by_idempotency(m['idempotencyKey'])
@@ -68,6 +70,7 @@ class WorkOrderController:
   if r['authority']['authorityCeiling']=='external-sovereign':raise InvalidRequest("sovereign receipt forbidden")
   return self.store.put_receipt(r)
  def transition_history(self,wid):return [dict(x) for x in self.store.transitions(wid)]
+ def action_receipts(self,wid):return [json.loads(x['receipt_json']) for x in self.store.receipts(wid)]
  @staticmethod
  def _shape(r):
   needed={'apiVersion','kind','metadata','capability','constraints','isolation','checkpointPolicy','approvalPolicy'}
@@ -75,6 +78,9 @@ class WorkOrderController:
   if r['apiVersion']!='modos.pleiades/v1alpha1' or r['kind']!='WorkOrder':raise InvalidRequest("unsupported work order")
   for f in ('workOrderId','mindId','requesterPrincipalId','idempotencyKey'):
    if not r['metadata'].get(f):raise InvalidRequest('metadata.'+f+' required')
+ @staticmethod
+ def _capability_view(r):
+  return {'capabilityId':r['capability_id'],'version':r['version'],'operations':json.loads(r['operations_json']),'maximumRisk':r['maximum_risk'],'canonicalWrite':bool(r['canonical_write']),'definitionDigest':r['definition_digest']}
  @staticmethod
  def _view(r):
   return {'workOrderId':r['work_order_id'],'mindId':r['mind_id'],'requesterPrincipalId':r['requester_principal_id'],'idempotencyKey':r['idempotency_key'],'requestDigest':r['request_digest'],'capabilityId':r['capability_id'],'capabilityVersion':r['capability_version'],'requestedOperation':r['requested_operation'],'riskCeiling':r['risk_ceiling'],'canonicalWrite':bool(r['canonical_write']),'state':r['state'],'planVersion':r['plan_version'],'createdAt':r['created_at'],'updatedAt':r['updated_at'],'terminalReason':r['terminal_reason']}
