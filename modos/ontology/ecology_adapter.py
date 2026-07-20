@@ -126,7 +126,7 @@ def compile_registry(registry: dict[str, Any], schema: dict[str, Any]) -> tuple[
         ),
     ]
     relations: list[dict[str, Any]] = [
-        _relation("mind:pleiades", "operates-through", "workspace:pleiades", source="ecology-adapter")
+        _relation("mind:pleiades", "operates-through", "workspace:pleiades", evidenceSource="ecology-adapter")
     ]
 
     for group in sorted(spec["groups"], key=lambda row: row["id"]):
