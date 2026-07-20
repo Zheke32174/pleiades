@@ -1,0 +1,10 @@
+# Ontology contracts, deterministic compilers, projection, and promotion gates.
+# This is a review-routing boundary only; CODEOWNERS does not grant canonical authority.
+/modos/contracts/change-proposal.schema.json @Zheke32174
+/modos/contracts/ontology-*.schema.json @Zheke32174
+/modos/contracts/source-manifest.schema.json @Zheke32174
+/modos/ontology/ @Zheke32174
+/ci/validate-change-proposals.py @Zheke32174
+/ci/validate-promotion-evidence.py @Zheke32174
+/.github/workflows/change-proposal-contracts.yml @Zheke32174
+/.github/workflows/ontology-promotion-evidence.yml @Zheke32174
