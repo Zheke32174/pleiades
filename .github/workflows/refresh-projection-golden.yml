@@ -1,0 +1,54 @@
+name: Refresh ontology projection golden
+
+on:
+  push:
+    branches:
+      - governance/convergence-proof-v1
+    paths:
+      - '.github/workflows/refresh-projection-golden.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: governance/convergence-proof-v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Regenerate the exact projection fixture
+        run: |
+          python - <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          root = Path('modos/ontology')
+          sys.path.insert(0, str(root.resolve()))
+          import projection
+
+          snapshot = json.loads((root / 'fixtures/expected-candidate-snapshot.json').read_text())
+          receipt = json.loads((root / 'fixtures/expected-closure-receipt.json').read_text())
+          bundle = projection.build_projection_bundle(snapshot, receipt)
+          (root / 'fixtures/expected-projection-bundle.json').write_text(
+              json.dumps(bundle, ensure_ascii=False, sort_keys=True, indent=2) + '\n'
+          )
+          PY
+      - name: Verify projection invariants and golden output
+        run: python modos/ontology/test_projection.py
+      - name: Commit refreshed golden
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add modos/ontology/fixtures/expected-projection-bundle.json
+          git commit -m "Refresh deterministic ontology projection golden"
+          git fetch --no-tags origin governance/convergence-proof-v1
+          git rebase origin/governance/convergence-proof-v1
+          git push origin HEAD:governance/convergence-proof-v1
