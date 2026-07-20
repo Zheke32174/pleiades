@@ -1,0 +1,30 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "kind": "ValidationSuite",
+  "suiteId": "pleiades-modos-convergence-v1",
+  "commands": [
+    {"id": "contract-catalog", "category": "contracts", "argv": ["python", "ci/validate-contract-catalog.py", "--report", "artifacts/contract-catalog.json"]},
+    {"id": "public-ecology-closure", "category": "ecology", "argv": ["python", "ci/validate-ecology.py", "--registry", "modos/ecology/public-ecology.json", "--schema", "modos/contracts/ecology-registry.schema.json", "--report", "artifacts/public-ecology-closure.json"]},
+    {"id": "ontology-compiler-tests", "category": "ontology", "argv": ["python", "modos/ontology/test_compiler.py"]},
+    {"id": "ontology-projection-tests", "category": "ontology", "argv": ["python", "modos/ontology/test_projection.py"]},
+    {"id": "ontology-promotion-tests", "category": "ontology", "argv": ["python", "modos/ontology/test_promotion.py"]},
+    {"id": "ecology-adapter-tests", "category": "ontology", "argv": ["python", "modos/ontology/test_ecology_adapter.py"]},
+    {"id": "change-proposal-contracts", "category": "governance", "argv": ["python", "ci/validate-change-proposals.py"]},
+    {"id": "promotion-evidence", "category": "governance", "argv": ["python", "ci/validate-promotion-evidence.py"]},
+    {"id": "executive-authority", "category": "governance", "argv": ["python", "ci/validate-executive-authority.py"]},
+    {"id": "executive-control-plane", "category": "governance", "argv": ["python", "ci/validate-executive-control-plane.py"]},
+    {"id": "workspace-emergency", "category": "governance", "argv": ["python", "ci/validate-workspace-emergency.py"]},
+    {"id": "distributed-admission", "category": "governance", "argv": ["python", "ci/validate-distributed-admission.py"]},
+    {"id": "learning-spine", "category": "governance", "argv": ["python", "ci/validate-learning-spine.py"]},
+    {"id": "constitutional-evolution", "category": "governance", "argv": ["python", "ci/validate-constitutional.py"]},
+    {"id": "ecology-integration", "category": "governance", "argv": ["python", "ci/validate-ecology-integration.py"]},
+    {"id": "executive-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_executive.py"]},
+    {"id": "control-plane-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_control_plane.py"]},
+    {"id": "workspace-emergency-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_workspace_emergency.py"]},
+    {"id": "distributed-admission-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_distributed_admission.py"]},
+    {"id": "learning-spine-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_learning_spine.py"]},
+    {"id": "constitutional-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_constitutional.py"]},
+    {"id": "integration-readiness-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_ecology_integration.py"]}
+  ],
+  "authority": {"ceiling": "none", "canonicalMutationApplied": false}
+}
