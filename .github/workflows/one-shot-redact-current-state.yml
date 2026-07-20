@@ -1,0 +1,53 @@
+name: One-shot current-tree identity redaction
+
+on:
+  push:
+    branches:
+      - hardening/public-release-readiness-v1
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-current-tree-redaction
+  cancel-in-progress: false
+
+jobs:
+  redact-and-remove-helper:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: hardening/public-release-readiness-v1
+          fetch-depth: 0
+          show-progress: false
+
+      - name: Replace only the reviewed local-identity sentence
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('root.x86_64/scripts/PLEIADES_STATE.md')
+          text = path.read_text(encoding='utf-8')
+          old = "**WSL memory note:** WSL crashed twice on 2026-05-29 when running parallel claude-code expand calls. Root cause: 8 MCP servers (~650 MB) + Claude Code (~450 MB) + nspawn container (~500 MB) leaves almost no headroom on the 3.7 GB default allocation. `.wslconfig` written at `C:\\Users\\Fixxia\\.wslconfig` to raise limit to 6 GB / 2 GB swap — **requires `wsl --shutdown` from PowerShell to take effect.** Until then, do NOT run parallel task-master expand calls."
+          new = "**WSL memory note:** WSL crashed twice on 2026-05-29 when running parallel claude-code expand calls. Root cause: 8 MCP servers (~650 MB) + Claude Code (~450 MB) + nspawn container (~500 MB) leaves almost no headroom on the 3.7 GB default allocation. The user-profile `.wslconfig` was set to 6 GB memory / 2 GB swap and requires `wsl --shutdown` from PowerShell to take effect. Until then, do NOT run parallel task-master expand calls."
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one reviewed identity sentence, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8', newline='\n')
+          PY
+          ! grep -Fq 'C:\Users\Fixxia\' root.x86_64/scripts/PLEIADES_STATE.md
+          git diff --check
+
+      - name: Commit redaction and remove one-shot workflow
+        run: |
+          set -euo pipefail
+          git rm -- .github/workflows/one-shot-redact-current-state.yml
+          git add -- root.x86_64/scripts/PLEIADES_STATE.md
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'docs: redact current-tree workstation identity'
+          git push origin HEAD:hardening/public-release-readiness-v1
