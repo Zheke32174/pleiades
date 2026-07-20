@@ -1,6 +1,7 @@
 # Pleiades implementation audit and outstanding-work ledger
 
-Date: 2026-07-19
+Date: 2026-07-19  
+Last reconciled: 2026-07-20
 
 ## Purpose
 
@@ -136,17 +137,17 @@ The following requirements already exist on GitHub and are therefore not trapped
 ### Factory evidence and source provenance
 
 - `pleiades-factory` issue #4 and PR #5 — immutable, content-addressed evidence generations.
-- `pleiades-factory` issue #6 — recovery of an observation committed before index publication.
+- `pleiades-factory` issue #6 — **RECORDED, NOT IMPLEMENTED**. The exact code-and-test repair is preserved on PR #5 at `patches/issue-6-orphan-observation-recovery.patch`; applying and validating it remains blocked by private hosted jobs that allocate no executable steps.
 - `pleiades-factory-stack` issue #5 and PR #6 — transactional locks and honest dirty-source identity.
 - `pleiades-factory-stack` issue #7 — serialize synchronization and bind state to one checkout generation.
 
 ### Host and edge adapters
 
 - `pleiades-container` issue #8 and PR #9 — transactional host binding and ambient nspawn-settings refusal.
-- `pleiades-container` issue #10 — **implemented on PR #9 and closed as completed**. The branch now performs a compensating `daemon-reload`, preserves both failure results, reports manager uncertainty on double failure, and includes deterministic tests. The implementation is still unmerged.
+- `pleiades-container` issue #10 — **IMPLEMENTED, NOT PROMOTED** on PR #9. The branch performs a compensating `daemon-reload`, preserves both failure results, reports manager uncertainty on double failure, and includes deterministic tests; CI run `29709096507` passed.
 - `pleiades-termux` issue #3 and Pleiades issue #19 — authenticated delivery/acknowledgement design.
 - `pleiades-termux` PR #5 — delivery-stream continuity without transport.
-- `pleiades-termux` issue #6 — symlink-safe state and lock handling.
+- `pleiades-termux` issue #6 — **IMPLEMENTED, NOT PROMOTED** on PR #5. Live state is confined to `PLEIADES_ROOT`; symlinked roots, state, queue, and locks are refused; managed-object ownership and file identity are rechecked; external operator exports remain supported. Full CI and reproducible source-package run `29709629604` passed at head `113168429284a676007cb53b440081796c1e22b8`.
 - `pleiades-windows` PR #6 — typed canonical WSL lifecycle argv and shell-injection removal.
 - `pleiades-connect` PR #3 — signed short-lived SSH route assertions.
 
@@ -165,20 +166,21 @@ The following requirements already exist on GitHub and are therefore not trapped
 
 1. **Release workflow present, but no release asset verified.** Applies currently to Yojimbo, Recall Xed, and Recall Underward until evidence says otherwise.
 2. **Open PR exists, but change is not on the default branch.** The stacked Pleiades/MODOS PR graph must not be described as merged implementation.
-3. **Issue specifies a repair, but no code has landed.** Pleiades issue #25, Factory issue #6, Factory Stack issue #7, and Termux issue #6 are current examples.
+3. **Issue specifies a repair, but executable code has not landed.** Pleiades issue #25, Factory issue #6, and Factory Stack issue #7 are current examples. Factory issue #6 has an exact patch preserved, but the patch itself is not runtime implementation.
 4. **Actions failure noise was contained, but the private Actions account restriction was not diagnosed at the account banner/billing/policy layer.** Pleiades issue #38 now owns that work.
 5. **Prior release counts require a current asset inventory.** Do not preserve old numbers as fact without retrievable evidence.
 6. **Live-hardware validations remain separate from repository CI.** Pleiades issue #6 owns Alienware/Lenovo capability-lease validation and cannot be completed by repository edits alone.
 
 ## Implementation order
 
-1. Keep every newly discovered gap durable in an issue, PR, or this ledger before ending a review session.
+1. Keep every newly discovered gap durable in an issue, PR, exact patch, or this ledger before ending a review session.
 2. Finish exact, narrow correctness repairs on already-reviewed PR stacks before opening broad new implementation waves.
-3. Produce and retain verified Xed and Underward Android build outputs through draft PRs #1 in their respective repositories.
-4. Merge and publish the Yojimbo engineering-preview stack after review.
-5. Resolve Pleiades issue #38 and run one private canary from each workflow family.
-6. Capture a machine-readable Android release/artifact inventory rather than relying on remembered counts.
-7. Continue Pleiades issue #4 repository-by-repository with explicit dispositions: canonical, active-supporting, upstream/reference, archive, or delete candidate.
+3. Apply and validate the preserved Factory issue #6 patch once private Actions execute real steps or another verified execution surface is available.
+4. Produce and retain verified Xed and Underward Android build outputs through draft PRs #1 in their respective repositories.
+5. Merge and publish the Yojimbo engineering-preview stack after review.
+6. Resolve Pleiades issue #38 and run one private canary from each workflow family.
+7. Capture a machine-readable Android release/artifact inventory rather than relying on remembered counts.
+8. Continue Pleiades issue #4 repository-by-repository with explicit dispositions: canonical, active-supporting, upstream/reference, archive, or delete candidate.
 
 ## Rule for future sessions
 
