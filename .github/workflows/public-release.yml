@@ -1,0 +1,122 @@
+name: Public source release checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-source-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-source-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Fetch exact validation ref
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${REPOSITORY}.git"
+          if [[ "$EVENT_NAME" == 'pull_request' ]]; then
+            test -n "$PR_NUMBER"
+            git fetch --no-tags --prune origin "+refs/pull/${PR_NUMBER}/merge:refs/remotes/pull/${PR_NUMBER}/merge"
+            git checkout --detach "refs/remotes/pull/${PR_NUMBER}/merge"
+          else
+            git fetch --no-tags --prune origin "+refs/heads/main:refs/remotes/origin/main"
+            git checkout --detach refs/remotes/origin/main
+          fi
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git diff --quiet
+          git diff --cached --quiet
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.13'
+
+      - name: Parse release tooling
+        run: |
+          set -euo pipefail
+          python3 -m py_compile ci/scan_public_repo.py scripts/package_lean_source.py
+          bash -n ci/check-lean-security.sh
+
+      - name: Validate lean defensive invariants
+        run: bash ci/check-lean-security.sh lean
+
+      - name: Capture sensitivity findings
+        id: sensitivity
+        run: |
+          set +e
+          python3 ci/scan_public_repo.py > sensitivity.log 2>&1
+          status=$?
+          cat sensitivity.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Build twice and compare every asset
+        run: |
+          set -euo pipefail
+          python3 scripts/package_lean_source.py --output dist-one
+          python3 scripts/package_lean_source.py --output dist-two
+          diff -u <(cd dist-one && find . -maxdepth 1 -type f -printf '%f\n' | sort) <(cd dist-two && find . -maxdepth 1 -type f -printf '%f\n' | sort)
+          while IFS= read -r name; do
+            cmp "dist-one/$name" "dist-two/$name"
+          done < <(cd dist-one && find . -maxdepth 1 -type f -printf '%f\n' | sort)
+          cd dist-one
+          sha256sum -c SHA256SUMS.txt
+
+      - name: Verify source boundary receipt
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import tarfile
+
+          version = pathlib.Path('VERSION').read_text(encoding='utf-8').strip()
+          prefix = f'pleiades-lean-{version}'
+          receipt = json.loads((pathlib.Path('dist-one') / f'{prefix}.build-receipt.json').read_text(encoding='utf-8'))
+          assert receipt['commit'] == os.environ['GITHUB_SHA']
+          assert receipt['scope']['manifest'] == 'release/source-paths.txt'
+          assert receipt['release_component'] == 'lean'
+          assert receipt['distribution'] == 'reviewed-source'
+          for field in (
+              'contains_historical_root_runtime', 'contains_experimental_recovery',
+              'contains_modos_pdk', 'contains_runtime_state', 'contains_event_records',
+              'contains_credentials', 'contains_signing_keys', 'contains_stage3_or_rootfs',
+              'contains_container_or_vm_image', 'installs_or_enables_services_during_build',
+              'deployment_receipt',
+          ):
+              assert receipt[field] is False, field
+          archive = pathlib.Path('dist-one') / f'{prefix}.tar.gz'
+          with tarfile.open(archive, 'r:gz') as handle:
+              names = handle.getnames()
+          assert names and all(name.startswith(prefix + '/') for name in names)
+          forbidden = ('root.x86_64/', 'experimental/', 'modos/')
+          assert not any(any(name.startswith(prefix + '/' + item) for item in forbidden) for name in names)
+          PY
+
+      - name: Preserve package and scan evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pleiades-lean-source-${{ github.sha }}
+          path: |
+            dist-one/
+            sensitivity.log
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Enforce sensitivity gate
+        if: always()
+        run: test "${{ steps.sensitivity.outputs.status }}" = '0'

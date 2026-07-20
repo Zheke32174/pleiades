@@ -1,0 +1,77 @@
+{
+  "schema": "pleiades.public-sensitivity-allowlist/v1",
+  "entries": [
+    {
+      "path": "core/SofiaX.sh",
+      "rule": "linux-user-home",
+      "line_sha256": "17505f6bea96",
+      "reason": "Generic Linuxbrew installation fallback, not a user identity."
+    },
+    {
+      "path": "core/SofiaX.sh",
+      "rule": "linux-user-home",
+      "line_sha256": "de3eb922fd03",
+      "reason": "Generic Linuxbrew installation fallback, not a user identity."
+    },
+    {
+      "path": "oobe/scripts/hermes_60_day_evolution.sh",
+      "rule": "linux-user-home",
+      "line_sha256": "0518d6b3e8f0",
+      "reason": "Generic Linuxbrew installation path, not a user identity."
+    },
+    {
+      "path": "root.x86_64/scripts/Beryl.sh",
+      "rule": "linux-user-home",
+      "line_sha256": "2d4a358a5acc",
+      "reason": "Synthetic Ubuntu decoy filesystem fixture."
+    },
+    {
+      "path": "root.x86_64/scripts/Beryl.sh",
+      "rule": "linux-user-home",
+      "line_sha256": "4a6666c39440",
+      "reason": "Synthetic Ubuntu decoy filesystem fixture."
+    },
+    {
+      "path": "root.x86_64/scripts/Beryl.sh",
+      "rule": "linux-user-home",
+      "line_sha256": "ef43161e7eb7",
+      "reason": "Synthetic Ubuntu decoy path normalization."
+    },
+    {
+      "path": "root.x86_64/scripts/SCRATCH_NONALIGNED_ARCHIVE_20260529T044511Z.md",
+      "rule": "linux-user-home",
+      "line_sha256": "2d4a358a5acc",
+      "reason": "Archived copy of the synthetic Ubuntu decoy filesystem fixture."
+    },
+    {
+      "path": "root.x86_64/scripts/SCRATCH_NONALIGNED_ARCHIVE_20260529T044511Z.md",
+      "rule": "linux-user-home",
+      "line_sha256": "4a6666c39440",
+      "reason": "Archived copy of the synthetic Ubuntu decoy filesystem fixture."
+    },
+    {
+      "path": "root.x86_64/scripts/SCRATCH_NONALIGNED_ARCHIVE_20260529T044511Z.md",
+      "rule": "linux-user-home",
+      "line_sha256": "ef43161e7eb7",
+      "reason": "Archived copy of synthetic Ubuntu decoy path normalization."
+    },
+    {
+      "path": "root.x86_64/scripts/Taygete.sh",
+      "rule": "linux-user-home",
+      "line_sha256": "2d4a358a5acc",
+      "reason": "Synthetic Ubuntu decoy filesystem fixture."
+    },
+    {
+      "path": "root.x86_64/scripts/Taygete.sh",
+      "rule": "linux-user-home",
+      "line_sha256": "4a6666c39440",
+      "reason": "Synthetic Ubuntu decoy filesystem fixture."
+    },
+    {
+      "path": "root.x86_64/scripts/Taygete.sh",
+      "rule": "linux-user-home",
+      "line_sha256": "ef43161e7eb7",
+      "reason": "Synthetic Ubuntu decoy path normalization."
+    }
+  ]
+}
