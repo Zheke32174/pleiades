@@ -7,10 +7,28 @@
   },
   "currentTreeSensitivity": {
     "findingCount": 2,
+    "findings": [
+      {
+        "blobSha": null,
+        "lineHashPrefix": "0518d6b3e8f0",
+        "lineNumber": 7,
+        "path": "oobe/scripts/hermes_60_day_evolution.sh",
+        "rule": "literal-linux-home",
+        "scope": "current-tree"
+      },
+      {
+        "blobSha": null,
+        "lineHashPrefix": "4da77931816d",
+        "lineNumber": 66,
+        "path": "scripts/pleiades-install-host-autostart.sh",
+        "rule": "literal-windows-profile",
+        "scope": "current-tree"
+      }
+    ],
     "receiptDigest": "sha256:0b54c8c7e3048f6a2d4f6701c9326605da5a2ad2a923d1994700959ca89866f4",
     "status": "blocked"
   },
-  "evidenceDigest": "sha256:07c13165a621a7f2e848bb609043ed4b0509980856e3ac1b187522a412da4a5d",
+  "evidenceDigest": "sha256:bc93394efa03ac2892bb6ff5dc80bcccaea7945043777660767c79ece4a8373b",
   "interventionFrontier": {
     "autonomousActionCount": 0,
     "operatorActionCount": 11,
@@ -39,6 +57,50 @@
     "commandCount": 32,
     "executedCount": 32,
     "exitCode": 1,
+    "failureDetails": {
+      "control-plane-unit-tests": {
+        "privacyScrubbed": true,
+        "stderrTail": "test_domain_mismatch (__main__.CompetenceTests.test_domain_mismatch) ... ok\ntest_duplicate_outcome (__main__.CompetenceTests.test_duplicate_outcome) ... ok\ntest_golden (__main__.CompetenceTests.test_golden) ... FAIL\ntest_growth_proposal_only (__main__.CompetenceTests.test_growth_proposal_only) ... ok\ntest_policy_violation_suspends (__main__.CompetenceTests.test_policy_violation_suspends) ... ok\ntest_self_verification (__main__.CompetenceTests.test_self_verification) ... ok\ntest_small_sample_maintains (__main__.CompetenceTests.test_small_sample_maintains) ... ok\ntest_executor_mismatch (__main__.ExecutionTests.test_executor_mismatch) ... ok\ntest_expired (__main__.ExecutionTests.test_expired) ... ok\ntest_failed_rollback (__main__.ExecutionTests.test_failed_rollback) ... ok\ntest_golden_rollback (__main__.ExecutionTests.test_golden_rollback) ... ok\ntest_golden_success (__main__.ExecutionTests.test_golden_success) ... ok\ntest_rollback (__main__.ExecutionTests.test_rollback) ... ok\ntest_success (__main__.ExecutionTests.test_success) ... ok\ntest_write_budget (__main__.ExecutionTests.test_write_budget) ... ok\ntest_golden (__main__.PolicyTests.test_golden) ... ok\ntest_machine_executive (__main__.PolicyTests.test_machine_executive) ... ok\ntest_machine_human_mix_rejected (__main__.PolicyTests.test_machine_human_mix_rejected) ... ok\ntest_no_match_rejected (__main__.PolicyTests.test_no_match_rejected) ... ok\ntest_reserved_power (__main__.PolicyTests.test_reserved_power) ... ok\ntest_wildcard_rejected (__main__.PolicyTests.test_wildcard_rejected) ... ok\ntest_expiry (__main__.RegistryTests.test_expiry) ... ok\ntest_golden (__main__.RegistryTests.test_golden) ... ok\ntest_issued_active (__main__.RegistryTests.test_issued_active) ... ok\ntest_revocation_terminal (__main__.RegistryTests.test_revocation_terminal) ... ok\ntest_self_issue_rejected (__main__.RegistryTests.test_self_issue_rejected) ... ok\ntest_suspension (__main__.RegistryTests.test_suspension) ... ok\n\n======================================================================\nFAIL: test_golden (__main__.CompetenceTests.test_golden)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/governance/test_control_plane.py\", line 197, in test_golden\n    self.assertEqual(competence.digest(receipt), fixtures.EXPECTED_DIGESTS[\"competenceReceipt\"])\nAssertionError: 'sha256:dd025b9cf40f2e724a4ce8902aa01b6bedb15037f51aaa1228d10ecc6cb6505f' != 'sha256:99e1c371a9097fb8863a83808cb3ea49de6fcab7126acbe2361ecc1d59808386'\n- sha256:dd025b9cf40f2e724a4ce8902aa01b6bedb15037f51aaa1228d10ecc6cb6505f\n+ sha256:99e1c371a9097fb8863a83808cb3ea49de6fcab7126acbe2361ecc1d59808386\n\n\n----------------------------------------------------------------------\nRan 27 tests in 0.007s\n\nFAILED (failures=1)\n",
+        "stdoutTail": "",
+        "tailByteLimit": 4096
+      },
+      "current-tree-sensitivity": {
+        "privacyScrubbed": true,
+        "stderrTail": "",
+        "stdoutTail": "public history scan blocked: 2 findings; sha256:0b54c8c7e3048f6a2d4f6701c9326605da5a2ad2a923d1994700959ca89866f4\n",
+        "tailByteLimit": 4096
+      },
+      "ecology-adapter-tests": {
+        "privacyScrubbed": true,
+        "stderrTail": "st):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 47, in test_every_registry_repository_becomes_resource\n    snapshot, _ = self.compile()\n                  ^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 28, in compile\n    return ecology_adapter.compile_registry(registry or self.registry, self.schema)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/ecology_adapter.py\", line 129, in compile_registry\n    _relation(\"mind:pleiades\", \"operates-through\", \"workspace:pleiades\", source=\"ecology-adapter\")\nTypeError: _relation() got multiple values for argument 'source'\n\n======================================================================\nERROR: test_public_projection_cannot_claim_private_closure (__main__.EcologyAdapterTests.test_public_projection_cannot_claim_private_closure)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 63, in test_public_projection_cannot_claim_private_closure\n    _, receipt = self.compile()\n                 ^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 28, in compile\n    return ecology_adapter.compile_registry(registry or self.registry, self.schema)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/ecology_adapter.py\", line 129, in compile_registry\n    _relation(\"mind:pleiades\", \"operates-through\", \"workspace:pleiades\", source=\"ecology-adapter\")\nTypeError: _relation() got multiple values for argument 'source'\n\n======================================================================\nERROR: test_public_projection_compiles_to_closed_snapshot (__main__.EcologyAdapterTests.test_public_projection_compiles_to_closed_snapshot)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 31, in test_public_projection_compiles_to_closed_snapshot\n    snapshot, receipt = self.compile()\n                        ^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 28, in compile\n    return ecology_adapter.compile_registry(registry or self.registry, self.schema)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/ecology_adapter.py\", line 129, in compile_registry\n    _relation(\"mind:pleiades\", \"operates-through\", \"workspace:pleiades\", source=\"ecology-adapter\")\nTypeError: _relation() got multiple values for argument 'source'\n\n======================================================================\nERROR: test_unknown_relation_endpoint_fails_ontology_closure (__main__.EcologyAdapterTests.test_unknown_relation_endpoint_fails_ontology_closure)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 86, in test_unknown_relation_endpoint_fails_ontology_closure\n    self.compile(registry)\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 28, in compile\n    return ecology_adapter.compile_registry(registry or self.registry, self.schema)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/ecology_adapter.py\", line 129, in compile_registry\n    _relation(\"mind:pleiades\", \"operates-through\", \"workspace:pleiades\", source=\"ecology-adapter\")\nTypeError: _relation() got multiple values for argument 'source'\n\n----------------------------------------------------------------------\nRan 7 tests in 0.199s\n\nFAILED (errors=6)\n",
+        "stdoutTail": "",
+        "tailByteLimit": 4096
+      },
+      "executive-control-plane": {
+        "privacyScrubbed": true,
+        "stderrTail": "validation failures:\n- competence receipt golden digest mismatch\n",
+        "stdoutTail": "",
+        "tailByteLimit": 4096
+      },
+      "ontology-projection-tests": {
+        "privacyScrubbed": true,
+        "stderrTail": "test_authority_widening_fails (__main__.ProjectionTests.test_authority_widening_fails) ... ok\ntest_projection_is_non_authoritative (__main__.ProjectionTests.test_projection_is_non_authoritative) ... ok\ntest_projection_matches_golden_bundle (__main__.ProjectionTests.test_projection_matches_golden_bundle) ... FAIL\ntest_projection_rows_cover_snapshot (__main__.ProjectionTests.test_projection_rows_cover_snapshot) ... ok\ntest_receipt_digest_mismatch_fails (__main__.ProjectionTests.test_receipt_digest_mismatch_fails) ... ok\ntest_sql_projection_is_read_only_for_consumers (__main__.ProjectionTests.test_sql_projection_is_read_only_for_consumers) ... ok\n\n======================================================================\nFAIL: test_projection_matches_golden_bundle (__main__.ProjectionTests.test_projection_matches_golden_bundle)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_projection.py\", line 31, in test_projection_matches_golden_bundle\n    self.assertEqual(\nAssertionError: b'{\"a[1434 chars]22222222\",\"lineage\":[],\"source\":\"fixture:seed\"[2463 chars]6\"}}' != b'{\"a[1434 chars]22222\",\"lineage\":[],\"source\":\"fixture:seed\",\"t[2460 chars]6\"}}'\n\n----------------------------------------------------------------------\nRan 6 tests in 0.004s\n\nFAILED (failures=1)\n",
+        "stdoutTail": "",
+        "tailByteLimit": 4096
+      },
+      "synthetic-rehearsal": {
+        "privacyScrubbed": true,
+        "stderrTail": "Traceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/synthetic_rehearsal.py\", line 403, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/synthetic_rehearsal.py\", line 382, in main\n    receipt = run_rehearsal(compiler.load_json_strict(args.public_registry), compiler.load_json_strict(args.schema))\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/synthetic_rehearsal.py\", line 256, in run_rehearsal\n    public_snapshot, public_receipt = ecology_adapter.compile_registry(public_registry, schema)\n                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/ecology_adapter.py\", line 129, in compile_registry\n    _relation(\"mind:pleiades\", \"operates-through\", \"workspace:pleiades\", source=\"ecology-adapter\")\nTypeError: _relation() got multiple values for argument 'source'\n",
+        "stdoutTail": "",
+        "tailByteLimit": 4096
+      },
+      "synthetic-rehearsal-unit-tests": {
+        "privacyScrubbed": true,
+        "stderrTail": "Traceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/test_synthetic_rehearsal.py\", line 89, in <module>\n    unittest.main(verbosity=2)\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/main.py\", line 105, in __init__\n    self.runTests()\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/main.py\", line 281, in runTests\n    self.result = testRunner.run(self.test)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/runner.py\", line 240, in run\n    test(result)\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/suite.py\", line 84, in __call__\n    return self.run(*args, **kwds)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/suite.py\", line 122, in run\n    test(result)\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/suite.py\", line 84, in __call__\n    return self.run(*args, **kwds)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/suite.py\", line 122, in run\n    test(result)\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/case.py\", line 690, in __call__\n    return self.run(*args, **kwds)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/test_synthetic_rehearsal.py\", line 29, in run\n    return synthetic_rehearsal.run_rehearsal(public or self.public, self.schema)\n                                                                    ^^^^^^^^^^^\nAttributeError: 'SyntheticRehearsalTests' object has no attribute 'schema'\n",
+        "stdoutTail": "",
+        "tailByteLimit": 4096
+      }
+    },
     "failures": [
       "current-tree-sensitivity",
       "ontology-projection-tests",
@@ -49,7 +111,7 @@
       "synthetic-rehearsal"
     ],
     "notRun": [],
-    "receiptDigest": "sha256:ab2beb16da9d406e5571894c94ae1dbcaaa78de242999700dafb297bd7999c2b",
+    "receiptDigest": "sha256:6a3f672398951df655def030662b28eea6932f1bbe1f8b2df233d475a4b2981f",
     "status": "fail"
   },
   "syntheticRehearsal": {
@@ -59,12 +121,12 @@
     ],
     "status": "missing"
   },
-  "validatedCommit": "3f575e86a6efbfd14a68038b179b661a7ba3d15d",
+  "validatedCommit": "45d15675aa6710fc0d3a9332625324e0da7b7562",
   "validationPackage": {
-    "manifestDigest": "sha256:fdea2ff188dcb4a2a5ed59142dd8f2189a8189bf679be3c3a9e2e9d2a2b1cf4d",
-    "packageDigest": "sha256:56feab8bd78ec81316eb349cacb366591be7f0cd4308cde83ef98443645245c7",
+    "manifestDigest": "sha256:d695d6dab12c93214f6559ac278a38fb9ff9842c8fc99f9fccf3c9965bd0f6b5",
+    "packageDigest": "sha256:be5ea53fed9e1135907801c98e4a2a6eb793e20cd0b529061047fe475bcdc94a",
     "privateMaterialIncluded": false,
-    "receiptDigest": "sha256:544f2462966c9bfa27123741110e7ccc2d725afda3ad5dcd6cafc708ebfe45fe",
-    "sbomDigest": "sha256:740164f40b38c0729b32fe18ade8c1f992cfaf01681bd8d0be26d2ec6641eebd"
+    "receiptDigest": "sha256:f3461add69d147a08108f72328bcae7db9394593adf8ecc5b96fd9e7bf64d4ed",
+    "sbomDigest": "sha256:563100e075c9ec72a6866d74744686d3e2b9ac1cdbf652af87f2954650813524"
   }
 }
