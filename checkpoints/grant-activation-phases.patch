@@ -1,0 +1,414 @@
+--- a/modos/pdk-node-agent/crates/pdk-node-agent/src/policy.rs
++++ b/modos/pdk-node-agent/crates/pdk-node-agent/src/policy.rs
+@@ -28,7 +28,7 @@
+     max_clock_skew_ms: u64,
+     trusted_controllers: Arc<HashMap<String, TrustedControllerKey>>,
+     grants: Arc<RwLock<HashMap<String, CachedGrant>>>,
+-    highest_sequences: Arc<RwLock<HashMap<String, u64>>>,
++    highest_sequences: Arc<RwLock<HashMap<String, HighestSequence>>>,
+ }
+ 
+ #[derive(Clone)]
+@@ -37,6 +37,30 @@
+     payload: CapabilityGrantPayload,
+ }
+ 
++#[derive(Clone)]
++struct HighestSequence {
++    sequence: u64,
++    token_id: String,
++    signature_base64: String,
++}
++
++#[derive(Clone)]
++pub struct ValidatedGrant {
++    envelope: SignedCapabilityGrant,
++    payload: CapabilityGrantPayload,
++    sequence_key: String,
++}
++
++impl ValidatedGrant {
++    pub fn payload(&self) -> &CapabilityGrantPayload {
++        &self.payload
++    }
++
++    pub fn signature_base64(&self) -> &str {
++        &self.envelope.signature_base64
++    }
++}
++
+ #[derive(Clone, Debug)]
+ pub struct Authorization {
+     pub token_id: String,
+@@ -63,11 +87,11 @@
+         }
+     }
+ 
+-    pub async fn cache_signed_grant(
++    pub fn validate_signed_grant(
+         &self,
+         envelope: SignedCapabilityGrant,
+         authenticated_controller_id: &str,
+-    ) -> Result<CapabilityGrantPayload> {
++    ) -> Result<ValidatedGrant> {
+         if !self.autonomy.allows_new_global_grant() {
+             bail!("new capability grants require Connected state");
+         }
+@@ -109,36 +133,63 @@
+             bail!("capability grant is missing a required identity or nonce");
+         }
+ 
+-        let token_id = payload.token_id.clone();
+-        let sequence_key = grant_sequence_key(&payload);
++        Ok(ValidatedGrant {
++            sequence_key: grant_sequence_key(&payload),
++            envelope,
++            payload,
++        })
++    }
++
++    pub async fn install_durably_admitted_grant(
++        &self,
++        candidate: ValidatedGrant,
++    ) -> Result<CapabilityGrantPayload> {
++        let token_id = candidate.payload.token_id.clone();
++        let signature_base64 = candidate.envelope.signature_base64.clone();
+         let mut grants = self.grants.write().await;
+         if let Some(existing) = grants.get(&token_id) {
+-            if existing.envelope.signature_base64 != envelope.signature_base64 {
++            if existing.envelope.signature_base64 != signature_base64 {
+                 bail!("token ID collision with different signed content");
+             }
+             return Ok(existing.payload.clone());
+         }
+ 
+         let mut highest_sequences = self.highest_sequences.write().await;
+-        if let Some(highest) = highest_sequences.get(&sequence_key)
+-            && payload.grant_sequence <= *highest
+-        {
+-            bail!(
+-                "capability grant sequence {} is not newer than accepted sequence {}",
+-                payload.grant_sequence,
+-                highest
+-            );
++        if let Some(highest) = highest_sequences.get(&candidate.sequence_key) {
++            if candidate.payload.grant_sequence < highest.sequence {
++                bail!(
++                    "capability grant sequence {} is older than active projection sequence {}",
++                    candidate.payload.grant_sequence,
++                    highest.sequence
++                );
++            }
++            if candidate.payload.grant_sequence == highest.sequence
++                && (highest.token_id != token_id
++                    || highest.signature_base64 != signature_base64)
++            {
++                bail!(
++                    "capability grant sequence {} collides with another admitted identity",
++                    candidate.payload.grant_sequence
++                );
++            }
+         }
+ 
++        highest_sequences.insert(
++            candidate.sequence_key,
++            HighestSequence {
++                sequence: candidate.payload.grant_sequence,
++                token_id: token_id.clone(),
++                signature_base64,
++            },
++        );
+         grants.insert(
+             token_id,
+             CachedGrant {
+-                envelope,
+-                payload: payload.clone(),
++                envelope: candidate.envelope,
++                payload: candidate.payload.clone(),
+             },
+         );
+-        highest_sequences.insert(sequence_key, payload.grant_sequence);
+-        Ok(payload)
++        Ok(candidate.payload)
+     }
+ 
+     pub async fn authorize_spawn(
+@@ -511,10 +562,44 @@
+     }
+ 
+     #[tokio::test]
+-    async fn rejects_sequence_rollback_for_same_subject() {
++    async fn validation_is_side_effect_free_until_durable_installation() {
+         let (enforcer, key, _) = fixture();
++        let candidate = enforcer
++            .validate_signed_grant(
++                signed_grant(
++                    &key,
++                    "token-candidate",
++                    20,
++                    1,
++                    OfflinePolicy::BoundedCache,
++                    CapabilityAction::StatusWorkload,
++                ),
++                "controller-1",
++            )
++            .expect("candidate should pass deterministic validation");
++
++        assert_eq!(enforcer.cached_count().await, 0);
+         enforcer
+-            .cache_signed_grant(
++            .authorize_status("token-candidate", "workload-1")
++            .await
++            .expect_err("validated but uncommitted candidate must not become active");
++
++        enforcer
++            .install_durably_admitted_grant(candidate)
++            .await
++            .expect("durably admitted candidate should become active");
++        assert_eq!(enforcer.cached_count().await, 1);
++        enforcer
++            .authorize_status("token-candidate", "workload-1")
++            .await
++            .expect("installed grant should authorize policy checks");
++    }
++
++    #[tokio::test]
++    async fn active_projection_rejects_rollback_and_same_sequence_collision() {
++        let (enforcer, key, _) = fixture();
++        let newest = enforcer
++            .validate_signed_grant(
+                 signed_grant(
+                     &key,
+                     "token-new",
+@@ -525,10 +610,14 @@
+                 ),
+                 "controller-1",
+             )
++            .expect("new grant should validate");
++        enforcer
++            .install_durably_admitted_grant(newest)
+             .await
+-            .expect("new grant should be accepted");
+-        let error = enforcer
+-            .cache_signed_grant(
++            .expect("new grant should install");
++
++        let older = enforcer
++            .validate_signed_grant(
+                 signed_grant(
+                     &key,
+                     "token-old",
+@@ -539,16 +628,66 @@
+                 ),
+                 "controller-1",
+             )
++            .expect("sequence continuity belongs to durable admission, not validation");
++        let error = enforcer
++            .install_durably_admitted_grant(older)
+             .await
+-            .expect_err("older sequence must be rejected");
+-        assert!(error.to_string().contains("not newer"));
++            .expect_err("older durable projection must be rejected defensively");
++        assert!(error.to_string().contains("older than active projection"));
++
++        let collision = enforcer
++            .validate_signed_grant(
++                signed_grant(
++                    &key,
++                    "token-collision",
++                    20,
++                    1,
++                    OfflinePolicy::BoundedCache,
++                    CapabilityAction::StatusWorkload,
++                ),
++                "controller-1",
++            )
++            .expect("same-sequence candidate should validate cryptographically");
++        let error = enforcer
++            .install_durably_admitted_grant(collision)
++            .await
++            .expect_err("same sequence with another identity must be rejected");
++        assert!(error.to_string().contains("collides"));
+     }
+ 
+     #[tokio::test]
+-    async fn subject_validation_does_not_consume_the_durable_budget() {
++    async fn exact_install_retry_is_idempotent() {
+         let (enforcer, key, _) = fixture();
++        let envelope = signed_grant(
++            &key,
++            "token-retry",
++            21,
++            1,
++            OfflinePolicy::BoundedCache,
++            CapabilityAction::StatusWorkload,
++        );
++        let first = enforcer
++            .validate_signed_grant(envelope.clone(), "controller-1")
++            .expect("first candidate should validate");
++        let second = enforcer
++            .validate_signed_grant(envelope, "controller-1")
++            .expect("retry candidate should validate without cache mutation");
+         enforcer
+-            .cache_signed_grant(
++            .install_durably_admitted_grant(first)
++            .await
++            .expect("first install should succeed");
++        enforcer
++            .install_durably_admitted_grant(second)
++            .await
++            .expect("exact retry should be idempotent");
++        assert_eq!(enforcer.cached_count().await, 1);
++    }
++
++    #[tokio::test]
++    async fn subject_validation_does_not_consume_the_durable_budget() {
++        let (enforcer, key, _) = fixture();
++        let candidate = enforcer
++            .validate_signed_grant(
+                 signed_grant(
+                     &key,
+                     "token-budget",
+@@ -559,8 +698,11 @@
+                 ),
+                 "controller-1",
+             )
++            .expect("grant should validate");
++        enforcer
++            .install_durably_admitted_grant(candidate)
+             .await
+-            .expect("grant should be accepted");
++            .expect("durably admitted grant should install");
+ 
+         enforcer
+             .authorize_status("token-budget", "wrong-workload")
+--- a/modos/pdk-node-agent/crates/pdk-node-agent/src/rpc.rs
++++ b/modos/pdk-node-agent/crates/pdk-node-agent/src/rpc.rs
+@@ -90,58 +90,11 @@
+     ) -> Result<Response<CapabilityGrantAck>, Status> {
+         let peer = peer_identity(&request)?.clone();
+         let envelope = request.into_inner();
+-        let signature_base64 = envelope.signature_base64.clone();
+-        match self
++        let candidate = match self
+             .policy
+-            .cache_signed_grant(envelope, &peer.identity)
+-            .await
++            .validate_signed_grant(envelope, &peer.identity)
+         {
+-            Ok(grant) => {
+-                let event = DecisionEvent {
+-                    decision: "allow",
+-                    operation: "push_capability_grant",
+-                    controller_id: &peer.identity,
+-                    token_id: &grant.token_id,
+-                    workload_id: &grant.subject_workload_id,
+-                    detail: "signature, domain, target, validity interval, Connected state, durable sequence floor, token identity, and signed admission receipt verified",
+-                };
+-                let prepared = self
+-                    .audit
+-                    .prepare_event("capability.grant.cached", &grant.token_id, &event)
+-                    .map_err(|error| {
+-                        Status::internal(format!(
+-                            "preparing signed capability admission receipt failed: {error}"
+-                        ))
+-                    })?;
+-                let admission = self
+-                    .authority_state
+-                    .admit_grant(&grant, &signature_base64, &prepared)
+-                    .await
+-                    .map_err(|error| {
+-                        Status::failed_precondition(format!(
+-                            "transactional capability admission failed: {error}"
+-                        ))
+-                    })?;
+-                let admission_state = match admission {
+-                    GrantAdmission::New { .. } => "new",
+-                    GrantAdmission::Recovered { .. } => "recovered",
+-                    GrantAdmission::Idempotent { .. } => "idempotent",
+-                };
+-                info!(
+-                    token_id = %grant.token_id,
+-                    workload_id = %grant.subject_workload_id,
+-                    controller = %peer.identity,
+-                    admission_state,
+-                    "committed signed capability grant with atomic authority and audit state"
+-                );
+-                Ok(Response::new(CapabilityGrantAck {
+-                    token_id: grant.token_id,
+-                    accepted: true,
+-                    message: format!(
+-                        "capability grant transactionally admitted ({admission_state})"
+-                    ),
+-                }))
+-            }
++            Ok(candidate) => candidate,
+             Err(error) => {
+                 let token_id = "rejected";
+                 let event = DecisionEvent {
+@@ -155,9 +108,63 @@
+                 let _ = self
+                     .audit_decision(token_id, "capability.grant.denied", &event)
+                     .await;
+-                Err(Status::permission_denied(error.to_string()))
++                return Err(Status::permission_denied(error.to_string()));
+             }
+-        }
++        };
++        let grant = candidate.payload().clone();
++        let signature_base64 = candidate.signature_base64().to_owned();
++        let event = DecisionEvent {
++            decision: "allow",
++            operation: "push_capability_grant",
++            controller_id: &peer.identity,
++            token_id: &grant.token_id,
++            workload_id: &grant.subject_workload_id,
++            detail: "deterministically validated, transactionally admitted with signed receipt, then installed into the active policy cache",
++        };
++        let prepared = self
++            .audit
++            .prepare_event("capability.grant.admitted", &grant.token_id, &event)
++            .map_err(|error| {
++                Status::internal(format!(
++                    "preparing signed capability admission receipt failed: {error}"
++                ))
++            })?;
++        let admission = self
++            .authority_state
++            .admit_grant(&grant, &signature_base64, &prepared)
++            .await
++            .map_err(|error| {
++                Status::failed_precondition(format!(
++                    "transactional capability admission failed: {error}"
++                ))
++            })?;
++        let admission_state = match admission {
++            GrantAdmission::New { .. } => "new",
++            GrantAdmission::Recovered { .. } => "recovered",
++            GrantAdmission::Idempotent { .. } => "idempotent",
++        };
++        self.policy
++            .install_durably_admitted_grant(candidate)
++            .await
++            .map_err(|error| {
++                Status::failed_precondition(format!(
++                    "durably admitted capability could not be installed into active policy: {error}"
++                ))
++            })?;
++        info!(
++            token_id = %grant.token_id,
++            workload_id = %grant.subject_workload_id,
++            controller = %peer.identity,
++            admission_state,
++            "committed signed capability grant before active policy installation"
++        );
++        Ok(Response::new(CapabilityGrantAck {
++            token_id: grant.token_id,
++            accepted: true,
++            message: format!(
++                "capability grant transactionally admitted and activated ({admission_state})"
++            ),
++        }))
+     }
+ 
+     async fn spawn_workload(
