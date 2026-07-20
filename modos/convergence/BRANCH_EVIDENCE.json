@@ -10,25 +10,25 @@
     "findings": [
       {
         "blobSha": null,
-        "lineHashPrefix": "0518d6b3e8f0",
-        "lineNumber": 7,
-        "path": "oobe/scripts/hermes_60_day_evolution.sh",
-        "rule": "literal-linux-home",
+        "lineHashPrefix": "0f00025d3e12",
+        "lineNumber": 99,
+        "path": ".github/workflows/apply-convergence-repairs.yml",
+        "rule": "literal-windows-profile",
         "scope": "current-tree"
       },
       {
         "blobSha": null,
-        "lineHashPrefix": "4da77931816d",
-        "lineNumber": 66,
-        "path": "scripts/pleiades-install-host-autostart.sh",
-        "rule": "literal-windows-profile",
+        "lineHashPrefix": "03233ce7c58c",
+        "lineNumber": 19,
+        "path": "ci/public-history-sensitivity.json",
+        "rule": "literal-linux-home",
         "scope": "current-tree"
       }
     ],
-    "receiptDigest": "sha256:0b54c8c7e3048f6a2d4f6701c9326605da5a2ad2a923d1994700959ca89866f4",
+    "receiptDigest": "sha256:2bfedc34045bcf28e31a39bbd1c34b26c90dcfc71355d7c1555c09f4e2d423ab",
     "status": "blocked"
   },
-  "evidenceDigest": "sha256:bc93394efa03ac2892bb6ff5dc80bcccaea7945043777660767c79ece4a8373b",
+  "evidenceDigest": "sha256:d58604736668204f64ff9c3be456ee727d10f398b3c21b8f408f5ef7f8735b86",
   "interventionFrontier": {
     "autonomousActionCount": 0,
     "operatorActionCount": 11,
@@ -38,19 +38,19 @@
   "kind": "BranchConvergenceEvidence",
   "publicEcologyAdapter": {
     "blockers": [
-      "receipt-missing"
+      "live-private-exhaustive-registry-not-supplied"
     ],
-    "exitCode": 1,
-    "objectCount": null,
-    "receiptDigest": null,
-    "relationCount": null,
-    "resultSnapshotDigest": null
+    "exitCode": 0,
+    "objectCount": 18,
+    "receiptDigest": "sha256:b50226e4bd1efbbf9f5210d2ecc1a56d7effa0e47253c6e0e047ae2ed69fc327",
+    "relationCount": 17,
+    "resultSnapshotDigest": "sha256:b28b366af159ccfeb376a1ad8d131d1159a45be3988b5d48013eb75c17a108d1"
   },
   "reachableHistorySensitivity": {
     "contentDisclosed": false,
     "exitCode": 2,
-    "findingCount": 85,
-    "receiptDigest": "sha256:0e1962d805ead8f54cd2f4eacb7a57dba5d709a50f613a9921d042848fdbd8a5",
+    "findingCount": 86,
+    "receiptDigest": "sha256:0accc18174b30d057902d686282d9b3ef2a1677a1ab7c5eb48b6f6eac8371612",
     "status": "blocked"
   },
   "suite": {
@@ -58,75 +58,49 @@
     "executedCount": 32,
     "exitCode": 1,
     "failureDetails": {
-      "control-plane-unit-tests": {
-        "privacyScrubbed": true,
-        "stderrTail": "test_domain_mismatch (__main__.CompetenceTests.test_domain_mismatch) ... ok\ntest_duplicate_outcome (__main__.CompetenceTests.test_duplicate_outcome) ... ok\ntest_golden (__main__.CompetenceTests.test_golden) ... FAIL\ntest_growth_proposal_only (__main__.CompetenceTests.test_growth_proposal_only) ... ok\ntest_policy_violation_suspends (__main__.CompetenceTests.test_policy_violation_suspends) ... ok\ntest_self_verification (__main__.CompetenceTests.test_self_verification) ... ok\ntest_small_sample_maintains (__main__.CompetenceTests.test_small_sample_maintains) ... ok\ntest_executor_mismatch (__main__.ExecutionTests.test_executor_mismatch) ... ok\ntest_expired (__main__.ExecutionTests.test_expired) ... ok\ntest_failed_rollback (__main__.ExecutionTests.test_failed_rollback) ... ok\ntest_golden_rollback (__main__.ExecutionTests.test_golden_rollback) ... ok\ntest_golden_success (__main__.ExecutionTests.test_golden_success) ... ok\ntest_rollback (__main__.ExecutionTests.test_rollback) ... ok\ntest_success (__main__.ExecutionTests.test_success) ... ok\ntest_write_budget (__main__.ExecutionTests.test_write_budget) ... ok\ntest_golden (__main__.PolicyTests.test_golden) ... ok\ntest_machine_executive (__main__.PolicyTests.test_machine_executive) ... ok\ntest_machine_human_mix_rejected (__main__.PolicyTests.test_machine_human_mix_rejected) ... ok\ntest_no_match_rejected (__main__.PolicyTests.test_no_match_rejected) ... ok\ntest_reserved_power (__main__.PolicyTests.test_reserved_power) ... ok\ntest_wildcard_rejected (__main__.PolicyTests.test_wildcard_rejected) ... ok\ntest_expiry (__main__.RegistryTests.test_expiry) ... ok\ntest_golden (__main__.RegistryTests.test_golden) ... ok\ntest_issued_active (__main__.RegistryTests.test_issued_active) ... ok\ntest_revocation_terminal (__main__.RegistryTests.test_revocation_terminal) ... ok\ntest_self_issue_rejected (__main__.RegistryTests.test_self_issue_rejected) ... ok\ntest_suspension (__main__.RegistryTests.test_suspension) ... ok\n\n======================================================================\nFAIL: test_golden (__main__.CompetenceTests.test_golden)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/governance/test_control_plane.py\", line 197, in test_golden\n    self.assertEqual(competence.digest(receipt), fixtures.EXPECTED_DIGESTS[\"competenceReceipt\"])\nAssertionError: 'sha256:dd025b9cf40f2e724a4ce8902aa01b6bedb15037f51aaa1228d10ecc6cb6505f' != 'sha256:99e1c371a9097fb8863a83808cb3ea49de6fcab7126acbe2361ecc1d59808386'\n- sha256:dd025b9cf40f2e724a4ce8902aa01b6bedb15037f51aaa1228d10ecc6cb6505f\n+ sha256:99e1c371a9097fb8863a83808cb3ea49de6fcab7126acbe2361ecc1d59808386\n\n\n----------------------------------------------------------------------\nRan 27 tests in 0.007s\n\nFAILED (failures=1)\n",
-        "stdoutTail": "",
-        "tailByteLimit": 4096
-      },
       "current-tree-sensitivity": {
         "privacyScrubbed": true,
         "stderrTail": "",
-        "stdoutTail": "public history scan blocked: 2 findings; sha256:0b54c8c7e3048f6a2d4f6701c9326605da5a2ad2a923d1994700959ca89866f4\n",
+        "stdoutTail": "public history scan blocked: 2 findings; sha256:2bfedc34045bcf28e31a39bbd1c34b26c90dcfc71355d7c1555c09f4e2d423ab\n",
         "tailByteLimit": 4096
       },
       "ecology-adapter-tests": {
         "privacyScrubbed": true,
-        "stderrTail": "st):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 47, in test_every_registry_repository_becomes_resource\n    snapshot, _ = self.compile()\n                  ^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 28, in compile\n    return ecology_adapter.compile_registry(registry or self.registry, self.schema)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/ecology_adapter.py\", line 129, in compile_registry\n    _relation(\"mind:pleiades\", \"operates-through\", \"workspace:pleiades\", source=\"ecology-adapter\")\nTypeError: _relation() got multiple values for argument 'source'\n\n======================================================================\nERROR: test_public_projection_cannot_claim_private_closure (__main__.EcologyAdapterTests.test_public_projection_cannot_claim_private_closure)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 63, in test_public_projection_cannot_claim_private_closure\n    _, receipt = self.compile()\n                 ^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 28, in compile\n    return ecology_adapter.compile_registry(registry or self.registry, self.schema)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/ecology_adapter.py\", line 129, in compile_registry\n    _relation(\"mind:pleiades\", \"operates-through\", \"workspace:pleiades\", source=\"ecology-adapter\")\nTypeError: _relation() got multiple values for argument 'source'\n\n======================================================================\nERROR: test_public_projection_compiles_to_closed_snapshot (__main__.EcologyAdapterTests.test_public_projection_compiles_to_closed_snapshot)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 31, in test_public_projection_compiles_to_closed_snapshot\n    snapshot, receipt = self.compile()\n                        ^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 28, in compile\n    return ecology_adapter.compile_registry(registry or self.registry, self.schema)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/ecology_adapter.py\", line 129, in compile_registry\n    _relation(\"mind:pleiades\", \"operates-through\", \"workspace:pleiades\", source=\"ecology-adapter\")\nTypeError: _relation() got multiple values for argument 'source'\n\n======================================================================\nERROR: test_unknown_relation_endpoint_fails_ontology_closure (__main__.EcologyAdapterTests.test_unknown_relation_endpoint_fails_ontology_closure)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 86, in test_unknown_relation_endpoint_fails_ontology_closure\n    self.compile(registry)\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 28, in compile\n    return ecology_adapter.compile_registry(registry or self.registry, self.schema)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/ecology_adapter.py\", line 129, in compile_registry\n    _relation(\"mind:pleiades\", \"operates-through\", \"workspace:pleiades\", source=\"ecology-adapter\")\nTypeError: _relation() got multiple values for argument 'source'\n\n----------------------------------------------------------------------\nRan 7 tests in 0.199s\n\nFAILED (errors=6)\n",
-        "stdoutTail": "",
-        "tailByteLimit": 4096
-      },
-      "executive-control-plane": {
-        "privacyScrubbed": true,
-        "stderrTail": "validation failures:\n- competence receipt golden digest mismatch\n",
-        "stdoutTail": "",
-        "tailByteLimit": 4096
-      },
-      "ontology-projection-tests": {
-        "privacyScrubbed": true,
-        "stderrTail": "test_authority_widening_fails (__main__.ProjectionTests.test_authority_widening_fails) ... ok\ntest_projection_is_non_authoritative (__main__.ProjectionTests.test_projection_is_non_authoritative) ... ok\ntest_projection_matches_golden_bundle (__main__.ProjectionTests.test_projection_matches_golden_bundle) ... FAIL\ntest_projection_rows_cover_snapshot (__main__.ProjectionTests.test_projection_rows_cover_snapshot) ... ok\ntest_receipt_digest_mismatch_fails (__main__.ProjectionTests.test_receipt_digest_mismatch_fails) ... ok\ntest_sql_projection_is_read_only_for_consumers (__main__.ProjectionTests.test_sql_projection_is_read_only_for_consumers) ... ok\n\n======================================================================\nFAIL: test_projection_matches_golden_bundle (__main__.ProjectionTests.test_projection_matches_golden_bundle)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_projection.py\", line 31, in test_projection_matches_golden_bundle\n    self.assertEqual(\nAssertionError: b'{\"a[1434 chars]22222222\",\"lineage\":[],\"source\":\"fixture:seed\"[2463 chars]6\"}}' != b'{\"a[1434 chars]22222\",\"lineage\":[],\"source\":\"fixture:seed\",\"t[2460 chars]6\"}}'\n\n----------------------------------------------------------------------\nRan 6 tests in 0.004s\n\nFAILED (failures=1)\n",
-        "stdoutTail": "",
-        "tailByteLimit": 4096
-      },
-      "synthetic-rehearsal": {
-        "privacyScrubbed": true,
-        "stderrTail": "Traceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/synthetic_rehearsal.py\", line 403, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/synthetic_rehearsal.py\", line 382, in main\n    receipt = run_rehearsal(compiler.load_json_strict(args.public_registry), compiler.load_json_strict(args.schema))\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/synthetic_rehearsal.py\", line 256, in run_rehearsal\n    public_snapshot, public_receipt = ecology_adapter.compile_registry(public_registry, schema)\n                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/ecology_adapter.py\", line 129, in compile_registry\n    _relation(\"mind:pleiades\", \"operates-through\", \"workspace:pleiades\", source=\"ecology-adapter\")\nTypeError: _relation() got multiple values for argument 'source'\n",
+        "stderrTail": "test_authority_ceiling_is_preserved_on_repository_objects (__main__.EcologyAdapterTests.test_authority_ceiling_is_preserved_on_repository_objects) ... ok\ntest_compilation_is_deterministic_under_input_array_reordering (__main__.EcologyAdapterTests.test_compilation_is_deterministic_under_input_array_reordering) ... FAIL\ntest_duplicate_membership_is_rejected (__main__.EcologyAdapterTests.test_duplicate_membership_is_rejected) ... ok\ntest_every_registry_repository_becomes_resource (__main__.EcologyAdapterTests.test_every_registry_repository_becomes_resource) ... ok\ntest_public_projection_cannot_claim_private_closure (__main__.EcologyAdapterTests.test_public_projection_cannot_claim_private_closure) ... ok\ntest_public_projection_compiles_to_closed_snapshot (__main__.EcologyAdapterTests.test_public_projection_compiles_to_closed_snapshot) ... ok\ntest_unknown_relation_endpoint_fails_ontology_closure (__main__.EcologyAdapterTests.test_unknown_relation_endpoint_fails_ontology_closure) ... ok\n\n======================================================================\nFAIL: test_compilation_is_deterministic_under_input_array_reordering (__main__.EcologyAdapterTests.test_compilation_is_deterministic_under_input_array_reordering)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 44, in test_compilation_is_deterministic_under_input_array_reordering\n    self.assertEqual(compiler.canonical_bytes(first_snapshot), compiler.canonical_bytes(second_snapshot))\nAssertionError: b'{\"a[7836 chars]a256:75f0d613633808527fa0b03e2f305db1412654995[7912 chars]a1\"}' != b'{\"a[7836 chars]a256:da91b35aad213ea6aab718b09f68a9707ec3c8b4d[7912 chars]a1\"}'\n\n----------------------------------------------------------------------\nRan 7 tests in 0.148s\n\nFAILED (failures=1)\n",
         "stdoutTail": "",
         "tailByteLimit": 4096
       },
       "synthetic-rehearsal-unit-tests": {
         "privacyScrubbed": true,
-        "stderrTail": "Traceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/test_synthetic_rehearsal.py\", line 89, in <module>\n    unittest.main(verbosity=2)\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/main.py\", line 105, in __init__\n    self.runTests()\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/main.py\", line 281, in runTests\n    self.result = testRunner.run(self.test)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/runner.py\", line 240, in run\n    test(result)\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/suite.py\", line 84, in __call__\n    return self.run(*args, **kwds)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/suite.py\", line 122, in run\n    test(result)\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/suite.py\", line 84, in __call__\n    return self.run(*args, **kwds)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/suite.py\", line 122, in run\n    test(result)\n  File \"/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/unittest/case.py\", line 690, in __call__\n    return self.run(*args, **kwds)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/test_synthetic_rehearsal.py\", line 29, in run\n    return synthetic_rehearsal.run_rehearsal(public or self.public, self.schema)\n                                                                    ^^^^^^^^^^^\nAttributeError: 'SyntheticRehearsalTests' object has no attribute 'schema'\n",
+        "stderrTail": "ent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/test_synthetic_rehearsal.py\", line 56, in test_reordering_public_ecology_preserves_semantics_but_changes_source_evidence\n    self.assertEqual(first[\"mergedSnapshotDigest\"], second[\"mergedSnapshotDigest\"])\nAssertionError: 'sha256:d148a20732e1cee2dbfd42aabbd015d63ac5285b73b9e0ae1ec870fffb5a8a04' != 'sha256:3b4b6bbb1fcffe89d6197f097136c4b77eb4c7a71d5ca9d1e66bd7602ca146eb'\n- sha256:d148a20732e1cee2dbfd42aabbd015d63ac5285b73b9e0ae1ec870fffb5a8a04\n+ sha256:3b4b6bbb1fcffe89d6197f097136c4b77eb4c7a71d5ca9d1e66bd7602ca146eb\n\n\n======================================================================\nFAIL: test_synthetic_private_registry_contains_no_real_project_owner (__main__.SyntheticRehearsalTests.test_synthetic_private_registry_contains_no_real_project_owner)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/test_synthetic_rehearsal.py\", line 66, in test_synthetic_private_registry_contains_no_real_project_owner\n    self.assertNotIn(\"undergrowth\", rendered.lower())\nAssertionError: 'undergrowth' unexpectedly found in '{\"apiversion\": \"modos.pleiades/v1alpha1\", \"kind\": \"ecologyregistry\", \"metadata\": {\"name\": \"synthetic-private-ecology\", \"notes\": \"rehearsal-only private scope. never substitute for undergrowth.\", \"observedat\": \"2026-07-20t22:00:00z\", \"owner\": \"syntheticlab\", \"source\": \"synthetic fixture containing no real private identities\", \"sourcedigest\": \"sha256:304f2e464d918ae6662db78f3294edfcf6b1d2543421525a5a7b297356057e09\", \"visibility\": \"private\"}, \"spec\": {\"canonicalscopes\": {\"synthetic-private-ecology\": \"repo:syntheticlab/private-spine\", \"synthetic-private-runtime\": \"repo:syntheticlab/private-runtime\"}, \"capabilities\": [{\"id\": \"synthetic.private.ecology.close\", \"providerref\": \"repo:syntheticlab/private-spine\", \"status\": \"canonical\", \"version\": \"v1alpha1\"}, {\"id\": \"synthetic.private.runtime.observe\", \"providerref\": \"repo:syntheticlab/private-runtime\", \"status\": \"operational\", \"version\": \"v1alpha1\"}], \"components\": [{\"componentid\": \"synthetic-private-spine\", \"manifestpath\": \"modos_component.yaml\", \"manifeststate\": \"present\", \"repository\": \"syntheticlab/private-spine\"}, {\"componentid\": \"synthetic-private-node\", \"manifestpath\": \"modos_component.yaml\", \"manifeststate\": \"present\", \"repository\": \"syntheticlab/private-runtime\"}], \"exceptions\": [], \"groups\": [{\"authorityceiling\": \"domain-control\", \"description\": \"synthetic private governance spine\", \"disposition\": \"canonical\", \"id\": \"synthetic-private-governance\", \"lifecycle\": \"canonical\", \"repositories\": [\"syntheticlab/private-spine\"], \"subsystem\": \"private-governance\"}, {\"authorityceiling\": \"local-enforcement\", \"description\": \"synthetic private runtime substrate\", \"disposition\": \"active\", \"id\": \"synthetic-private-runtime\", \"lifecycle\": \"operational\", \"repositories\": [\"syntheticlab/private-runtime\"], \"subsystem\": \"private-runtime\"}], \"invariants\": {\"archiveisolation\": true, \"authoritymonotonicity\": true, \"completeinventory\": true, \"nodanglingrequiredrelations\": true, \"singlecanonicalprovider\": true, \"uniquemembership\": true}, \"inventory\": {\"expectedcount\": 2, \"repositories\": [\"syntheticlab/private-runtime\", \"syntheticlab/private-spine\"]}, \"precedence\": [\"promoted pleiades constitution and public contracts\", \"synthetic rehearsal private registry\", \"synthetic component manifests\"], \"relations\": [{\"required\": true, \"scope\": \"governance\", \"sourceref\": \"repo:syntheticlab/private-spine\", \"targetref\": \"scope:synthetic-private-ecology\", \"type\": \"canonical-for\"}, {\"required\": true, \"scope\": \"runtime\", \"sourceref\": \"repo:syntheticlab/private-runtime\", \"targetref\": \"scope:synthetic-private-runtime\", \"type\": \"canonical-for\"}, {\"required\": true, \"scope\": \"governance\", \"sourceref\": \"repo:syntheticlab/private-runtime\", \"targetref\": \"repo:syntheticlab/private-spine\", \"type\": \"governed-by\"}]}}'\n\n----------------------------------------------------------------------\nRan 6 tests in 0.253s\n\nFAILED (failures=2)\n",
         "stdoutTail": "",
         "tailByteLimit": 4096
       }
     },
     "failures": [
       "current-tree-sensitivity",
-      "ontology-projection-tests",
       "ecology-adapter-tests",
-      "executive-control-plane",
-      "control-plane-unit-tests",
-      "synthetic-rehearsal-unit-tests",
-      "synthetic-rehearsal"
+      "synthetic-rehearsal-unit-tests"
     ],
     "notRun": [],
-    "receiptDigest": "sha256:6a3f672398951df655def030662b28eea6932f1bbe1f8b2df233d475a4b2981f",
+    "receiptDigest": "sha256:4fa96bec1053b90bbc4dfded45c9a3cbc4ae1c91458488f99626c74d640008c1",
     "status": "fail"
   },
   "syntheticRehearsal": {
-    "receiptDigest": null,
+    "receiptDigest": "sha256:37f0fe5e17087ecf595faf3dc520144a698deb78fb3728d62373c058a3a3e40d",
     "remainingBlockers": [
-      "receipt-missing"
+      "live-private-exhaustive-registry-not-supplied",
+      "live-substrate-loop-not-authorized-or-executed",
+      "sustained-autonomy-evidence-not-observed"
     ],
-    "status": "missing"
+    "status": "pass"
   },
-  "validatedCommit": "45d15675aa6710fc0d3a9332625324e0da7b7562",
+  "validatedCommit": "647f094a7092972710a0b1e167f8defa65c19cad",
   "validationPackage": {
-    "manifestDigest": "sha256:d695d6dab12c93214f6559ac278a38fb9ff9842c8fc99f9fccf3c9965bd0f6b5",
-    "packageDigest": "sha256:be5ea53fed9e1135907801c98e4a2a6eb793e20cd0b529061047fe475bcdc94a",
+    "manifestDigest": "sha256:e96250dd41a4eb3e9dbec97ac66e064c80256aa4fd2e3605dc56f0ca10f1c051",
+    "packageDigest": "sha256:b66657c6c32764595ddcb765dce518ec98a9e6fd20b9e18ac07ece46cd60aca4",
     "privateMaterialIncluded": false,
-    "receiptDigest": "sha256:f3461add69d147a08108f72328bcae7db9394593adf8ecc5b96fd9e7bf64d4ed",
-    "sbomDigest": "sha256:563100e075c9ec72a6866d74744686d3e2b9ac1cdbf652af87f2954650813524"
+    "receiptDigest": "sha256:a3d500f058f45ea9c927822eee42b28a4a2a35d312d9b9bb388ec4591586b925",
+    "sbomDigest": "sha256:d1494ec923171e470c7442749bfa2edafbcf0b2adc4ce6df6d669ef018cb56d1"
   }
 }
