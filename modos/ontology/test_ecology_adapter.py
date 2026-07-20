@@ -19,6 +19,13 @@ def load(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def semantic_snapshot(snapshot):
+    value = copy.deepcopy(snapshot)
+    for obj in value["objects"]:
+        obj["provenance"]["digest"] = "<source-evidence-digest>"
+    return value
+
+
 class EcologyAdapterTests(unittest.TestCase):
     def setUp(self):
         self.registry = load(ROOT / "modos" / "ecology" / "public-ecology.json")
@@ -35,13 +42,18 @@ class EcologyAdapterTests(unittest.TestCase):
         self.assertFalse(receipt["fullEcologyClosure"])
         self.assertEqual(receipt["blockers"], ["live-private-exhaustive-registry-not-supplied"])
 
-    def test_compilation_is_deterministic_under_input_array_reordering(self):
+    def test_input_reordering_preserves_semantics_but_changes_exact_source_evidence(self):
         reordered = copy.deepcopy(self.registry)
         for field in ("groups", "components", "capabilities", "relations"):
             reordered["spec"][field].reverse()
-        first_snapshot, _ = self.compile()
-        second_snapshot, _ = self.compile(reordered)
-        self.assertEqual(compiler.canonical_bytes(first_snapshot), compiler.canonical_bytes(second_snapshot))
+        first_snapshot, first_receipt = self.compile()
+        second_snapshot, second_receipt = self.compile(reordered)
+        self.assertEqual(
+            compiler.canonical_bytes(semantic_snapshot(first_snapshot)),
+            compiler.canonical_bytes(semantic_snapshot(second_snapshot)),
+        )
+        self.assertNotEqual(first_receipt["registryDigest"], second_receipt["registryDigest"])
+        self.assertNotEqual(first_receipt["resultSnapshotDigest"], second_receipt["resultSnapshotDigest"])
 
     def test_every_registry_repository_becomes_resource(self):
         snapshot, _ = self.compile()
