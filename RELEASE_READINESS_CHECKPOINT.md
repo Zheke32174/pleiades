@@ -7,14 +7,15 @@ This ledger prevents duplicate review work. Reconsider an entry only when its re
 - **Default branch:** `main`
 - **Last reviewed default head:** `ce40d41d3cb712aef20416b1227edb3d19e988f5`
 - **Draft branch:** `hardening/public-release-readiness-v1`
-- **Checkpoint head:** `248a4c25b5b622b350848b41aaaa77c4552d8244`
+- **Checkpoint head before this ledger update:** `1139dfd5fd4cb1f044e38a373c008dff1ab59747`
 - **Draft PR:** #34 — deterministic lean source distribution
-- **Completed scope:** public claims; bounded release contents; deterministic double build; exact Git-blob manifest; SPDX 2.3 inventory; SHA-256 checksums; build receipt; immutable matching-tag release creation; public tree/history sensitivity scan; removal of misleading GHCR package lane; release provenance attestations.
-- **Resolved findings:** non-runnable container-package presentation removed; generic release notes replaced with download-first scope language; release refuses mismatched/non-main-reachable tags and refuses mutation of an existing release; generated artifacts are reproducible and checksum-verifiable; release artifacts now receive GitHub/Sigstore provenance attestations.
+- **Completed scope:** public claims; bounded release contents; deterministic double build; exact Git-blob manifest; SPDX 2.3 inventory; SHA-256 checksums; build receipt; immutable matching-tag release creation; public tree/history sensitivity scan; removal of misleading GHCR package lane; release provenance attestations; immutable-SHA pinning for release-path Actions; non-persistent checkout credentials; required artifact-metadata permission for current `actions/attest` behavior.
+- **Resolved findings:** non-runnable container-package presentation removed; generic release notes replaced with download-first scope language; release refuses mismatched/non-main-reachable tags and refuses mutation of an existing release; generated artifacts are reproducible and checksum-verifiable; release artifacts receive GitHub/Sigstore provenance attestations; release-path third-party Actions no longer rely on movable major-version tags.
 - **Open blocker:** issue #42. Current tree and reachable public history contain user-specific workstation paths. They are not credentials or keys, but the release must remain blocked until current-tree redaction and an explicitly approved coordinated history rewrite/rebase/rescan are complete.
-- **Validation receipts:** ordinary CI run `29710071027` passed at `df9a3211d3dd07f18aa8631fcba3d287e0783293`; public-source run `29710071025` completed deterministic packaging and receipt verification, then failed only at the intended sensitivity gate. The new attestation change at `248a4c25b5b622b350848b41aaaa77c4552d8244` requires a fresh CI receipt.
-- **Deferred:** full-SHA pinning for third-party Actions after recording trusted upstream commit identities; current-tree redaction of the large historical state document; coordinated Git history rewrite; release/tag publication.
-- **Next action:** inspect CI for checkpoint head `248a4c25b5b622b350848b41aaaa77c4552d8244`; repair any workflow defect; then redact current-tree workstation identities without authorizing or performing history rewrite.
+- **Validation receipts:** ordinary CI run `29740645990` passed at `0d624375efbfb3db5b9be44f17e19d75fa2fa22c`. Public-source run `29740646005` passed parsing, lean invariants, sensitivity capture, deterministic double build, checksum verification, source-boundary receipt verification, and evidence upload; it failed only at the intended final sensitivity gate. The action-pinning and attestation-permission changes require a fresh receipt.
+- **Changed conclusion:** the prior checkpoint treated full-SHA pinning as deferred. Fresh review of GitHub's secure-use guidance established that full-length commit SHAs are the only immutable Action references, and current `actions/attest` documentation lists `artifact-metadata: write` among required permissions. The release-path workflows were therefore hardened now rather than leaving these as publication-time chores.
+- **Deferred:** full-SHA pinning for the broader non-release CI workflow after trusted identities for every referenced Action are recorded; current-tree redaction of the large historical state document; coordinated Git history rewrite; release/tag publication.
+- **Next action:** inspect CI for the new checkpoint head; if the workflow structure passes and the only public-source failure remains the sensitivity gate, redact current-tree workstation identities on this same draft branch without authorizing or performing a history rewrite.
 
 ## mem-watchdog
 
@@ -32,10 +33,19 @@ This ledger prevents duplicate review work. Reconsider an entry only when its re
 
 ## Comparison provenance
 
-The release branch follows current GitHub public-release patterns selectively:
+The release branch follows current public-release patterns selectively:
 
-- artifact attestations bind downloadable artifacts to repository, workflow, event, and commit provenance;
-- checksums remain independently downloadable and verifiable;
-- release assets are built from exact reviewed Git blobs rather than a mutable working tree;
-- dependency review remains a future candidate where supported package manifests make it useful;
-- no external project code was copied.
+- GitHub artifact attestations bind downloadable artifacts to repository, workflow, event, and commit provenance; attestations supplement rather than replace security review.
+- Checksums remain independently downloadable and verifiable.
+- Release assets are built from exact reviewed Git blobs rather than a mutable working tree.
+- Release-path Actions are pinned to full upstream commit SHAs with human-readable version comments.
+- Checkout credentials are not persisted where subsequent authenticated Git operations are unnecessary.
+- Dependency review remains a future candidate where supported package manifests make it useful.
+- No external project code was copied.
+
+Trusted upstream identities recorded for this checkpoint:
+
+- `actions/checkout` `v4.4.0`: `11d5960a326750d5838078e36cf38b85af677262`
+- `actions/setup-python` `v5.6.0`: `a26af69be951a213d495a4c3e4e4022e16d87065`
+- `actions/upload-artifact` `v4.6.2`: `ea165f8d65b6e75b540449e92b4886f43607fa02`
+- `actions/attest` `v4.1.1`: `a1948c3f048ba23858d222213b7c278aabede763`
