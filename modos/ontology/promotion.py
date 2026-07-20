@@ -3,8 +3,9 @@
 
 This module verifies that a candidate snapshot, closure receipt, source manifest,
 and promotion candidate are bound to the same immutable evidence set. It emits a
-gate report only. It cannot sign, approve, admit, deploy, or mutate canonical
-state.
+gate report only. A successful gate becomes eligible for an authorized decision,
+which may be a delegated machine executive, mixed quorum, or human steward as
+selected by promoted policy. The gate cannot approve, execute, or mutate canon.
 """
 from __future__ import annotations
 
@@ -120,10 +121,44 @@ def _validate_source_manifest(manifest: dict[str, Any]) -> None:
         _require_digest(artifact.get("digest"), f"source artifact {artifact_id}.digest")
         if not isinstance(artifact.get("bytes"), int) or isinstance(artifact.get("bytes"), bool) or artifact["bytes"] < 1:
             raise PromotionEvidenceError(f"source artifact {artifact_id}.bytes must be positive")
-    required_roles = {"source-snapshot", "change-proposal", "candidate-snapshot", "closure-receipt", "compiler", "contract"}
+    required_roles = {
+        "source-snapshot",
+        "change-proposal",
+        "candidate-snapshot",
+        "closure-receipt",
+        "compiler",
+        "contract",
+    }
     missing = sorted(required_roles - roles)
     if missing:
         raise PromotionEvidenceError(f"source manifest is missing required artifact roles: {', '.join(missing)}")
+
+
+def _validate_authorization_policy(policy: Any) -> None:
+    if not isinstance(policy, dict):
+        raise PromotionEvidenceError("promotion candidate authorizationPolicy is required")
+    mode = policy.get("authorizationMode")
+    human = policy.get("requiredHumanApprovals")
+    machine = policy.get("machineExecutiveDecisionRequired")
+    grant = policy.get("delegatedAuthorityGrantRequired")
+    if not isinstance(human, int) or isinstance(human, bool) or human < 0:
+        raise PromotionEvidenceError("authorizationPolicy.requiredHumanApprovals must be a nonnegative integer")
+    if mode == "delegated-machine-executive":
+        if human != 0 or machine is not True or grant is not True:
+            raise PromotionEvidenceError("delegated-machine-executive policy must require a grant, machine decision, and zero human approvals")
+    elif mode == "mixed-quorum":
+        if human < 1 or machine is not True or grant is not True:
+            raise PromotionEvidenceError("mixed-quorum policy must require a grant, machine decision, and human quorum")
+    elif mode == "human-steward":
+        if human < 1:
+            raise PromotionEvidenceError("human-steward policy requires at least one human approval")
+    else:
+        raise PromotionEvidenceError("promotion candidate authorizationMode is unsupported")
+    for flag in ("codeownersRequired", "rulesetReviewRequired", "signedPromotionTransactionRequired"):
+        if policy.get(flag) is not True:
+            raise PromotionEvidenceError(f"authorizationPolicy.{flag} must be true")
+    if not isinstance(policy.get("artifactAttestationRequired"), bool):
+        raise PromotionEvidenceError("authorizationPolicy.artifactAttestationRequired must be boolean")
 
 
 def _validate_candidate(candidate: dict[str, Any]) -> None:
@@ -159,21 +194,15 @@ def _validate_candidate(candidate: dict[str, Any]) -> None:
     blockers = candidate.get("blockingIssues")
     if not isinstance(blockers, list) or len(set(blockers)) != len(blockers):
         raise PromotionEvidenceError("promotion candidate blockingIssues must be a unique array")
-    review_policy = candidate.get("reviewPolicy")
-    if not isinstance(review_policy, dict) or review_policy.get("requiredApprovals", 0) < 1:
-        raise PromotionEvidenceError("promotion candidate reviewPolicy requires at least one approval")
-    for flag in ("codeownersRequired", "rulesetReviewRequired", "signedPromotionTransactionRequired"):
-        if review_policy.get(flag) is not True:
-            raise PromotionEvidenceError(f"promotion candidate reviewPolicy.{flag} must be true")
-    if not isinstance(review_policy.get("artifactAttestationRequired"), bool):
-        raise PromotionEvidenceError("promotion candidate reviewPolicy.artifactAttestationRequired must be boolean")
+    _validate_authorization_policy(candidate.get("authorizationPolicy"))
     _require_exact_authority(
         candidate.get("authority"),
         {
             "ceiling": "none",
             "canonicalMutation": "forbidden",
-            "admissionExecutor": "external-steward",
-            "selfAdmissionAllowed": False,
+            "authorizationSource": "policy-and-delegated-authority",
+            "admissionExecutor": "capability-bound-service",
+            "proposalSelfAdmissionAllowed": False,
         },
         "promotion candidate",
     )
@@ -185,15 +214,15 @@ def evaluate_promotion_candidate(
     manifest: dict[str, Any],
     candidate: dict[str, Any],
 ) -> dict[str, Any]:
-    """Return a deterministic gate report without applying promotion authority."""
-    snapshot = compiler.normalize_snapshot(snapshot)
+    """Return a deterministic gate report without applying decision authority."""
+    source = compiler.normalize_snapshot(snapshot)
     receipt = copy.deepcopy(receipt)
     manifest = copy.deepcopy(manifest)
     candidate = copy.deepcopy(candidate)
     _validate_source_manifest(manifest)
     _validate_candidate(candidate)
 
-    snapshot_digest = compiler.snapshot_digest(snapshot)
+    result_digest = compiler.snapshot_digest(source)
     receipt_digest = digest(receipt)
     manifest_digest = digest(manifest)
     semantic_diff = receipt.get("semanticDiff")
@@ -219,7 +248,7 @@ def evaluate_promotion_candidate(
         "closure receipt",
     )
 
-    exact_bindings = {
+    bindings = {
         "repository": candidate["repository"],
         "branch": candidate["branch"],
         "commitSha": candidate["commitSha"],
@@ -231,9 +260,8 @@ def evaluate_promotion_candidate(
         "sourceManifestDigest": candidate["sourceManifestDigest"],
         "semanticDiffDigest": candidate["semanticDiffDigest"],
     }
-
     comparisons = {
-        "candidate-snapshot-digest-bound": snapshot_digest == candidate["candidateSnapshotDigest"] == receipt.get("resultSnapshotDigest") == manifest["subject"]["candidateSnapshotDigest"],
+        "candidate-snapshot-digest-bound": result_digest == candidate["candidateSnapshotDigest"] == receipt.get("resultSnapshotDigest") == manifest["subject"]["candidateSnapshotDigest"],
         "source-snapshot-digest-bound": candidate["sourceSnapshotDigest"] == receipt.get("sourceSnapshotDigest") == manifest["subject"]["sourceSnapshotDigest"],
         "closure-receipt-digest-bound": receipt_digest == candidate["closureReceiptDigest"] == manifest["subject"]["closureReceiptDigest"],
         "source-manifest-digest-bound": manifest_digest == candidate["sourceManifestDigest"],
@@ -244,8 +272,8 @@ def evaluate_promotion_candidate(
             and candidate["commitSha"] == manifest["commitSha"]
         ),
         "mind-schema-bound": (
-            candidate["mindId"] == manifest["mindId"] == receipt.get("mindId") == snapshot.get("mindId")
-            and candidate["schemaVersion"] == manifest["schemaVersion"] == receipt.get("schemaVersion") == snapshot.get("schemaVersion")
+            candidate["mindId"] == manifest["mindId"] == receipt.get("mindId") == source.get("mindId")
+            and candidate["schemaVersion"] == manifest["schemaVersion"] == receipt.get("schemaVersion") == source.get("schemaVersion")
         ),
         "codeowners-evidence-present": any(
             evidence.get("type") == "codeowners" and evidence.get("locator") == ".github/CODEOWNERS"
@@ -253,23 +281,21 @@ def evaluate_promotion_candidate(
         ),
         "no-unresolved-blocking-issues": not candidate["blockingIssues"],
     }
-
     failed = [name for name, passed in comparisons.items() if not passed]
-    hard_binding_failures = [name for name in failed if name != "no-unresolved-blocking-issues"]
-    if hard_binding_failures:
-        raise PromotionEvidenceError("promotion evidence binding failed: " + ", ".join(hard_binding_failures))
+    hard_failures = [name for name in failed if name != "no-unresolved-blocking-issues"]
+    if hard_failures:
+        raise PromotionEvidenceError("promotion evidence binding failed: " + ", ".join(hard_failures))
 
     blockers = sorted(candidate["blockingIssues"])
-    status = "blocked" if blockers else "eligible-for-steward-review"
-    gate_checks = []
-    for name, passed in comparisons.items():
-        gate_checks.append(
-            {
-                "name": name,
-                "status": "pass" if passed else "blocked",
-                **({"detail": "; ".join(blockers)} if name == "no-unresolved-blocking-issues" and blockers else {}),
-            }
-        )
+    status = "blocked" if blockers else "eligible-for-authorized-decision"
+    gate_checks = [
+        {
+            "name": name,
+            "status": "pass" if passed else "blocked",
+            **({"detail": "; ".join(blockers)} if name == "no-unresolved-blocking-issues" and blockers else {}),
+        }
+        for name, passed in comparisons.items()
+    ]
     gate_checks.extend(
         [
             {"name": "closure-receipt-closed", "status": "pass"},
@@ -283,7 +309,7 @@ def evaluate_promotion_candidate(
         "kind": "OntologyPromotionGateReport",
         "candidateId": candidate["candidateId"],
         "status": status,
-        "bindings": exact_bindings,
+        "bindings": bindings,
         "checks": gate_checks,
         "blockers": blockers,
         "authority": {
