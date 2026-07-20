@@ -21,7 +21,7 @@
     "evidenceRefs",
     "governanceEvidence",
     "blockingIssues",
-    "reviewPolicy",
+    "authorizationPolicy",
     "authority"
   ],
   "properties": {
@@ -64,33 +64,78 @@
       "uniqueItems": true,
       "items": {"type": "string", "minLength": 1, "maxLength": 1024}
     },
-    "reviewPolicy": {
+    "authorizationPolicy": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "requiredApprovals",
+        "authorizationMode",
+        "requiredHumanApprovals",
+        "machineExecutiveDecisionRequired",
+        "delegatedAuthorityGrantRequired",
         "codeownersRequired",
         "rulesetReviewRequired",
         "artifactAttestationRequired",
         "signedPromotionTransactionRequired"
       ],
       "properties": {
-        "requiredApprovals": {"type": "integer", "minimum": 1},
+        "authorizationMode": {
+          "enum": ["delegated-machine-executive", "mixed-quorum", "human-steward"]
+        },
+        "requiredHumanApprovals": {"type": "integer", "minimum": 0},
+        "machineExecutiveDecisionRequired": {"type": "boolean"},
+        "delegatedAuthorityGrantRequired": {"type": "boolean"},
         "codeownersRequired": {"const": true},
         "rulesetReviewRequired": {"const": true},
         "artifactAttestationRequired": {"type": "boolean"},
         "signedPromotionTransactionRequired": {"const": true}
-      }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"authorizationMode": {"const": "delegated-machine-executive"}}},
+          "then": {
+            "properties": {
+              "requiredHumanApprovals": {"const": 0},
+              "machineExecutiveDecisionRequired": {"const": true},
+              "delegatedAuthorityGrantRequired": {"const": true}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"authorizationMode": {"const": "mixed-quorum"}}},
+          "then": {
+            "properties": {
+              "requiredHumanApprovals": {"minimum": 1},
+              "machineExecutiveDecisionRequired": {"const": true},
+              "delegatedAuthorityGrantRequired": {"const": true}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"authorizationMode": {"const": "human-steward"}}},
+          "then": {
+            "properties": {
+              "requiredHumanApprovals": {"minimum": 1}
+            }
+          }
+        }
+      ]
     },
     "authority": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["ceiling", "canonicalMutation", "admissionExecutor", "selfAdmissionAllowed"],
+      "required": [
+        "ceiling",
+        "canonicalMutation",
+        "authorizationSource",
+        "admissionExecutor",
+        "proposalSelfAdmissionAllowed"
+      ],
       "properties": {
         "ceiling": {"const": "none"},
         "canonicalMutation": {"const": "forbidden"},
-        "admissionExecutor": {"const": "external-steward"},
-        "selfAdmissionAllowed": {"const": false}
+        "authorizationSource": {"const": "policy-and-delegated-authority"},
+        "admissionExecutor": {"const": "capability-bound-service"},
+        "proposalSelfAdmissionAllowed": {"const": false}
       }
     }
   },
