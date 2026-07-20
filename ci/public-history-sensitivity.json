@@ -17,8 +17,8 @@
   "allowlist": [
     {"rule": "literal-linux-home", "path": "**", "literal": "/home/ubuntu/", "reason": "generic synthetic fixture identity"},
     {"rule": "literal-linux-home", "path": "oobe/scripts/hermes_60_day_evolution.sh", "literal": "/home/linuxbrew/", "reason": "standard non-personal Linuxbrew installation prefix"},
-    {"rule": "literal-linux-home", "path": "ci/public-history-sensitivity.json", "literal": "/home/[A-Za-z0-9._-]+/", "reason": "the scanner policy must describe the pattern it detects"},
-    {"rule": "literal-windows-profile", "path": ".github/workflows/apply-convergence-repairs.yml", "literal": "/mnt/c/Users/", "reason": "the guarded repair workflow contains only a matcher, not a concrete profile identity"}
+    {"rule": "literal-linux-home", "path": "ci/public-history-sensitivity.json", "literal": "/home/", "reason": "the policy file must describe the Linux home-path rule and its allowed generic prefixes"},
+    {"rule": "literal-windows-profile", "path": "ci/public-history-sensitivity.json", "literal": "Users", "reason": "the policy file must describe the Windows profile-path rule"}
   ],
   "outputPolicy": {
     "includeLineContent": false,
