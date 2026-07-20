@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -14,6 +15,15 @@ from typing import Any, Iterable
 
 class SuiteError(ValueError):
     pass
+
+
+SCRUB_RULES = (
+    (re.compile(r"/home/[A-Za-z0-9._-]+/"), "/home/<redacted>/"),
+    (re.compile(r"(?:[A-Za-z]:\\\\|/mnt/[A-Za-z]/)Users[/\\\\][A-Za-z0-9._ -]+[/\\\\]"), "<redacted-profile>/"),
+    (re.compile(r"(?i)(authorization:\s*(?:bearer|token)\s+)[^\s]+"), r"\1<redacted>"),
+    (re.compile(r"(?i)((?:token|password|secret|private[_-]?key)\s*[=:]\s*)[^\s,;]+"), r"\1<redacted>"),
+    (re.compile(r"-----BEGIN [^-]*PRIVATE KEY-----.*?-----END [^-]*PRIVATE KEY-----", re.DOTALL), "<redacted-private-key>"),
+)
 
 
 def _no_duplicate_keys(pairs: Iterable[tuple[str, Any]]) -> dict[str, Any]:
@@ -40,6 +50,13 @@ def digest_bytes(value: bytes) -> str:
 
 def digest(value: Any) -> str:
     return digest_bytes(canonical_bytes(value))
+
+
+def scrub_tail(value: bytes, limit: int = 4096) -> str:
+    text = value[-limit:].decode("utf-8", errors="replace")
+    for pattern, replacement in SCRUB_RULES:
+        text = pattern.sub(replacement, text)
+    return text
 
 
 def validate_suite(suite: dict[str, Any]) -> None:
@@ -94,13 +111,20 @@ def run_suite(root: Path, suite: dict[str, Any], stop_on_failure: bool) -> dict[
             "stderrDigest": digest_bytes(completed.stderr),
             "status": "pass" if completed.returncode == 0 else "fail",
         }
+        if completed.returncode != 0:
+            result["diagnostics"] = {
+                "stdoutTail": scrub_tail(completed.stdout),
+                "stderrTail": scrub_tail(completed.stderr),
+                "privacyScrubbed": True,
+                "tailByteLimit": 4096,
+            }
         results.append(result)
         print(f"{result['status']}: {row['id']}")
         if completed.returncode != 0:
             if completed.stdout:
-                sys.stdout.buffer.write(completed.stdout[-8192:])
+                sys.stdout.write(result["diagnostics"]["stdoutTail"])
             if completed.stderr:
-                sys.stderr.buffer.write(completed.stderr[-8192:])
+                sys.stderr.write(result["diagnostics"]["stderrTail"])
             if stop_on_failure:
                 break
 
@@ -117,6 +141,11 @@ def run_suite(root: Path, suite: dict[str, Any], stop_on_failure: bool) -> dict[
         "results": results,
         "failures": failures,
         "notRun": not_run,
+        "diagnosticsPolicy": {
+            "failureTailsIncluded": True,
+            "privacyScrubbed": True,
+            "tailByteLimit": 4096,
+        },
         "authority": {"ceiling": "none", "canonicalMutationApplied": False},
     }
     receipt["receiptDigest"] = digest(receipt)
