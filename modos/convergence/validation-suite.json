@@ -22,6 +22,8 @@
     {"id": "learning-spine", "category": "governance", "argv": ["python", "ci/validate-learning-spine.py"]},
     {"id": "constitutional-evolution", "category": "governance", "argv": ["python", "ci/validate-constitutional.py"]},
     {"id": "ecology-integration", "category": "governance", "argv": ["python", "ci/validate-ecology-integration.py"]},
+    {"id": "operator-intake-contracts", "category": "handoff", "argv": ["python", "ci/validate-operator-intake.py"]},
+    {"id": "operator-intake-unit-tests", "category": "handoff", "argv": ["python", "modos/handoff/test_intake.py"]},
     {"id": "executive-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_executive.py"]},
     {"id": "control-plane-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_control_plane.py"]},
     {"id": "workspace-emergency-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_workspace_emergency.py"]},
