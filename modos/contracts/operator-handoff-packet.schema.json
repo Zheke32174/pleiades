@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/operator-handoff-packet-v1.json",
+  "title": "Pleiades Operator Handoff Packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "packetId", "bindings", "state", "repositoryReadiness", "readyPlans", "blockedPlans", "operatorActions", "runbookRefs", "contentSafety", "authority", "packetDigest"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "OperatorHandoffPacket"},
+    "packetId": {"type": "string", "pattern": "^operator-handoff:[a-z0-9][a-z0-9._:-]{2,127}$"},
+    "bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidateDigest", "compilationReceiptDigest", "branchEvidenceDigest", "frontierReceiptDigest"],
+      "properties": {
+        "candidateDigest": {"$ref": "#/$defs/digest"},
+        "compilationReceiptDigest": {"$ref": "#/$defs/digest"},
+        "branchEvidenceDigest": {"$ref": "#/$defs/digest"},
+        "frontierReceiptDigest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "state": {"enum": ["repository-repair-required", "operator-inputs-required", "operator-intervention-required", "ready-for-sovereign-review"]},
+    "repositoryReadiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["suitePassed", "currentTreeClear", "syntheticRehearsalPassed", "validationPackagePresent"],
+      "properties": {
+        "suitePassed": {"type": "boolean"},
+        "currentTreeClear": {"type": "boolean"},
+        "syntheticRehearsalPassed": {"type": "boolean"},
+        "validationPackagePresent": {"type": "boolean"}
+      }
+    },
+    "readyPlans": {"type": "array", "items": {"$ref": "#/$defs/plan"}},
+    "blockedPlans": {"type": "array", "items": {"$ref": "#/$defs/plan"}},
+    "operatorActions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "description": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "runbookRefs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "contentSafety": {
+      "const": {"privatePayloadIncluded": false, "privateKeyMaterialIncluded": false, "secretMaterialIncluded": false}
+    },
+    "authority": {
+      "const": {"ceiling": "none", "proposalOnly": true, "canonicalMutationApplied": false, "liveExecutionApplied": false, "historyRewriteApplied": false, "grantIssued": false}
+    },
+    "packetDigest": {"$ref": "#/$defs/digest"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:(?!0{64}$)[0-9a-f]{64}$"},
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outputId", "status", "planDigest", "missingBindings"],
+      "properties": {
+        "outputId": {"type": "string", "minLength": 1},
+        "status": {"enum": ["ready-for-sovereign-review", "blocked"]},
+        "planDigest": {"$ref": "#/$defs/digest"},
+        "missingBindings": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+      }
+    }
+  }
+}
