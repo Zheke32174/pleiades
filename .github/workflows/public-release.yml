@@ -36,16 +36,22 @@ jobs:
       - name: Validate lean defensive invariants
         run: bash ci/check-lean-security.sh lean
 
-      - name: Scan current tree and reachable history
-        run: python3 ci/scan_public_repo.py
+      - name: Capture sensitivity findings
+        id: sensitivity
+        run: |
+          set +e
+          python3 ci/scan_public_repo.py > sensitivity.log 2>&1
+          status=$?
+          cat sensitivity.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
 
       - name: Build twice and compare every asset
         run: |
           set -euo pipefail
           python3 scripts/package_lean_source.py --output dist-one
           python3 scripts/package_lean_source.py --output dist-two
-          diff -u <(cd dist-one && find . -maxdepth 1 -type f -printf '%f\n' | sort) \
-                  <(cd dist-two && find . -maxdepth 1 -type f -printf '%f\n' | sort)
+          diff -u <(cd dist-one && find . -maxdepth 1 -type f -printf '%f\n' | sort) <(cd dist-two && find . -maxdepth 1 -type f -printf '%f\n' | sort)
           while IFS= read -r name; do
             cmp "dist-one/$name" "dist-two/$name"
           done < <(cd dist-one && find . -maxdepth 1 -type f -printf '%f\n' | sort)
@@ -63,42 +69,38 @@ jobs:
 
           version = pathlib.Path('VERSION').read_text(encoding='utf-8').strip()
           prefix = f'pleiades-lean-{version}'
-          receipt_path = pathlib.Path('dist-one') / f'{prefix}.build-receipt.json'
-          receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+          receipt = json.loads((pathlib.Path('dist-one') / f'{prefix}.build-receipt.json').read_text(encoding='utf-8'))
           assert receipt['commit'] == os.environ['GITHUB_SHA']
           assert receipt['scope']['manifest'] == 'release/source-paths.txt'
           assert receipt['release_component'] == 'lean'
           assert receipt['distribution'] == 'reviewed-source'
           for field in (
-              'contains_historical_root_runtime',
-              'contains_experimental_recovery',
-              'contains_modos_pdk',
-              'contains_runtime_state',
-              'contains_event_records',
-              'contains_credentials',
-              'contains_signing_keys',
-              'contains_stage3_or_rootfs',
-              'contains_container_or_vm_image',
-              'installs_or_enables_services_during_build',
+              'contains_historical_root_runtime', 'contains_experimental_recovery',
+              'contains_modos_pdk', 'contains_runtime_state', 'contains_event_records',
+              'contains_credentials', 'contains_signing_keys', 'contains_stage3_or_rootfs',
+              'contains_container_or_vm_image', 'installs_or_enables_services_during_build',
               'deployment_receipt',
           ):
               assert receipt[field] is False, field
-
           archive = pathlib.Path('dist-one') / f'{prefix}.tar.gz'
           with tarfile.open(archive, 'r:gz') as handle:
               names = handle.getnames()
-          assert names
-          assert all(name.startswith(prefix + '/') for name in names)
+          assert names and all(name.startswith(prefix + '/') for name in names)
           forbidden = ('root.x86_64/', 'experimental/', 'modos/')
-          assert not any(
-              any(name.startswith(prefix + '/' + item) for item in forbidden)
-              for name in names
-          )
+          assert not any(any(name.startswith(prefix + '/' + item) for item in forbidden) for name in names)
           PY
 
-      - uses: actions/upload-artifact@v4
+      - name: Preserve package and scan evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: pleiades-lean-source-${{ github.sha }}
-          path: dist-one/
+          path: |
+            dist-one/
+            sensitivity.log
           if-no-files-found: error
           retention-days: 14
+
+      - name: Enforce sensitivity gate
+        if: always()
+        run: test "${{ steps.sensitivity.outputs.status }}" = '0'
