@@ -1,18 +1,19 @@
+mod grant_admission;
+
 use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Context, Result, anyhow, bail};
 use ed25519_dalek::VerifyingKey;
-use pdk_crypto::verify_capability;
 use pdk_protocol::v1::{
     CapabilityAction, CapabilityGrantPayload, IsolationConstraints, NodeState, OfflinePolicy,
     SignedCapabilityGrant, WorkloadSpec,
 };
 use tokio::sync::RwLock;
 
-use crate::{
-    autonomy::{AutonomyStateMachine, unix_ms},
-    config::TrustedControllerConfig,
-};
+use grant_admission::validate_grant_time;
+pub use grant_admission::{GrantInstallOutcome, ValidatedGrant};
+
+use crate::{autonomy::AutonomyStateMachine, config::TrustedControllerConfig};
 
 #[derive(Clone)]
 pub struct TrustedControllerKey {
@@ -63,82 +64,75 @@ impl PolicyEnforcer {
         }
     }
 
-    pub async fn cache_signed_grant(
+    pub fn validate_signed_grant(
         &self,
         envelope: SignedCapabilityGrant,
         authenticated_controller_id: &str,
-    ) -> Result<CapabilityGrantPayload> {
-        if !self.autonomy.allows_new_global_grant() {
-            bail!("new capability grants require Connected state");
-        }
-        let payload = envelope
-            .payload
-            .as_ref()
-            .context("capability grant payload missing")?
-            .clone();
-        if payload.protocol_version != pdk_protocol::PROTOCOL_VERSION {
-            bail!("unsupported capability protocol version");
-        }
-        if payload.domain_id != self.domain_id {
-            bail!("capability grant belongs to another domain");
-        }
-        if payload.target_node_id != self.node_id {
-            bail!("capability grant targets another node");
-        }
-        if payload.issuer_id != authenticated_controller_id {
-            bail!("mTLS controller identity does not match signed grant issuer");
-        }
-        let trusted = self
-            .trusted_controllers
-            .get(&payload.issuer_id)
-            .context("grant issuer is not trusted")?;
-        if envelope.key_id != trusted.key_id {
-            bail!("capability grant key_id is not enrolled");
-        }
-        verify_capability(&envelope, &trusted.verifying_key)?;
-        validate_grant_time(&payload, unix_ms(), self.max_clock_skew_ms)?;
-        validate_bounded_fields(&payload)?;
-        if payload.actions.is_empty() {
-            bail!("capability grant contains no actions");
-        }
-        if payload.token_id.is_empty()
-            || payload.lease_id.is_empty()
-            || payload.subject_workload_id.is_empty()
-            || payload.nonce.is_empty()
-        {
-            bail!("capability grant is missing a required identity or nonce");
-        }
+    ) -> Result<ValidatedGrant> {
+        grant_admission::validate_signed_grant(
+            &self.domain_id,
+            &self.node_id,
+            &self.autonomy,
+            self.max_clock_skew_ms,
+            &self.trusted_controllers,
+            envelope,
+            authenticated_controller_id,
+        )
+    }
 
-        let token_id = payload.token_id.clone();
-        let sequence_key = grant_sequence_key(&payload);
+    pub async fn install_committed_grant(
+        &self,
+        validated: ValidatedGrant,
+    ) -> Result<GrantInstallOutcome> {
+        let token_id = validated.payload.token_id.clone();
+        let sequence = validated.payload.grant_sequence;
+        let sequence_key = validated.sequence_key.clone();
+        let signature = validated.envelope.signature_base64.clone();
+
+        // Every installation path keeps this lock order. Candidate validation
+        // acquires neither lock and therefore cannot change active authority.
         let mut grants = self.grants.write().await;
         if let Some(existing) = grants.get(&token_id) {
-            if existing.envelope.signature_base64 != envelope.signature_base64 {
+            if existing.envelope.signature_base64 != signature {
                 bail!("token ID collision with different signed content");
             }
-            return Ok(existing.payload.clone());
+            if existing.payload != validated.payload {
+                bail!("token ID collision with different decoded payload");
+            }
+            return Ok(GrantInstallOutcome::Idempotent);
         }
 
         let mut highest_sequences = self.highest_sequences.write().await;
-        if let Some(highest) = highest_sequences.get(&sequence_key)
-            && payload.grant_sequence <= *highest
-        {
-            bail!(
-                "capability grant sequence {} is not newer than accepted sequence {}",
-                payload.grant_sequence,
-                highest
-            );
+        if let Some(highest) = highest_sequences.get(&sequence_key).copied() {
+            if sequence < highest {
+                return Ok(GrantInstallOutcome::Superseded {
+                    highest_sequence: highest,
+                });
+            }
+            if sequence == highest {
+                bail!(
+                    "capability grant sequence {} collides with a different active token",
+                    sequence
+                );
+            }
         }
 
         grants.insert(
             token_id,
             CachedGrant {
-                envelope,
-                payload: payload.clone(),
+                envelope: validated.envelope,
+                payload: validated.payload,
             },
         );
-        highest_sequences.insert(sequence_key, payload.grant_sequence);
-        Ok(payload)
+        highest_sequences.insert(sequence_key, sequence);
+        Ok(GrantInstallOutcome::Installed)
+    }
+
+    #[cfg(test)]
+    async fn remove_active_grant(&self, token_id: &str) -> bool {
+        // Expiry, revocation, and compaction must not lower the installed
+        // sequence floor and reopen rollback.
+        self.grants.write().await.remove(token_id).is_some()
     }
 
     pub async fn authorize_spawn(
@@ -229,6 +223,15 @@ impl PolicyEnforcer {
             .unwrap_or(u64::MAX)
     }
 
+    #[cfg(test)]
+    async fn highest_installed_sequence(&self, sequence_key: &str) -> Option<u64> {
+        self.highest_sequences
+            .read()
+            .await
+            .get(sequence_key)
+            .copied()
+    }
+
     async fn authorize_with<F>(
         &self,
         token_id: &str,
@@ -242,7 +245,11 @@ impl PolicyEnforcer {
         let cached = grants
             .get(token_id)
             .context("capability token is not cached")?;
-        validate_grant_time(&cached.payload, unix_ms(), self.max_clock_skew_ms)?;
+        validate_grant_time(
+            &cached.payload,
+            crate::autonomy::unix_ms(),
+            self.max_clock_skew_ms,
+        )?;
         if !cached.payload.actions.contains(&(action as i32)) {
             bail!("capability token does not authorize requested action");
         }
@@ -273,38 +280,6 @@ pub fn build_trusted_controller_keys(
         }
     }
     Ok(keys)
-}
-
-fn validate_bounded_fields(grant: &CapabilityGrantPayload) -> Result<()> {
-    if grant.grant_sequence == 0 {
-        bail!("capability grant sequence must be nonzero");
-    }
-    if grant.max_uses == 0 {
-        bail!("capability grant max_uses must be nonzero");
-    }
-    let offline_policy = OfflinePolicy::try_from(grant.offline_policy)
-        .map_err(|_| anyhow!("unsupported capability offline policy"))?;
-    if offline_policy == OfflinePolicy::Unspecified {
-        bail!("capability offline policy must be explicit");
-    }
-    validate_policy_digest(&grant.policy_digest_sha256)
-}
-
-fn validate_policy_digest(value: &str) -> Result<()> {
-    let digest = value
-        .strip_prefix("sha256:")
-        .context("policy digest must use sha256:<lowercase-hex>")?;
-    if digest.len() != 64 || !digest.chars().all(|ch| matches!(ch, '0'..='9' | 'a'..='f')) {
-        bail!("policy digest must use sha256 followed by 64 lowercase hexadecimal characters");
-    }
-    Ok(())
-}
-
-fn grant_sequence_key(grant: &CapabilityGrantPayload) -> String {
-    format!(
-        "{}|{}|{}",
-        grant.issuer_id, grant.target_node_id, grant.subject_workload_id
-    )
 }
 
 fn enforce_offline_policy(
@@ -346,26 +321,6 @@ fn enforce_offline_policy(
             policy,
             action
         );
-    }
-    Ok(())
-}
-
-fn validate_grant_time(
-    grant: &CapabilityGrantPayload,
-    now_unix_ms: u64,
-    max_clock_skew_ms: u64,
-) -> Result<()> {
-    if grant.not_before_unix_ms > grant.expires_at_unix_ms {
-        bail!("capability validity interval is inverted");
-    }
-    if grant.issued_at_unix_ms > now_unix_ms.saturating_add(max_clock_skew_ms) {
-        bail!("capability was issued too far in the future");
-    }
-    if now_unix_ms.saturating_add(max_clock_skew_ms) < grant.not_before_unix_ms {
-        bail!("capability is not yet valid");
-    }
-    if now_unix_ms >= grant.expires_at_unix_ms {
-        bail!("capability has expired");
     }
     Ok(())
 }
@@ -441,210 +396,4 @@ fn require_bool(actual: bool, required: bool, field: &str) -> Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
-    use std::{collections::HashMap, time::Duration};
-
-    use ed25519_dalek::SigningKey;
-    use pdk_crypto::{LoadedSigningKey, sign_capability};
-    use pdk_protocol::{
-        PROTOCOL_VERSION,
-        v1::{CapabilityAction, CapabilityGrantPayload, OfflinePolicy},
-    };
-
-    use super::*;
-
-    const POLICY_DIGEST: &str =
-        "sha256:a6dda54861f8897bd1e0a2fb14d072d4733a54e1496bda220c70d24e188e131e";
-
-    fn fixture() -> (PolicyEnforcer, LoadedSigningKey, AutonomyStateMachine) {
-        let signing_key = SigningKey::from_bytes(&[7_u8; 32]);
-        let loaded = LoadedSigningKey {
-            key_id: "controller-key".into(),
-            signing_key,
-        };
-        let autonomy = AutonomyStateMachine::new(Duration::from_secs(30), Duration::from_secs(60));
-        autonomy.record_controller_ack(unix_ms());
-        let trusted = HashMap::from([(
-            "controller-1".into(),
-            TrustedControllerKey {
-                key_id: loaded.key_id.clone(),
-                verifying_key: loaded.signing_key.verifying_key(),
-            },
-        )]);
-        let enforcer = PolicyEnforcer::new("pleiades-lab", "node-1", autonomy.clone(), 5, trusted);
-        (enforcer, loaded, autonomy)
-    }
-
-    fn signed_grant(
-        key: &LoadedSigningKey,
-        token_id: &str,
-        sequence: u64,
-        max_uses: u32,
-        offline_policy: OfflinePolicy,
-        action: CapabilityAction,
-    ) -> SignedCapabilityGrant {
-        let now = unix_ms();
-        sign_capability(
-            CapabilityGrantPayload {
-                protocol_version: PROTOCOL_VERSION,
-                token_id: token_id.into(),
-                domain_id: "pleiades-lab".into(),
-                issuer_id: "controller-1".into(),
-                subject_workload_id: "workload-1".into(),
-                target_node_id: "node-1".into(),
-                lease_id: format!("lease-{token_id}"),
-                actions: vec![action as i32],
-                issued_at_unix_ms: now,
-                not_before_unix_ms: now.saturating_sub(1_000),
-                expires_at_unix_ms: now.saturating_add(60_000),
-                policy_version: "epoch2-local-policy-v1".into(),
-                nonce: format!("nonce-{token_id}"),
-                maximum_isolation: None,
-                singleton_destructive: false,
-                grant_sequence: sequence,
-                max_uses,
-                offline_policy: offline_policy as i32,
-                policy_digest_sha256: POLICY_DIGEST.into(),
-            },
-            key,
-        )
-    }
-
-    #[tokio::test]
-    async fn rejects_sequence_rollback_for_same_subject() {
-        let (enforcer, key, _) = fixture();
-        enforcer
-            .cache_signed_grant(
-                signed_grant(
-                    &key,
-                    "token-new",
-                    20,
-                    1,
-                    OfflinePolicy::BoundedCache,
-                    CapabilityAction::StatusWorkload,
-                ),
-                "controller-1",
-            )
-            .await
-            .expect("new grant should be accepted");
-        let error = enforcer
-            .cache_signed_grant(
-                signed_grant(
-                    &key,
-                    "token-old",
-                    19,
-                    1,
-                    OfflinePolicy::BoundedCache,
-                    CapabilityAction::StatusWorkload,
-                ),
-                "controller-1",
-            )
-            .await
-            .expect_err("older sequence must be rejected");
-        assert!(error.to_string().contains("not newer"));
-    }
-
-    #[tokio::test]
-    async fn subject_validation_does_not_consume_the_durable_budget() {
-        let (enforcer, key, _) = fixture();
-        enforcer
-            .cache_signed_grant(
-                signed_grant(
-                    &key,
-                    "token-budget",
-                    30,
-                    1,
-                    OfflinePolicy::BoundedCache,
-                    CapabilityAction::StatusWorkload,
-                ),
-                "controller-1",
-            )
-            .await
-            .expect("grant should be accepted");
-
-        enforcer
-            .authorize_status("token-budget", "wrong-workload")
-            .await
-            .expect_err("wrong subject must fail");
-        enforcer
-            .authorize_status("token-budget", "workload-1")
-            .await
-            .expect("valid subject should pass policy validation");
-        enforcer
-            .authorize_status("token-budget", "workload-1")
-            .await
-            .expect("durable authority state, not the policy cache, owns use consumption");
-    }
-
-    #[test]
-    fn offline_policy_matrix_is_explicit() {
-        let key = LoadedSigningKey {
-            key_id: "unused".into(),
-            signing_key: SigningKey::from_bytes(&[9_u8; 32]),
-        };
-        let bounded = signed_grant(
-            &key,
-            "bounded",
-            1,
-            1,
-            OfflinePolicy::BoundedCache,
-            CapabilityAction::SpawnWorkload,
-        )
-        .payload
-        .expect("payload");
-        assert!(
-            enforce_offline_policy(
-                &bounded,
-                NodeState::DegradedAutonomous,
-                CapabilityAction::SpawnWorkload,
-            )
-            .is_ok()
-        );
-
-        let denied = signed_grant(
-            &key,
-            "denied",
-            2,
-            1,
-            OfflinePolicy::Deny,
-            CapabilityAction::StatusWorkload,
-        )
-        .payload
-        .expect("payload");
-        assert!(
-            enforce_offline_policy(
-                &denied,
-                NodeState::DegradedAutonomous,
-                CapabilityAction::StatusWorkload,
-            )
-            .is_err()
-        );
-
-        let finish = signed_grant(
-            &key,
-            "finish",
-            3,
-            1,
-            OfflinePolicy::FinishCurrent,
-            CapabilityAction::StopWorkload,
-        )
-        .payload
-        .expect("payload");
-        assert!(
-            enforce_offline_policy(
-                &finish,
-                NodeState::ReadOnlySafe,
-                CapabilityAction::StopWorkload,
-            )
-            .is_ok()
-        );
-        assert!(
-            enforce_offline_policy(
-                &finish,
-                NodeState::ReadOnlySafe,
-                CapabilityAction::SpawnWorkload,
-            )
-            .is_err()
-        );
-    }
-}
+mod tests;
