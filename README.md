@@ -4,15 +4,22 @@ Pleiades is a Gentoo `systemd-nspawn` container lab for running honeypot service
 
 It is not for unauthorized deployment, stealth installation, credential theft, lateral movement, or reconnaissance on systems you don't own.
 
+## Ontological ecology
+
+This repository is also the canonical public contract surface for the Pleiades/MODOS Git ecology. The repository-local `MODOS_COMPONENT.yaml`, the schemas under `modos/contracts/`, and the deterministic ecology validator define how repositories declare lifecycle, authority, capabilities, provenance, and typed relations.
+
+The exhaustive private inventory remains in Undergrowth. Public absence does not imply private nonexistence, and catalog membership never grants runtime authority. See [`modos/ecology/PRECEDENCE.md`](modos/ecology/PRECEDENCE.md) for the authority ladder and closure rules.
+
 ## Repository Map
 
 | Repo | Status | Purpose |
 |------|--------|---------|
-| [`pleiades`](https://github.com/Zheke32174/pleiades) | Release-track | Host launcher, docs, agent scripts, architecture |
+| [`pleiades`](https://github.com/Zheke32174/pleiades) | Release-track | Host launcher, docs, agent scripts, architecture, public MODOS contracts |
 | [`pleiades-container`](https://github.com/Zheke32174/pleiades-container) | Release-track | Gentoo `systemd-nspawn` container layer |
 | [`pleiades-factory-stack`](https://github.com/Zheke32174/pleiades-factory-stack) | Release-track | Tooling, AI/LLM integration, cross-ISA research helpers |
-| `pleiades-factory` | Private staging | Future factory orchestration work; not public-ready yet |
+| `pleiades-factory` | Private staging | Governed factory orchestration and promotion work |
 | `pleiades-evidence` | Private forever | Forensic evidence archive — never public |
+| `undergrowth` | Private canonical spine | Exhaustive ecology inventory, lineage, dispositions, and closure receipts |
 
 ## Architecture
 
