@@ -1,0 +1,18 @@
+domain_id = "domain://pleiades/home"
+controller_id = "controller://pleiades/alienware-primary"
+signing_key_file = "/etc/pleiades/keys/controller-signing.json"
+
+[tls]
+certificate_chain = "/etc/pleiades/pki/controller-alienware.chain.pem"
+private_key = "/etc/pleiades/pki/controller-alienware.key.pem"
+trust_bundle = "/etc/pleiades/pki/ca.cert.pem"
+
+[[nodes]]
+node_id = "node://pleiades/alienware"
+uri = "https://alienware-node.pdk.local:7543"
+server_name = "alienware-node.pdk.local"
+
+[[nodes]]
+node_id = "node://pleiades/lenovo"
+uri = "https://lenovo-node.pdk.local:7543"
+server_name = "lenovo-node.pdk.local"

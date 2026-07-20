@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-desired-state-v1.json",
+  "title": "MODOS Desired State Set",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "DesiredStateSet"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "domainId", "generation", "createdAt", "issuer"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "domainId": {"type": "string", "minLength": 1},
+        "generation": {"type": "integer", "minimum": 1},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "issuer": {"type": "string", "minLength": 1},
+        "parentGeneration": {"type": "integer", "minimum": 0},
+        "traceId": {"type": "string"}
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objects", "reconciliationPolicy"],
+      "properties": {
+        "objects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["objectRef", "desiredLifecycle", "placement", "partitionPolicy"],
+            "properties": {
+              "objectRef": {"type": "string", "minLength": 1},
+              "desiredLifecycle": {"enum": ["present", "running", "stopped", "suspended", "absent"]},
+              "placement": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["hardConstraints", "preferences"],
+                "properties": {
+                  "hardConstraints": {"type": "array", "items": {"type": "string"}},
+                  "preferences": {"type": "array", "items": {"type": "string"}},
+                  "targetNodeRefs": {"type": "array", "items": {"type": "string"}},
+                  "antiAffinityRefs": {"type": "array", "items": {"type": "string"}}
+                }
+              },
+              "capabilityRequirements": {"type": "array", "items": {"type": "string"}},
+              "resourceRequirements": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "cpuMillis": {"type": "integer", "minimum": 0},
+                  "memoryBytes": {"type": "integer", "minimum": 0},
+                  "storageBytes": {"type": "integer", "minimum": 0},
+                  "gpuCount": {"type": "integer", "minimum": 0},
+                  "networkClass": {"type": "string"}
+                }
+              },
+              "partitionPolicy": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["continueExisting", "allowNewLocal", "globalAuthorityRequired"],
+                "properties": {
+                  "continueExisting": {"type": "boolean"},
+                  "allowNewLocal": {"type": "boolean"},
+                  "globalAuthorityRequired": {"type": "boolean"},
+                  "maximumAutonomySeconds": {"type": "integer", "minimum": 0}
+                }
+              },
+              "leaseSeconds": {"type": "integer", "minimum": 1},
+              "rollbackRef": {"type": "string"}
+            }
+          }
+        },
+        "reconciliationPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mode", "maximumParallelChanges", "failureAction"],
+          "properties": {
+            "mode": {"enum": ["continuous", "manual", "one-shot"]},
+            "maximumParallelChanges": {"type": "integer", "minimum": 1},
+            "failureAction": {"enum": ["pause", "rollback", "continue-safe", "steward-review"]},
+            "deadlineSeconds": {"type": "integer", "minimum": 1}
+          }
+        }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keyId", "algorithm", "value"],
+      "properties": {
+        "keyId": {"type": "string", "minLength": 1},
+        "algorithm": {"const": "Ed25519"},
+        "value": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

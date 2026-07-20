@@ -1,0 +1,13 @@
+[package]
+name = "pdk-transport"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+sha2.workspace = true
+tonic.workspace = true
+x509-parser.workspace = true

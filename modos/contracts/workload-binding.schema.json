@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-workload-binding-v1.json",
+  "title": "MODOS Workload Binding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec", "placementEvidence", "signature"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "WorkloadBinding"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "domainId", "generation", "createdAt", "controllerId"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "domainId": {"type": "string", "minLength": 1},
+        "generation": {"type": "integer", "minimum": 1},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "controllerId": {"type": "string", "minLength": 1},
+        "traceId": {"type": "string"}
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workloadRef", "nodeRef", "runtimeClass", "capabilityTokenRef", "lease", "desiredStateGeneration"],
+      "properties": {
+        "workloadRef": {"type": "string", "minLength": 1},
+        "nodeRef": {"type": "string", "minLength": 1},
+        "runtimeClass": {"enum": ["systemd-native", "nspawn", "container", "virtual-machine", "windows-service", "android-edge", "notebook", "model-runtime", "custom"]},
+        "runtimeDriver": {"type": "string"},
+        "capabilityTokenRef": {"type": "string", "minLength": 1},
+        "desiredStateGeneration": {"type": "integer", "minimum": 1},
+        "artifactRefs": {"type": "array", "items": {"type": "string"}},
+        "datasetRefs": {"type": "array", "items": {"type": "string"}},
+        "lease": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "notBefore", "expiresAt"],
+          "properties": {
+            "id": {"type": "string", "minLength": 1},
+            "notBefore": {"type": "string", "format": "date-time"},
+            "expiresAt": {"type": "string", "format": "date-time"},
+            "renewable": {"type": "boolean"}
+          }
+        },
+        "isolationProfileRef": {"type": "string"},
+        "partitionBehavior": {"enum": ["stop-on-disconnect", "continue-until-lease", "local-only", "read-only", "application-defined"]}
+      }
+    },
+    "placementEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inventoryGeneration", "hardConstraintsSatisfied", "score", "explanation"],
+      "properties": {
+        "inventoryGeneration": {"type": "integer", "minimum": 1},
+        "hardConstraintsSatisfied": {"type": "array", "items": {"type": "string"}},
+        "hardConstraintsRejected": {"type": "array", "items": {"type": "string"}},
+        "score": {"type": "number"},
+        "scoreComponents": {"type": "object", "additionalProperties": {"type": "number"}},
+        "explanation": {"type": "string", "minLength": 1}
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keyId", "algorithm", "value"],
+      "properties": {
+        "keyId": {"type": "string", "minLength": 1},
+        "algorithm": {"const": "Ed25519"},
+        "value": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

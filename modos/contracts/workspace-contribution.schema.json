@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-workspace-contribution-v1.json",
+  "title": "MODOS Shared Workspace Contribution",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "contribution", "evidence", "epistemics", "security", "provenance"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "WorkspaceContribution"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contributionId", "mindId", "cycleId", "organId", "createdAt", "stage", "sequence"],
+      "properties": {
+        "contributionId": {"type": "string", "minLength": 1},
+        "mindId": {"type": "string", "minLength": 1},
+        "cycleId": {"type": "string", "minLength": 1},
+        "organId": {"type": "string", "minLength": 1},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "stage": {"enum": ["first-pass", "deliberation", "verification", "arbitration", "handoff"]},
+        "sequence": {"type": "integer", "minimum": 1},
+        "traceId": {"type": "string", "minLength": 1},
+        "observedContributionRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      },
+      "allOf": [
+        {"if": {"properties": {"stage": {"const": "first-pass"}}}, "then": {"properties": {"observedContributionRefs": {"maxItems": 0}}}}
+      ]
+    },
+    "contribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "summary", "contentDigest", "reasoningDisclosure"],
+      "properties": {
+        "type": {"enum": ["observation", "hypothesis", "proposal", "critique", "verification", "dissent", "question", "handoff"]},
+        "summary": {"type": "string", "minLength": 1},
+        "contentDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "artifactRef": {"type": "string", "minLength": 1},
+        "reasoningDisclosure": {"const": "summary-and-evidence-only"},
+        "proposedAction": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["capabilityName", "resourceRef", "requestedOperations", "verifierRef", "failurePath"],
+          "properties": {
+            "capabilityName": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+            "resourceRef": {"type": "string", "minLength": 1},
+            "requestedOperations": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+            "verifierRef": {"type": "string", "minLength": 1},
+            "failurePath": {"type": "string", "minLength": 1},
+            "justificationDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+            "approvalRef": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["claim", "sourceRef", "sourceDigest", "support"],
+        "properties": {
+          "claim": {"type": "string", "minLength": 1},
+          "sourceRef": {"type": "string", "minLength": 1},
+          "sourceDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "support": {"enum": ["supports", "contradicts", "uncertain"]},
+          "observedAt": {"type": "string", "format": "date-time"}
+        }
+      }
+    },
+    "epistemics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["confidence", "uncertainties", "dissentStatus", "resolutionStatus"],
+      "properties": {
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "uncertainties": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "dissentStatus": {"enum": ["none", "minority", "formal-dissent", "resolved", "superseded"]},
+        "dissentRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "resolutionStatus": {"enum": ["unresolved", "provisionally-converged", "verified", "rejected", "superseded"]}
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorityCeiling", "visibility", "taints", "allowedUses"],
+      "properties": {
+        "authorityCeiling": {"enum": ["none", "proposal"]},
+        "visibility": {"enum": ["internal", "private", "secret", "model-only", "steward-only"]},
+        "taints": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "allowedUses": {"type": "array", "uniqueItems": true, "items": {"enum": ["display", "retrieve", "summarize", "reason", "compare", "verify", "propose"]}}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceType", "sourceRef", "sourceDigest", "lineage"],
+      "properties": {
+        "sourceType": {"enum": ["model", "agent", "service", "steward", "sensor", "repository", "generated"]},
+        "sourceRef": {"type": "string", "minLength": 1},
+        "sourceDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "lineage": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "contextEnvelopeRef": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

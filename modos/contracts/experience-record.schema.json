@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-experience-record-v1.json",
+  "title": "MODOS Learning Spine Experience Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "recordType", "subject", "payload", "evidence", "security", "provenance"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "ExperienceRecord"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["experienceId", "domainId", "sourceIdentity", "createdAt", "traceId", "sequence"],
+      "properties": {
+        "experienceId": {"type": "string", "minLength": 1},
+        "domainId": {"type": "string", "minLength": 1},
+        "mindId": {"type": "string", "minLength": 1},
+        "sourceIdentity": {"type": "string", "minLength": 1},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "traceId": {"type": "string", "minLength": 1},
+        "sequence": {"type": "integer", "minimum": 1},
+        "causedByRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "supersedesRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "recordType": {"enum": ["observation", "proposal", "decision", "action-receipt", "outcome", "correction", "promotion-candidate"]},
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subjectType", "subjectRef"],
+      "properties": {
+        "subjectType": {"enum": ["node", "resource", "workload", "service", "model", "mind", "artifact", "dataset", "route", "identity", "capability", "lease", "policy", "event", "repository", "experience", "promotion-candidate", "other"]},
+        "subjectRef": {"type": "string", "minLength": 1},
+        "stateDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary", "contentDigest", "resultClass"],
+      "properties": {
+        "summary": {"type": "string", "minLength": 1},
+        "contentDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "artifactRef": {"type": "string", "minLength": 1},
+        "resultClass": {"enum": ["positive", "negative", "mixed", "unknown", "not-applicable"]},
+        "decisionRef": {"type": "string", "minLength": 1},
+        "actionReceiptRef": {"type": "string", "minLength": 1},
+        "outcomeRef": {"type": "string", "minLength": 1},
+        "correctionRef": {"type": "string", "minLength": 1},
+        "promotionTransactionRef": {"type": "string", "minLength": 1},
+        "metrics": {"type": "object", "additionalProperties": {"type": ["number", "integer", "string", "boolean", "null"]}},
+        "failureMode": {"type": "string", "minLength": 1},
+        "rollbackRef": {"type": "string", "minLength": 1}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceEventRefs", "artifactDigests", "confidence", "independentVerification"],
+      "properties": {
+        "sourceEventRefs": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "artifactDigests": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "independentVerification": {"type": "boolean"},
+        "verifierRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorityCeiling", "visibility", "taints", "trainingDisposition"],
+      "properties": {
+        "authorityCeiling": {"const": "none"},
+        "visibility": {"enum": ["public", "internal", "private", "secret", "model-only", "steward-only"]},
+        "taints": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "trainingDisposition": {"enum": ["prohibited", "candidate-only", "verified-candidate", "steward-approved"]},
+        "retention": {"enum": ["ephemeral", "bounded", "durable", "canonical-lineage"]}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRef", "sourceDigest", "lineage", "trust"],
+      "properties": {
+        "sourceRef": {"type": "string", "minLength": 1},
+        "sourceDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "lineage": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "trust": {"enum": ["untrusted", "observed", "corroborated", "verified", "canonical"]},
+        "contextEnvelopeRef": {"type": "string", "minLength": 1}
+      }
+    }
+  },
+  "allOf": [
+    {"if": {"properties": {"recordType": {"const": "action-receipt"}}}, "then": {"properties": {"payload": {"required": ["actionReceiptRef"]}}}},
+    {"if": {"properties": {"recordType": {"const": "outcome"}}}, "then": {"properties": {"payload": {"required": ["outcomeRef"]}}}},
+    {"if": {"properties": {"recordType": {"const": "correction"}}}, "then": {"properties": {"payload": {"required": ["correctionRef"]}, "metadata": {"required": ["supersedesRefs"]}}}},
+    {"if": {"properties": {"recordType": {"const": "promotion-candidate"}}}, "then": {"properties": {"payload": {"required": ["promotionTransactionRef", "rollbackRef"]}, "evidence": {"properties": {"independentVerification": {"const": true}}}}}},
+    {"if": {"properties": {"payload": {"properties": {"resultClass": {"const": "negative"}}}}}, "then": {"properties": {"payload": {"required": ["failureMode"]}}}}
+  ]
+}
