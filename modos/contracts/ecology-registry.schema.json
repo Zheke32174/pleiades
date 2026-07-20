@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-ecology-registry-v1.json",
+  "title": "MODOS Ecology Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "EcologyRegistry"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "owner", "observedAt", "visibility", "source"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+        "owner": {"type": "string"},
+        "observedAt": {"type": "string", "format": "date-time"},
+        "visibility": {"enum": ["public", "private"]},
+        "source": {"type": "string"},
+        "sourceDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "notes": {"type": "string"}
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["precedence", "inventory", "groups", "canonicalScopes", "components", "capabilities", "relations", "invariants"],
+      "properties": {
+        "precedence": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "inventory": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["expectedCount", "repositories"],
+          "properties": {
+            "expectedCount": {"type": "integer", "minimum": 1},
+            "repositories": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[^/]+/[^/]+$"}}
+          }
+        },
+        "groups": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "description", "lifecycle", "disposition", "subsystem", "authorityCeiling", "repositories"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+              "description": {"type": "string", "minLength": 1},
+              "lifecycle": {"enum": ["canonical", "operational", "experimental", "reference", "backup", "quarantined", "parked", "human-only"]},
+              "disposition": {"enum": ["canonical", "active", "active-supporting", "reference", "archive-only", "parked", "human-only", "delete-candidate"]},
+              "subsystem": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+              "authorityCeiling": {"enum": ["none", "proposal", "local-enforcement", "domain-control", "steward-only"]},
+              "repositories": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[^/]+/[^/]+$"}}
+            }
+          }
+        },
+        "canonicalScopes": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "pattern": "^repo:[^/\\s]+/[^/\\s]+$"}},
+        "components": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["componentId", "repository", "manifestPath", "manifestState"],
+            "properties": {
+              "componentId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+              "repository": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
+              "manifestPath": {"type": "string"},
+              "manifestState": {"enum": ["present", "branch-only", "planned", "exempt"]},
+              "sourceRef": {"type": "string"},
+              "notes": {"type": "string"}
+            }
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "version", "providerRef", "status"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+              "version": {"type": "string", "minLength": 1},
+              "providerRef": {"$ref": "#/$defs/ref"},
+              "status": {"enum": ["canonical", "operational", "experimental", "reference", "planned"]},
+              "compatibility": {"type": "string"}
+            }
+          }
+        },
+        "relations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "sourceRef", "targetRef", "scope", "required"],
+            "properties": {
+              "type": {"enum": ["part-of", "depends-on", "implements", "governed-by", "derived-from", "supersedes", "mirror-of", "archive-of", "canonical-for", "supports", "overlays", "produced-by", "evidence-for", "human-interface-for", "requires-capability", "provides-capability"]},
+              "sourceRef": {"$ref": "#/$defs/ref"},
+              "targetRef": {"$ref": "#/$defs/ref"},
+              "scope": {"enum": ["runtime", "build", "governance", "provenance", "deployment", "historical", "evidence", "human"]},
+              "required": {"type": "boolean"},
+              "versionConstraint": {"type": "string"},
+              "evidenceRef": {"type": "string"}
+            }
+          }
+        },
+        "invariants": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["completeInventory", "uniqueMembership", "singleCanonicalProvider", "archiveIsolation", "authorityMonotonicity", "noDanglingRequiredRelations"],
+          "properties": {
+            "completeInventory": {"const": true},
+            "uniqueMembership": {"const": true},
+            "singleCanonicalProvider": {"const": true},
+            "archiveIsolation": {"const": true},
+            "authorityMonotonicity": {"const": true},
+            "noDanglingRequiredRelations": {"const": true}
+          }
+        },
+        "exceptions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["subjectRef", "reason", "expiresAt"],
+            "properties": {
+              "subjectRef": {"$ref": "#/$defs/ref"},
+              "reason": {"type": "string", "minLength": 1},
+              "expiresAt": {"type": "string", "format": "date-time"},
+              "issueRef": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ref": {"type": "string", "pattern": "^(?:repo:[^/\\s]+/[^/\\s]+|component:[a-z0-9][a-z0-9._-]*|capability:[a-z0-9][a-z0-9._-]*(?:@[A-Za-z0-9._*+\\-<>=^~]+)?|scope:[a-z0-9][a-z0-9._-]*)$"}
+  }
+}
