@@ -65,29 +65,29 @@ No item in this ledger silently grants canonical authority, issues a live grant,
 
 ## Phase E — Shared-workspace executive integration
 
-41. `queued` Define typed executive-workspace contribution messages.
-42. `queued` Bind every contribution to a `mindId`, role, evidence set, and first-pass trace.
-43. `queued` Require independent proposal, risk, policy, and dissent contributions.
-44. `queued` Add historical competence weighting without suppressing minority evidence.
-45. `queued` Define a recurrent arbitration cycle over the shared workspace.
-46. `queued` Bind Atlas belief state to executive evidence inputs.
-47. `queued` Bind Forge executive state to the selected authorization path.
-48. `queued` Persist unresolved dissent across decision cycles.
-49. `queued` Define deadlock, defer, and request-more-evidence outcomes.
-50. `queued` Emit a workspace-deliberation closure receipt.
+41. `implemented` Define typed executive-workspace contribution messages.
+42. `implemented` Bind every contribution to a `mindId`, role, evidence set, and first-pass trace.
+43. `implemented` Require independent proposal, risk, policy, and dissent contributions.
+44. `implemented` Add historical competence weighting without suppressing minority evidence.
+45. `implemented` Define a recurrent arbitration cycle over the shared workspace.
+46. `implemented` Bind Atlas belief state to executive evidence inputs.
+47. `implemented` Bind Forge executive state to the selected authorization path.
+48. `implemented` Persist unresolved dissent across decision cycles.
+49. `implemented` Define deadlock, defer, and request-more-evidence outcomes.
+50. `implemented` Emit a workspace-deliberation closure receipt.
 
 ## Phase F — Emergency and recovery authority
 
-51. `queued` Define emergency containment classifications separately from ordinary evolution.
-52. `queued` Define short-lived emergency grants with automatic expiration.
-53. `queued` Limit emergency powers to containment, isolation, rollback, and evidence preservation.
-54. `queued` Forbid emergency grants from rewriting constitutional policy.
-55. `queued` Require post-event review for every emergency action.
-56. `queued` Define recovery quorum when the primary steward is unavailable.
-57. `queued` Define continuity rules for partial Mind or node loss.
-58. `queued` Define grant rehydration without silently restoring revoked authority.
-59. `queued` Define safe-mode authority ceilings.
-60. `queued` Emit emergency-action and recovery receipts.
+51. `implemented` Define emergency containment classifications separately from ordinary evolution.
+52. `implemented` Define short-lived emergency grants with automatic expiration.
+53. `implemented` Limit emergency powers to containment, isolation, rollback, and evidence preservation.
+54. `implemented` Forbid emergency grants from rewriting constitutional policy.
+55. `implemented` Require post-event review for every emergency action.
+56. `implemented` Define recovery quorum when the primary steward is unavailable.
+57. `implemented` Define continuity rules for partial Mind or node loss.
+58. `implemented` Define grant rehydration without silently restoring revoked authority.
+59. `implemented` Define safe-mode authority ceilings.
+60. `implemented` Emit emergency-action and recovery receipts.
 
 ## Phase G — Distributed substrate admission
 
@@ -143,4 +143,4 @@ No item in this ledger silently grants canonical authority, issues a live grant,
 
 ## Current tranche
 
-The branch containing this ledger implements points 1–40 as a deterministic contract and validation slice. It does not execute a live grant, mutation, rollback, competence change, or authority adjustment. Points 41–100 remain ordered after this control-plane foundation.
+The stacked control-plane and workspace/recovery branches implement points 1–60 as deterministic contract and validation slices. They do not execute a live grant, mutation, rollback, emergency action, competence change, or authority adjustment. Points 61–100 remain ordered after these foundations.
