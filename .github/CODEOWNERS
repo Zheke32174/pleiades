@@ -6,6 +6,7 @@
 /modos/contracts/delegated-authority-grant.schema.json @Zheke32174
 /modos/contracts/executive-*.schema.json @Zheke32174
 /modos/contracts/admission-mandate.schema.json @Zheke32174
+/modos/contracts/workspace-emergency-recovery.schema.json @Zheke32174
 /modos/ontology/ @Zheke32174
 /modos/governance/ @Zheke32174
 /modos/EXECUTIVE_AUTHORITY.md @Zheke32174
@@ -14,7 +15,9 @@
 /ci/validate-promotion-evidence.py @Zheke32174
 /ci/validate-executive-authority.py @Zheke32174
 /ci/validate-executive-control-plane.py @Zheke32174
+/ci/validate-workspace-emergency.py @Zheke32174
 /.github/workflows/change-proposal-contracts.yml @Zheke32174
 /.github/workflows/ontology-promotion-evidence.yml @Zheke32174
 /.github/workflows/executive-authority-contracts.yml @Zheke32174
 /.github/workflows/executive-control-plane.yml @Zheke32174
+/.github/workflows/workspace-emergency-recovery.yml @Zheke32174
