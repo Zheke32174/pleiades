@@ -1,0 +1,64 @@
+{
+  "kind": "ChangeProposal",
+  "cases": [
+    {
+      "name": "accepted proposal remains authority free",
+      "valid": true,
+      "instance": {
+        "apiVersion": "modos.pleiades/v1alpha1",
+        "kind": "ChangeProposal",
+        "proposalId": "proposal:mind-workspace-link-0001",
+        "sourceSnapshotDigest": "sha256:7b6e0e119b88d4b885d2b9deec47cae28595b32cb78ccb9c609fcd2c6009caee",
+        "targetSchemaVersion": "v1alpha1",
+        "mindId": "mind:pleiades",
+        "objectFamily": "Mind",
+        "rationale": "Bind the persistent mind to its typed shared cognitive workspace without treating any model as the whole mind.",
+        "operations": [
+          {"op": "link", "objectId": "mind:pleiades", "relationType": "participatesIn", "targetRef": "workspace:pleiades"}
+        ],
+        "evidenceRefs": ["evidence:canon-polycentric-mind"],
+        "expectedSemanticEffects": ["Mind remains the persistent recurrent organization; Model remains a replaceable cognitive organ."],
+        "rollbackPlan": "Remove only the proposed relation and restore the exact prior snapshot digest.",
+        "authority": {"ceiling": "none", "canonicalMutation": "forbidden", "promotionTransactionRequired": true, "selfPromotionAllowed": false}
+      }
+    },
+    {
+      "name": "reject self promotion",
+      "valid": false,
+      "instance": {
+        "apiVersion": "modos.pleiades/v1alpha1",
+        "kind": "ChangeProposal",
+        "proposalId": "proposal:self-promotion-0001",
+        "sourceSnapshotDigest": "sha256:7b6e0e119b88d4b885d2b9deec47cae28595b32cb78ccb9c609fcd2c6009caee",
+        "targetSchemaVersion": "v1alpha1",
+        "mindId": "mind:pleiades",
+        "objectFamily": "Mind",
+        "rationale": "Attempt to bypass the governed promotion transaction and mutate canonical state directly.",
+        "operations": [{"op": "update", "objectId": "mind:pleiades", "payload": {"canonical": true}}],
+        "evidenceRefs": ["evidence:none"],
+        "expectedSemanticEffects": ["Direct canonical mutation."],
+        "rollbackPlan": "Restore the previous canonical state after the attempted direct mutation.",
+        "authority": {"ceiling": "none", "canonicalMutation": "forbidden", "promotionTransactionRequired": true, "selfPromotionAllowed": true}
+      }
+    },
+    {
+      "name": "reject relation without target",
+      "valid": false,
+      "instance": {
+        "apiVersion": "modos.pleiades/v1alpha1",
+        "kind": "ChangeProposal",
+        "proposalId": "proposal:dangling-link-0001",
+        "sourceSnapshotDigest": "sha256:7b6e0e119b88d4b885d2b9deec47cae28595b32cb78ccb9c609fcd2c6009caee",
+        "targetSchemaVersion": "v1alpha1",
+        "mindId": "mind:pleiades",
+        "objectFamily": "Mind",
+        "rationale": "Create a typed relation while deliberately omitting its required target reference.",
+        "operations": [{"op": "link", "objectId": "mind:pleiades", "relationType": "participatesIn"}],
+        "evidenceRefs": ["evidence:test"],
+        "expectedSemanticEffects": ["A malformed relation would be introduced."],
+        "rollbackPlan": "Discard the malformed proposal before compilation or promotion review.",
+        "authority": {"ceiling": "none", "canonicalMutation": "forbidden", "promotionTransactionRequired": true, "selfPromotionAllowed": false}
+      }
+    }
+  ]
+}
