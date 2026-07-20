@@ -1,0 +1,90 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "kind": "EcologyRegistry",
+  "metadata": {
+    "name": "pleiades-public-ecology-projection",
+    "notes": "This is a testable public projection, not the exhaustive private estate registry.",
+    "observedAt": "2026-07-20T02:50:00-04:00",
+    "owner": "Zheke32174",
+    "source": "Curated public projection used to validate the open registry contract",
+    "sourceDigest": "sha256:44c91cffd3f68588b4db32992385378da20c9310d49c59496d2d2837bc4d4e3e",
+    "visibility": "public"
+  },
+  "spec": {
+    "canonicalScopes": {
+      "constitution": "repo:Zheke32174/pleiades",
+      "public-modos-contracts": "repo:Zheke32174/pleiades"
+    },
+    "capabilities": [
+      {"id": "governance.contract.validate", "providerRef": "repo:Zheke32174/pleiades", "status": "canonical", "version": "v1alpha1"},
+      {"id": "forge.artifact.build", "providerRef": "repo:Zheke32174/pleiades-factory-stack", "status": "operational", "version": "v1"},
+      {"id": "node.android.substrate", "providerRef": "repo:Zheke32174/ryznix", "status": "operational", "version": "v1"}
+    ],
+    "components": [
+      {"componentId": "pleiades-defensive-substrate", "manifestPath": "MODOS_COMPONENT.yaml", "manifestState": "present", "repository": "Zheke32174/pleiades"},
+      {"componentId": "pleiades-container-substrate", "manifestPath": "MODOS_COMPONENT.yaml", "manifestState": "present", "repository": "Zheke32174/pleiades-container"},
+      {"componentId": "pleiades-forge-tooling-stack", "manifestPath": "MODOS_COMPONENT.yaml", "manifestState": "present", "repository": "Zheke32174/pleiades-factory-stack"},
+      {"componentId": "ryznix-android-node-substrate", "manifestPath": "MODOS_COMPONENT.yaml", "manifestState": "present", "repository": "Zheke32174/ryznix"}
+    ],
+    "exceptions": [],
+    "groups": [
+      {
+        "authorityCeiling": "domain-control",
+        "description": "Public MODOS contract and integration surface.",
+        "disposition": "canonical",
+        "id": "canonical-governance",
+        "lifecycle": "canonical",
+        "repositories": ["Zheke32174/pleiades"],
+        "subsystem": "governance"
+      },
+      {
+        "authorityCeiling": "local-enforcement",
+        "description": "Public local node substrates.",
+        "disposition": "active",
+        "id": "runtime-substrates",
+        "lifecycle": "operational",
+        "repositories": ["Zheke32174/pleiades-container", "Zheke32174/ryznix"],
+        "subsystem": "runtime"
+      },
+      {
+        "authorityCeiling": "proposal",
+        "description": "Public candidate-producing forge tooling.",
+        "disposition": "active-supporting",
+        "id": "forge-tooling",
+        "lifecycle": "operational",
+        "repositories": ["Zheke32174/pleiades-factory-stack"],
+        "subsystem": "forge"
+      }
+    ],
+    "invariants": {
+      "archiveIsolation": true,
+      "authorityMonotonicity": true,
+      "completeInventory": true,
+      "noDanglingRequiredRelations": true,
+      "singleCanonicalProvider": true,
+      "uniqueMembership": true
+    },
+    "inventory": {
+      "expectedCount": 4,
+      "repositories": [
+        "Zheke32174/pleiades",
+        "Zheke32174/pleiades-container",
+        "Zheke32174/pleiades-factory-stack",
+        "Zheke32174/ryznix"
+      ]
+    },
+    "precedence": [
+      "Pleiades constitution and promoted MODOS ADRs/contracts",
+      "Public projection registry",
+      "Repository-local MODOS_COMPONENT.yaml",
+      "Repository documentation"
+    ],
+    "relations": [
+      {"required": true, "scope": "governance", "sourceRef": "repo:Zheke32174/pleiades", "targetRef": "scope:constitution", "type": "canonical-for"},
+      {"required": true, "scope": "governance", "sourceRef": "repo:Zheke32174/pleiades", "targetRef": "scope:public-modos-contracts", "type": "canonical-for"},
+      {"required": true, "scope": "runtime", "sourceRef": "repo:Zheke32174/pleiades-container", "targetRef": "repo:Zheke32174/pleiades", "type": "part-of"},
+      {"required": false, "scope": "build", "sourceRef": "repo:Zheke32174/pleiades-factory-stack", "targetRef": "repo:Zheke32174/pleiades", "type": "supports"},
+      {"required": false, "scope": "runtime", "sourceRef": "repo:Zheke32174/ryznix", "targetRef": "repo:Zheke32174/pleiades", "type": "depends-on"}
+    ]
+  }
+}
