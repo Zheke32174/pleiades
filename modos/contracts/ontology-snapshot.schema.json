@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/ontology-snapshot-v1.json",
+  "title": "Pleiades Ontology Snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "schemaVersion", "mindId", "objects", "relations"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "OntologySnapshot"},
+    "schemaVersion": {"type": "string", "pattern": "^v[0-9]+(?:alpha[0-9]+|beta[0-9]+)?$"},
+    "mindId": {"type": "string", "minLength": 1, "maxLength": 128},
+    "objects": {
+      "type": "array",
+      "items": {"$ref": "https://pleiades.local/schemas/modos-domain-object-v1.json"}
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceRef", "type", "targetRef"],
+        "properties": {
+          "sourceRef": {"type": "string", "minLength": 1, "maxLength": 256},
+          "type": {"type": "string", "minLength": 1, "maxLength": 128},
+          "targetRef": {"type": "string", "minLength": 1, "maxLength": 256},
+          "attributes": {"type": "object"}
+        }
+      }
+    }
+  }
+}
