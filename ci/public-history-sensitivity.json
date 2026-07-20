@@ -15,7 +15,8 @@
     {"id": "literal-windows-profile", "pattern": "(?:[A-Za-z]:\\\\|/mnt/[A-Za-z]/)Users[/\\\\][A-Za-z0-9._ -]+[/\\\\]"}
   ],
   "allowlist": [
-    {"rule": "literal-linux-home", "path": "**", "literal": "/home/ubuntu/", "reason": "generic synthetic fixture identity"}
+    {"rule": "literal-linux-home", "path": "**", "literal": "/home/ubuntu/", "reason": "generic synthetic fixture identity"},
+    {"rule": "literal-linux-home", "path": "oobe/scripts/hermes_60_day_evolution.sh", "literal": "/home/linuxbrew/", "reason": "standard non-personal Linuxbrew installation prefix"}
   ],
   "outputPolicy": {
     "includeLineContent": false,
