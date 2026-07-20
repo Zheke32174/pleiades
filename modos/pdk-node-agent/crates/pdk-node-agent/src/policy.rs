@@ -10,8 +10,8 @@ use pdk_protocol::v1::{
 };
 use tokio::sync::RwLock;
 
-pub use grant_admission::{GrantInstallOutcome, ValidatedGrant};
 use grant_admission::validate_grant_time;
+pub use grant_admission::{GrantInstallOutcome, ValidatedGrant};
 
 use crate::{autonomy::AutonomyStateMachine, config::TrustedControllerConfig};
 
@@ -128,7 +128,8 @@ impl PolicyEnforcer {
         Ok(GrantInstallOutcome::Installed)
     }
 
-    pub async fn remove_active_grant(&self, token_id: &str) -> bool {
+    #[cfg(test)]
+    async fn remove_active_grant(&self, token_id: &str) -> bool {
         // Expiry, revocation, and compaction must not lower the installed
         // sequence floor and reopen rollback.
         self.grants.write().await.remove(token_id).is_some()
@@ -244,7 +245,11 @@ impl PolicyEnforcer {
         let cached = grants
             .get(token_id)
             .context("capability token is not cached")?;
-        validate_grant_time(&cached.payload, crate::autonomy::unix_ms(), self.max_clock_skew_ms)?;
+        validate_grant_time(
+            &cached.payload,
+            crate::autonomy::unix_ms(),
+            self.max_clock_skew_ms,
+        )?;
         if !cached.payload.actions.contains(&(action as i32)) {
             bail!("capability token does not authorize requested action");
         }
