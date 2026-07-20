@@ -1,0 +1,43 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "authority": {
+    "admissionExecutor": "external-steward",
+    "canonicalMutation": "forbidden",
+    "ceiling": "none",
+    "selfAdmissionAllowed": false
+  },
+  "blockingIssues": [
+    "github:Zheke32174/pleiades#42"
+  ],
+  "branch": "ontology/proposal-compiler-boundary-v1",
+  "candidateId": "promotion-candidate:ontology-pr-52-0001",
+  "candidateSnapshotDigest": "sha256:fb24a0a0c1394fc8f4a45df9e68eb5d8ed9a3e849882c19ff0b743ffd8202196",
+  "closureReceiptDigest": "sha256:7e4bc0216488af205339cc0a59b1eb4de5bc435be46d1e9b8dbb7aa263b64487",
+  "commitSha": "18503ad22e01c1ab2461b4397fa9c5052ed121c3",
+  "evidenceRefs": [
+    "github:Zheke32174/pleiades#52",
+    "modos/ontology/LOCAL_VALIDATION_RECEIPT.json"
+  ],
+  "governanceEvidence": [
+    {
+      "digest": "sha256:1cf702a8b3166d81a949169f452fbb659c9266937a89fafad4f61be81e0bf06d",
+      "locator": ".github/CODEOWNERS",
+      "type": "codeowners",
+      "verified": true
+    }
+  ],
+  "kind": "OntologyPromotionCandidate",
+  "mindId": "mind:pleiades",
+  "repository": "Zheke32174/pleiades",
+  "reviewPolicy": {
+    "artifactAttestationRequired": false,
+    "codeownersRequired": true,
+    "requiredApprovals": 1,
+    "rulesetReviewRequired": true,
+    "signedPromotionTransactionRequired": true
+  },
+  "schemaVersion": "v1alpha1",
+  "semanticDiffDigest": "sha256:dab46271705556cb4572afbad2f54c8639aa26e4970aed8dbdaed7be149655bf",
+  "sourceManifestDigest": "sha256:80e975416d93e2935f12f041c338ec8cc2dd49de5cab43b58a3b40b00f5d60f8",
+  "sourceSnapshotDigest": "sha256:6cdb735ccdd132b7c86a7f60df6f953138f3555bfc362708947f7a8f5832ea51"
+}

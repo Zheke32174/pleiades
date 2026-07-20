@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/ontology-promotion-candidate-v1.json",
+  "title": "Pleiades Ontology Promotion Candidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "candidateId",
+    "repository",
+    "branch",
+    "commitSha",
+    "mindId",
+    "schemaVersion",
+    "sourceSnapshotDigest",
+    "candidateSnapshotDigest",
+    "closureReceiptDigest",
+    "sourceManifestDigest",
+    "semanticDiffDigest",
+    "evidenceRefs",
+    "governanceEvidence",
+    "blockingIssues",
+    "reviewPolicy",
+    "authority"
+  ],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "OntologyPromotionCandidate"},
+    "candidateId": {"type": "string", "minLength": 1, "maxLength": 256},
+    "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+    "branch": {"type": "string", "minLength": 1, "maxLength": 256},
+    "commitSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "mindId": {"type": "string", "minLength": 1, "maxLength": 128},
+    "schemaVersion": {"type": "string", "pattern": "^v[0-9]+(?:alpha[0-9]+|beta[0-9]+)?$"},
+    "sourceSnapshotDigest": {"$ref": "#/$defs/sha256"},
+    "candidateSnapshotDigest": {"$ref": "#/$defs/sha256"},
+    "closureReceiptDigest": {"$ref": "#/$defs/sha256"},
+    "sourceManifestDigest": {"$ref": "#/$defs/sha256"},
+    "semanticDiffDigest": {"$ref": "#/$defs/sha256"},
+    "evidenceRefs": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+    },
+    "governanceEvidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "locator", "digest"],
+        "properties": {
+          "type": {"enum": ["codeowners", "ruleset", "artifact-attestation"]},
+          "locator": {"type": "string", "minLength": 1, "maxLength": 1024},
+          "digest": {"$ref": "#/$defs/sha256"},
+          "verified": {"type": "boolean"}
+        }
+      }
+    },
+    "blockingIssues": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+    },
+    "reviewPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requiredApprovals",
+        "codeownersRequired",
+        "rulesetReviewRequired",
+        "artifactAttestationRequired",
+        "signedPromotionTransactionRequired"
+      ],
+      "properties": {
+        "requiredApprovals": {"type": "integer", "minimum": 1},
+        "codeownersRequired": {"const": true},
+        "rulesetReviewRequired": {"const": true},
+        "artifactAttestationRequired": {"type": "boolean"},
+        "signedPromotionTransactionRequired": {"const": true}
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ceiling", "canonicalMutation", "admissionExecutor", "selfAdmissionAllowed"],
+      "properties": {
+        "ceiling": {"const": "none"},
+        "canonicalMutation": {"const": "forbidden"},
+        "admissionExecutor": {"const": "external-steward"},
+        "selfAdmissionAllowed": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:(?!0{64}$)[0-9a-f]{64}$"
+    }
+  }
+}
