@@ -47,24 +47,24 @@ class SyntheticRehearsalTests(unittest.TestCase):
         second = self.rehearse()
         self.assertEqual(compiler.canonical_bytes(first), compiler.canonical_bytes(second))
 
-    def test_reordering_public_ecology_preserves_semantics_but_changes_source_evidence(self):
+    def test_reordering_public_ecology_preserves_topology_but_changes_provenance_identity(self):
         reordered = copy.deepcopy(self.public)
         for field in ("groups", "components", "capabilities", "relations"):
             reordered["spec"][field].reverse()
         first = self.rehearse()
         second = self.rehearse(reordered)
-        self.assertEqual(first["mergedSnapshotDigest"], second["mergedSnapshotDigest"])
         self.assertEqual(first["mergedObjectCount"], second["mergedObjectCount"])
         self.assertEqual(first["mergedRelationCount"], second["mergedRelationCount"])
         self.assertNotEqual(first["publicRegistryDigest"], second["publicRegistryDigest"])
+        self.assertNotEqual(first["mergedSnapshotDigest"], second["mergedSnapshotDigest"])
         self.assertNotEqual(first["receiptDigest"], second["receiptDigest"])
 
     def test_synthetic_private_registry_contains_no_real_project_owner(self):
         registry = synthetic_rehearsal.synthetic_private_registry()
         rendered = json.dumps(registry, sort_keys=True)
         self.assertNotIn("Zheke32174", rendered)
-        self.assertNotIn("undergrowth", rendered.lower())
         self.assertEqual(registry["metadata"]["owner"], "SyntheticLab")
+        self.assertTrue(all(name.startswith("SyntheticLab/") for name in registry["spec"]["inventory"]["repositories"]))
 
     def test_synthetic_private_receipt_cannot_satisfy_live_private_blocker(self):
         receipt = self.rehearse()
