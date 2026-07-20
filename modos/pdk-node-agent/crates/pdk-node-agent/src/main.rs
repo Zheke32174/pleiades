@@ -1,4 +1,5 @@
 mod audit;
+mod authority;
 mod autonomy;
 mod config;
 mod control_link;
@@ -24,6 +25,7 @@ use tracing_subscriber::EnvFilter;
 
 use crate::{
     audit::OfflineAuditBuffer,
+    authority::AuthorityStateStore,
     autonomy::AutonomyStateMachine,
     config::{NodeAgentConfig, StartupMode},
     control_link::ControlPlaneLink,
@@ -89,6 +91,7 @@ async fn main() -> Result<()> {
         signing_key.clone(),
     )
     .await?;
+    let authority_state = AuthorityStateStore::open(&config.state_database).await?;
     let policy = PolicyEnforcer::new(
         config.domain_id.clone(),
         config.node_id.clone(),
@@ -131,6 +134,7 @@ async fn main() -> Result<()> {
         policy.clone(),
         runtime.clone(),
         audit.clone(),
+        authority_state,
     );
 
     let autonomy_task = tokio::spawn(autonomy.clone().monitor());

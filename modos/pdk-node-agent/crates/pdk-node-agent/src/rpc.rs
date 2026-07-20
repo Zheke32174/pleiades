@@ -9,7 +9,10 @@ use pdk_protocol::v1::{
 use pdk_transport::peer_identity;
 
 use crate::{
-    audit::OfflineAuditBuffer, autonomy::AutonomyStateMachine, policy::PolicyEnforcer,
+    audit::OfflineAuditBuffer,
+    authority::AuthorityStateStore,
+    autonomy::{AutonomyStateMachine, unix_ms},
+    policy::PolicyEnforcer,
     runtime::RuntimeManager,
 };
 
@@ -21,6 +24,7 @@ pub struct NodeAgentService {
     policy: PolicyEnforcer,
     runtime: RuntimeManager,
     audit: OfflineAuditBuffer,
+    authority_state: AuthorityStateStore,
 }
 
 #[derive(Serialize)]
@@ -41,6 +45,7 @@ impl NodeAgentService {
         policy: PolicyEnforcer,
         runtime: RuntimeManager,
         audit: OfflineAuditBuffer,
+        authority_state: AuthorityStateStore,
     ) -> Self {
         Self {
             domain_id: domain_id.into(),
@@ -49,6 +54,7 @@ impl NodeAgentService {
             policy,
             runtime,
             audit,
+            authority_state,
         }
     }
 
@@ -64,6 +70,16 @@ impl NodeAgentService {
             .map(|_| ())
             .map_err(|error| Status::internal(format!("audit persistence failed: {error}")))
     }
+
+    async fn consume_durable_use(&self, token_id: &str) -> Result<(), Status> {
+        self.authority_state
+            .consume_use(token_id, unix_ms())
+            .await
+            .map(|_| ())
+            .map_err(|error| {
+                Status::permission_denied(format!("durable capability use denied: {error}"))
+            })
+    }
 }
 
 #[tonic::async_trait]
@@ -74,19 +90,30 @@ impl NodeAgent for NodeAgentService {
     ) -> Result<Response<CapabilityGrantAck>, Status> {
         let peer = peer_identity(&request)?.clone();
         let envelope = request.into_inner();
+        let signature_base64 = envelope.signature_base64.clone();
         match self
             .policy
             .cache_signed_grant(envelope, &peer.identity)
             .await
         {
             Ok(grant) => {
+                if let Err(error) = self
+                    .authority_state
+                    .persist_grant(&grant, &signature_base64)
+                    .await
+                {
+                    self.policy.remove_cached_grant(&grant.token_id).await;
+                    return Err(Status::permission_denied(format!(
+                        "durable capability continuity check failed: {error}"
+                    )));
+                }
                 let event = DecisionEvent {
                     decision: "allow",
                     operation: "push_capability_grant",
                     controller_id: &peer.identity,
                     token_id: &grant.token_id,
                     workload_id: &grant.subject_workload_id,
-                    detail: "signature, domain, target, validity interval, and Connected state verified",
+                    detail: "signature, domain, target, validity interval, Connected state, durable sequence floor, and token identity verified",
                 };
                 if let Err(error) = self
                     .audit_decision(&grant.token_id, "capability.grant.cached", &event)
@@ -99,12 +126,12 @@ impl NodeAgent for NodeAgentService {
                     token_id = %grant.token_id,
                     workload_id = %grant.subject_workload_id,
                     controller = %peer.identity,
-                    "cached signed capability grant"
+                    "cached signed capability grant with durable continuity state"
                 );
                 Ok(Response::new(CapabilityGrantAck {
                     token_id: grant.token_id,
                     accepted: true,
-                    message: "capability grant cached".into(),
+                    message: "capability grant cached with durable continuity state".into(),
                 }))
             }
             Err(error) => {
@@ -140,6 +167,7 @@ impl NodeAgent for NodeAgentService {
             .authorize_spawn(&request.capability_token_id, &request.lease_id, workload)
             .await
             .map_err(|error| Status::permission_denied(error.to_string()))?;
+        self.consume_durable_use(&authorization.token_id).await?;
 
         let intent = DecisionEvent {
             decision: "allow",
@@ -147,7 +175,7 @@ impl NodeAgent for NodeAgentService {
             controller_id: &peer.identity,
             token_id: &authorization.token_id,
             workload_id: &authorization.workload_id,
-            detail: "authorized before runtime driver invocation",
+            detail: "authorized and durably consumed before runtime driver invocation",
         };
         self.audit_decision(&request.trace_id, "workload.spawn.authorized", &intent)
             .await?;
@@ -193,6 +221,7 @@ impl NodeAgent for NodeAgentService {
             .authorize_stop(&request.capability_token_id, &request.workload_id)
             .await
             .map_err(|error| Status::permission_denied(error.to_string()))?;
+        self.consume_durable_use(&authorization.token_id).await?;
         let intent = DecisionEvent {
             decision: "allow",
             operation: "stop_workload",
@@ -231,6 +260,8 @@ impl NodeAgent for NodeAgentService {
             .authorize_status(&request.capability_token_id, &request.workload_id)
             .await
             .map_err(|error| Status::permission_denied(error.to_string()))?;
+        self.consume_durable_use(&request.capability_token_id)
+            .await?;
         let receipt = self
             .runtime
             .status(&request.workload_id)
