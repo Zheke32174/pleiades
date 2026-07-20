@@ -5,6 +5,8 @@
   "commands": [
     {"id": "contract-catalog", "category": "contracts", "argv": ["python", "ci/validate-contract-catalog.py", "--report", "artifacts/contract-catalog.json"]},
     {"id": "stack-closure", "category": "convergence", "argv": ["python", "ci/validate-stack-manifest.py", "--manifest", "modos/convergence/stack-manifest.json", "--report", "artifacts/stack-closure-receipt.json"]},
+    {"id": "operator-runbooks", "category": "convergence", "argv": ["python", "ci/validate-operator-runbooks.py", "--report", "artifacts/operator-runbook-validation.json"]},
+    {"id": "current-tree-sensitivity", "category": "release", "argv": ["python", "ci/scan-public-history.py", "--mode", "current", "--report", "artifacts/current-tree-sensitivity-receipt.json"]},
     {"id": "public-ecology-closure", "category": "ecology", "argv": ["python", "ci/validate-ecology.py", "--registry", "modos/ecology/public-ecology.json", "--schema", "modos/contracts/ecology-registry.schema.json", "--report", "artifacts/public-ecology-closure.json"]},
     {"id": "ontology-compiler-tests", "category": "ontology", "argv": ["python", "modos/ontology/test_compiler.py"]},
     {"id": "ontology-projection-tests", "category": "ontology", "argv": ["python", "modos/ontology/test_projection.py"]},
@@ -25,7 +27,13 @@
     {"id": "distributed-admission-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_distributed_admission.py"]},
     {"id": "learning-spine-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_learning_spine.py"]},
     {"id": "constitutional-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_constitutional.py"]},
-    {"id": "integration-readiness-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_ecology_integration.py"]}
+    {"id": "integration-readiness-unit-tests", "category": "tests", "argv": ["python", "modos/governance/test_ecology_integration.py"]},
+    {"id": "synthetic-rehearsal-unit-tests", "category": "rehearsal", "argv": ["python", "modos/convergence/test_synthetic_rehearsal.py"]},
+    {"id": "synthetic-rehearsal", "category": "rehearsal", "argv": ["python", "modos/convergence/synthetic_rehearsal.py", "--report", "artifacts/synthetic-rehearsal-receipt.json"]},
+    {"id": "intervention-frontier-unit-tests", "category": "frontier", "argv": ["python", "modos/convergence/test_intervention_frontier.py"]},
+    {"id": "intervention-frontier", "category": "frontier", "argv": ["python", "modos/convergence/intervention_frontier.py", "--bundle", "modos/convergence/repository-ready-intervention.fixture.json", "--report", "artifacts/intervention-frontier.json"]},
+    {"id": "validation-package-unit-tests", "category": "package", "argv": ["python", "modos/convergence/test_validation_package.py"]},
+    {"id": "validation-package", "category": "package", "argv": ["python", "ci/build-modos-validation-package.py", "--output", "artifacts/pleiades-modos-validation.tar.gz", "--receipt", "artifacts/validation-package-receipt.json"]}
   ],
   "authority": {"ceiling": "none", "canonicalMutationApplied": false}
 }
