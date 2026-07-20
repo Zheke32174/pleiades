@@ -1,0 +1,31 @@
+name: Operator intake contracts
+
+on:
+  pull_request:
+    paths:
+      - 'modos/contracts/operator-input-candidate.schema.json'
+      - 'modos/handoff/**'
+      - 'ci/validate-operator-intake.py'
+      - '.github/workflows/operator-intake-contracts.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: operator-intake-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check --no-input -r requirements-modos.txt
+      - run: python ci/validate-operator-intake.py
+      - run: python modos/handoff/test_intake.py
