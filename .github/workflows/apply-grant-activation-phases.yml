@@ -1,0 +1,56 @@
+name: Apply grant activation phase repair
+
+# Branch-scoped one-shot: the successful output commit deletes this workflow and
+# its patch, so only the validated permanent Rust implementation remains.
+on:
+  push:
+    branches:
+      - modos/checkpoint-grant-activation-phases
+    paths:
+      - '.github/workflows/apply-grant-activation-phases.yml'
+      - 'checkpoints/grant-activation-phases.patch'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-grant-activation-phases-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - name: Install Rust and protobuf
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq protobuf-compiler
+      - name: Apply and validate bounded repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply --check checkpoints/grant-activation-phases.patch
+          git apply checkpoints/grant-activation-phases.patch
+          cargo fmt --all --manifest-path modos/pdk-node-agent/Cargo.toml
+          cargo clippy --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- -D warnings
+          cargo test --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- --nocapture
+          git diff --check
+          ! grep -RIn 'cache_signed_grant' modos/pdk-node-agent/crates/pdk-node-agent/src
+          grep -Fq 'validate_signed_grant' modos/pdk-node-agent/crates/pdk-node-agent/src/policy.rs
+          grep -Fq 'install_durably_admitted_grant' modos/pdk-node-agent/crates/pdk-node-agent/src/policy.rs
+      - name: Commit permanent implementation only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm checkpoints/grant-activation-phases.patch .github/workflows/apply-grant-activation-phases.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add modos/pdk-node-agent/crates/pdk-node-agent/src/policy.rs modos/pdk-node-agent/crates/pdk-node-agent/src/rpc.rs
+          git commit -m 'refactor: separate grant validation admission and activation'
+          git push origin "HEAD:${{ github.ref_name }}"
