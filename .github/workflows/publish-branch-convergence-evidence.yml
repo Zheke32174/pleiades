@@ -1,0 +1,168 @@
+name: Publish branch convergence evidence
+
+on:
+  push:
+    branches:
+      - governance/convergence-proof-v1
+    paths:
+      - '.github/workflows/publish-branch-convergence-evidence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-branch-convergence-evidence-v1
+  cancel-in-progress: false
+
+jobs:
+  validate-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: governance/convergence-proof-v1
+          show-progress: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned validation dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check --no-input
+          -r requirements-modos.txt
+
+      - name: Run complete suite and collect bounded evidence
+        id: suite
+        shell: bash
+        run: |
+          set +e
+          python ci/run-modos-convergence.py --continue-on-failure
+          suite_status=$?
+          python modos/ontology/ecology_adapter.py \
+            --registry modos/ecology/public-ecology.json \
+            --schema modos/contracts/ecology-registry.schema.json \
+            --out-snapshot artifacts/public-ecology-ontology.json \
+            --out-receipt artifacts/public-ecology-ontology-receipt.json
+          adapter_status=$?
+          python ci/scan-public-history.py \
+            --mode history \
+            --report artifacts/reachable-history-sensitivity-receipt.json
+          history_status=$?
+          set -e
+          echo "suite_status=$suite_status" >> "$GITHUB_OUTPUT"
+          echo "adapter_status=$adapter_status" >> "$GITHUB_OUTPUT"
+          echo "history_status=$history_status" >> "$GITHUB_OUTPUT"
+
+      - name: Write compact public-safe evidence summary
+        shell: bash
+        env:
+          VALIDATED_COMMIT: ${{ github.sha }}
+          SUITE_EXIT: ${{ steps.suite.outputs.suite_status }}
+          ADAPTER_EXIT: ${{ steps.suite.outputs.adapter_status }}
+          HISTORY_EXIT: ${{ steps.suite.outputs.history_status }}
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          def load(path):
+              p = Path(path)
+              return json.loads(p.read_text()) if p.exists() else None
+
+          def digest(value):
+              data = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()
+              return 'sha256:' + hashlib.sha256(data).hexdigest()
+
+          suite = load('artifacts/convergence-suite-receipt.json')
+          current = load('artifacts/current-tree-sensitivity-receipt.json')
+          history = load('artifacts/reachable-history-sensitivity-receipt.json')
+          rehearsal = load('artifacts/synthetic-rehearsal-receipt.json')
+          frontier = load('artifacts/intervention-frontier.json')
+          package = load('artifacts/validation-package-receipt.json')
+          ecology = load('artifacts/public-ecology-ontology-receipt.json')
+
+          summary = {
+              'apiVersion': 'modos.pleiades/v1alpha1',
+              'kind': 'BranchConvergenceEvidence',
+              'validatedCommit': os.environ['VALIDATED_COMMIT'],
+              'suite': {
+                  'exitCode': int(os.environ['SUITE_EXIT']),
+                  'status': suite.get('status') if suite else 'missing',
+                  'receiptDigest': suite.get('receiptDigest') if suite else None,
+                  'failures': suite.get('failures', []) if suite else ['receipt-missing'],
+                  'notRun': suite.get('notRun', []) if suite else [],
+                  'executedCount': suite.get('executedCount', 0) if suite else 0,
+                  'commandCount': suite.get('commandCount', 0) if suite else 0,
+              },
+              'publicEcologyAdapter': {
+                  'exitCode': int(os.environ['ADAPTER_EXIT']),
+                  'resultSnapshotDigest': ecology.get('resultSnapshotDigest') if ecology else None,
+                  'receiptDigest': ecology.get('receiptDigest') if ecology else None,
+                  'objectCount': ecology.get('objectCount') if ecology else None,
+                  'relationCount': ecology.get('relationCount') if ecology else None,
+                  'blockers': ecology.get('blockers', []) if ecology else ['receipt-missing'],
+              },
+              'currentTreeSensitivity': {
+                  'status': current.get('status') if current else 'missing',
+                  'findingCount': current.get('findingCount') if current else None,
+                  'receiptDigest': current.get('receiptDigest') if current else None,
+              },
+              'reachableHistorySensitivity': {
+                  'exitCode': int(os.environ['HISTORY_EXIT']),
+                  'status': history.get('status') if history else 'missing',
+                  'findingCount': history.get('findingCount') if history else None,
+                  'receiptDigest': history.get('receiptDigest') if history else None,
+                  'contentDisclosed': history.get('contentDisclosed') if history else False,
+              },
+              'syntheticRehearsal': {
+                  'status': rehearsal.get('status') if rehearsal else 'missing',
+                  'receiptDigest': rehearsal.get('receiptDigest') if rehearsal else None,
+                  'remainingBlockers': rehearsal.get('remainingBlockers', []) if rehearsal else ['receipt-missing'],
+              },
+              'interventionFrontier': {
+                  'status': frontier.get('status') if frontier else 'missing',
+                  'receiptDigest': frontier.get('receiptDigest') if frontier else None,
+                  'autonomousActionCount': frontier.get('autonomousActionCount') if frontier else None,
+                  'operatorActionCount': frontier.get('operatorActionCount') if frontier else None,
+              },
+              'validationPackage': {
+                  'packageDigest': package.get('packageDigest') if package else None,
+                  'manifestDigest': package.get('manifestDigest') if package else None,
+                  'sbomDigest': package.get('sbomDigest') if package else None,
+                  'receiptDigest': package.get('receiptDigest') if package else None,
+                  'privateMaterialIncluded': package.get('privateMaterialIncluded') if package else None,
+              },
+              'authority': {
+                  'ceiling': 'none',
+                  'canonicalMutationApplied': False,
+                  'liveExecutionApplied': False,
+              },
+          }
+          summary['evidenceDigest'] = digest(summary)
+          path = Path('modos/convergence/BRANCH_EVIDENCE.json')
+          path.write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          PY
+
+      - name: Commit evidence summary to the feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add modos/convergence/BRANCH_EVIDENCE.json
+          if git diff --cached --quiet; then
+            echo "Evidence summary is unchanged."
+            exit 0
+          fi
+          git commit -m "Record convergence evidence for $GITHUB_SHA"
+          git push origin HEAD:governance/convergence-proof-v1
+
+      - name: Fail after publishing when repository validation failed
+        if: steps.suite.outputs.suite_status != '0' || steps.suite.outputs.adapter_status != '0'
+        run: exit 1
