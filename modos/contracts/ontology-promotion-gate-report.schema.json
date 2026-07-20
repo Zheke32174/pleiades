@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/ontology-promotion-gate-report-v1.json",
+  "title": "Pleiades Ontology Promotion Gate Report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "candidateId",
+    "status",
+    "bindings",
+    "checks",
+    "blockers",
+    "authority"
+  ],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "OntologyPromotionGateReport"},
+    "candidateId": {"type": "string", "minLength": 1, "maxLength": 256},
+    "status": {"enum": ["blocked", "eligible-for-steward-review"]},
+    "bindings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "branch",
+        "commitSha",
+        "mindId",
+        "schemaVersion",
+        "sourceSnapshotDigest",
+        "candidateSnapshotDigest",
+        "closureReceiptDigest",
+        "sourceManifestDigest",
+        "semanticDiffDigest"
+      ],
+      "properties": {
+        "repository": {"type": "string"},
+        "branch": {"type": "string"},
+        "commitSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "mindId": {"type": "string"},
+        "schemaVersion": {"type": "string"},
+        "sourceSnapshotDigest": {"$ref": "#/$defs/sha256"},
+        "candidateSnapshotDigest": {"$ref": "#/$defs/sha256"},
+        "closureReceiptDigest": {"$ref": "#/$defs/sha256"},
+        "sourceManifestDigest": {"$ref": "#/$defs/sha256"},
+        "semanticDiffDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "status"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "status": {"enum": ["pass", "blocked"]},
+          "detail": {"type": "string"}
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ceiling", "canonicalMutationApplied", "promotionTransactionRequired"],
+      "properties": {
+        "ceiling": {"const": "none"},
+        "canonicalMutationApplied": {"const": false},
+        "promotionTransactionRequired": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:(?!0{64}$)[0-9a-f]{64}$"
+    }
+  }
+}
