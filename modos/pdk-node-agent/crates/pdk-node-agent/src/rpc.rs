@@ -372,7 +372,11 @@ impl NodeAgent for NodeAgentService {
             )));
         }
 
-        let mut receipt = match self.runtime.stop(&request.workload_id, &request.reason).await {
+        let mut receipt = match self
+            .runtime
+            .stop(&request.workload_id, &request.reason)
+            .await
+        {
             Ok(receipt) => receipt,
             Err(error) => {
                 let detail = format!("runtime stop failed: {error}");
@@ -630,7 +634,8 @@ fn canonical_isolation(isolation: Option<&IsolationConstraints>) -> Value {
 }
 
 fn digest_value<T: Serialize>(value: &T) -> Result<String, Status> {
-    let encoded = serde_json::to_vec(value)
-        .map_err(|error| Status::internal(format!("canonical request serialization failed: {error}")))?;
+    let encoded = serde_json::to_vec(value).map_err(|error| {
+        Status::internal(format!("canonical request serialization failed: {error}"))
+    })?;
     Ok(format!("sha256:{:x}", Sha256::digest(encoded)))
 }

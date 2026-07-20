@@ -8,9 +8,6 @@ on:
     paths:
       - 'modos/pdk-node-agent/**'
       - '.github/workflows/pdk-diagnostics.yml'
-      - '.github/workflows/apply-use-intent-atomicity.yml'
-      - 'checkpoints/use-intent-atomicity.patch'
-      - 'checkpoints/use-intent-test-fix.patch'
   pull_request:
     branches:
       - main
@@ -21,95 +18,14 @@ on:
       - '.github/workflows/pdk-diagnostics.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: pdk-diagnostics-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  apply-use-intent-atomicity:
-    if: >-
-      (github.event_name == 'push' && github.ref_name == 'modos/checkpoint-use-intent-atomicity') ||
-      (github.event_name == 'pull_request' && github.head_ref == 'modos/checkpoint-use-intent-atomicity')
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
-          fetch-depth: 0
-          show-progress: false
-      - name: Install stable Rust, rustfmt, Clippy, and protobuf
-        run: |
-          rustup toolchain install stable --profile minimal --component rustfmt,clippy
-          rustup default stable
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq protobuf-compiler
-      - name: Capture complete atomic operation intent validation
-        id: validation
-        shell: bash
-        run: |
-          set +e
-          {
-            set -x
-            git apply --check checkpoints/use-intent-atomicity.patch
-            git apply checkpoints/use-intent-atomicity.patch
-            git apply --check checkpoints/use-intent-test-fix.patch
-            git apply checkpoints/use-intent-test-fix.patch
-            cargo fmt --all --manifest-path modos/pdk-node-agent/Cargo.toml
-            cargo clippy --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- -D warnings
-            cargo test --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- --nocapture
-            git diff --check
-            grep -Fq 'consume_use_with_intent' modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs
-            ! grep -Fq 'consume_durable_use' modos/pdk-node-agent/crates/pdk-node-agent/src/rpc.rs
-            grep -Fq 'OperationIntentReceipt intent = 7;' modos/pdk-node-agent/proto/pdk/v1/pdk.proto
-          } > use-intent-validation.log 2>&1
-          status=$?
-          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
-          tail -n 240 use-intent-validation.log
-          exit 0
-      - name: Upload atomic intent validation evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: use-intent-validation-${{ github.sha }}
-          path: use-intent-validation.log
-          if-no-files-found: error
-          retention-days: 14
-      - name: Enforce atomic intent validation
-        env:
-          VALIDATION_EXIT: ${{ steps.validation.outputs.exit_code }}
-        run: test "$VALIDATION_EXIT" = 0
-      - name: Commit only permanent validated files
-        shell: bash
-        run: |
-          set -euo pipefail
-          target_branch="${{ github.head_ref || github.ref_name }}"
-          git fetch origin modos/checkpoint-grant-activation-phases
-          git checkout origin/modos/checkpoint-grant-activation-phases -- .github/workflows/pdk-diagnostics.yml
-          git rm \
-            checkpoints/use-intent-atomicity.patch \
-            checkpoints/use-intent-test-fix.patch \
-            .github/workflows/apply-use-intent-atomicity.yml
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add \
-            .github/workflows/pdk-diagnostics.yml \
-            modos/pdk-node-agent/crates/pdk-node-agent/Cargo.toml \
-            modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs \
-            modos/pdk-node-agent/crates/pdk-node-agent/src/rpc.rs \
-            modos/pdk-node-agent/crates/pdk-node-agent/src/runtime/systemd.rs \
-            modos/pdk-node-agent/proto/pdk/v1/pdk.proto
-          git commit -m 'feat: commit capability use and operation intent atomically'
-          git push origin "HEAD:${target_branch}"
-
   rust-report:
-    if: >-
-      !(
-        (github.event_name == 'push' && github.ref_name == 'modos/checkpoint-use-intent-atomicity') ||
-        (github.event_name == 'pull_request' && github.head_ref == 'modos/checkpoint-use-intent-atomicity')
-      )
     runs-on: ubuntu-latest
     defaults:
       run:
