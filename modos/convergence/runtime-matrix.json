@@ -1,0 +1,29 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "kind": "ValidationRuntimeMatrix",
+  "matrixId": "pleiades-modos-validation-v1",
+  "supported": [
+    {
+      "runtime": "cpython",
+      "version": "3.12",
+      "status": "required",
+      "platforms": ["linux-x86_64", "linux-aarch64"],
+      "dependencies": [
+        {"name": "jsonschema", "version": "4.26.0"},
+        {"name": "PyYAML", "version": "6.0.2"}
+      ]
+    }
+  ],
+  "unsupported": [
+    {"runtime": "cpython", "constraint": "<3.12", "reason": "not part of the promoted validation surface"},
+    {"runtime": "cpython", "constraint": ">=3.13", "reason": "requires explicit compatibility evidence before promotion"},
+    {"runtime": "pypy", "constraint": "*", "reason": "not yet validated"}
+  ],
+  "environment": {
+    "PYTHONHASHSEED": "0",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "locale": "C.UTF-8",
+    "networkRequiredDuringValidation": false
+  },
+  "authority": {"ceiling": "none", "canonicalMutationApplied": false}
+}
