@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import pathlib
 import re
 import subprocess
@@ -13,12 +14,34 @@ from dataclasses import dataclass
 
 MAX_BLOB_BYTES = 2 * 1024 * 1024
 SELF_PATH = "ci/scan_public_repo.py"
+ALLOWLIST_PATH = "ci/public-sensitivity-allowlist.json"
+ALLOWLIST_SCHEMA = "pleiades.public-sensitivity-allowlist/v1"
 
 
 @dataclass(frozen=True)
 class Rule:
     name: str
     expression: re.Pattern[str]
+
+
+@dataclass(frozen=True)
+class Finding:
+    scope: str
+    identity: str
+    path: str
+    line_number: int
+    rule: str
+    line_sha256: str
+
+    @property
+    def allowlist_key(self) -> tuple[str, str, str]:
+        return (self.path, self.rule, self.line_sha256)
+
+    def render(self) -> str:
+        return (
+            f"{self.scope}: {self.identity}:{self.path}:{self.line_number}: "
+            f"{self.rule} line_sha256={self.line_sha256}"
+        )
 
 
 def joined(*parts: str) -> str:
@@ -47,6 +70,7 @@ RULES = [
         re.compile(r"\b100\.(?:6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])(?:\.[0-9]{1,3}){2}\b"),
     ),
 ]
+RULE_NAMES = {rule.name for rule in RULES}
 
 
 def git(root: pathlib.Path, *args: str, text: bool = True) -> subprocess.CompletedProcess:
@@ -68,26 +92,68 @@ def decode_text(data: bytes) -> str | None:
         return None
 
 
-def scan_text(scope: str, identity: str, path: str, text: str) -> list[str]:
+def load_allowlist(root: pathlib.Path) -> dict[tuple[str, str, str], str]:
+    path = root / ALLOWLIST_PATH
+    document = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(document, dict) or document.get("schema") != ALLOWLIST_SCHEMA:
+        raise RuntimeError(f"{ALLOWLIST_PATH} must use schema {ALLOWLIST_SCHEMA}")
+    entries = document.get("entries")
+    if not isinstance(entries, list):
+        raise RuntimeError(f"{ALLOWLIST_PATH} entries must be an array")
+
+    allowlist: dict[tuple[str, str, str], str] = {}
+    ordered_keys: list[tuple[str, str, str]] = []
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict) or set(entry) != {"path", "rule", "line_sha256", "reason"}:
+            raise RuntimeError(f"{ALLOWLIST_PATH} entry {index} has an invalid shape")
+        item_path = entry["path"]
+        rule = entry["rule"]
+        digest = entry["line_sha256"]
+        reason = entry["reason"]
+        if not isinstance(item_path, str) or not item_path or item_path.startswith("/") or ".." in pathlib.PurePosixPath(item_path).parts:
+            raise RuntimeError(f"{ALLOWLIST_PATH} entry {index} has an unsafe path")
+        if rule not in RULE_NAMES:
+            raise RuntimeError(f"{ALLOWLIST_PATH} entry {index} names an unknown rule: {rule}")
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{12}", digest):
+            raise RuntimeError(f"{ALLOWLIST_PATH} entry {index} has an invalid line hash")
+        if not isinstance(reason, str) or not reason.strip():
+            raise RuntimeError(f"{ALLOWLIST_PATH} entry {index} needs a reason")
+        key = (item_path, rule, digest)
+        if key in allowlist:
+            raise RuntimeError(f"duplicate sensitivity allowlist entry: {key}")
+        allowlist[key] = reason.strip()
+        ordered_keys.append(key)
+
+    if ordered_keys != sorted(ordered_keys):
+        raise RuntimeError(f"{ALLOWLIST_PATH} entries must be sorted by path, rule, and line hash")
+    return allowlist
+
+
+def scan_text(scope: str, identity: str, path: str, text: str) -> list[Finding]:
     if path == SELF_PATH:
         return []
-    findings: list[str] = []
+    findings: list[Finding] = []
     for line_number, line in enumerate(text.splitlines(), start=1):
         for rule in RULES:
             if rule.expression.search(line):
-                digest = hashlib.sha256(line.encode("utf-8")).hexdigest()[:12]
                 findings.append(
-                    f"{scope}: {identity}:{path}:{line_number}: "
-                    f"{rule.name} line_sha256={digest}"
+                    Finding(
+                        scope=scope,
+                        identity=identity,
+                        path=path,
+                        line_number=line_number,
+                        rule=rule.name,
+                        line_sha256=hashlib.sha256(line.encode("utf-8")).hexdigest()[:12],
+                    )
                 )
     return findings
 
 
-def scan_current(root: pathlib.Path) -> list[str]:
+def scan_current(root: pathlib.Path) -> list[Finding]:
     listed = git(root, "ls-files", "-s", "-z", text=False)
     if listed.returncode != 0:
         raise RuntimeError(listed.stderr.decode("utf-8", errors="replace"))
-    findings: list[str] = []
+    findings: list[Finding] = []
     for record in listed.stdout.split(b"\0"):
         if not record:
             continue
@@ -112,11 +178,11 @@ def scan_current(root: pathlib.Path) -> list[str]:
     return findings
 
 
-def scan_history(root: pathlib.Path) -> list[str]:
+def scan_history(root: pathlib.Path) -> list[Finding]:
     objects = git(root, "rev-list", "--objects", "HEAD")
     if objects.returncode != 0:
         raise RuntimeError(objects.stderr)
-    findings: list[str] = []
+    findings: list[Finding] = []
     visited: set[str] = set()
     for line in objects.stdout.splitlines():
         sha, separator, path = line.partition(" ")
@@ -143,16 +209,32 @@ def main() -> int:
     parser.add_argument("--current-only", action="store_true")
     args = parser.parse_args()
     root = pathlib.Path(__file__).resolve().parents[1]
+    allowlist = load_allowlist(root)
     findings = scan_current(root)
     if not args.current_only:
         findings.extend(scan_history(root))
-    if findings:
+
+    encountered_keys = {finding.allowlist_key for finding in findings}
+    stale_keys = sorted(set(allowlist) - encountered_keys)
+    unreviewed = sorted(
+        {finding.render() for finding in findings if finding.allowlist_key not in allowlist}
+    )
+    allowed_count = sum(1 for finding in findings if finding.allowlist_key in allowlist)
+
+    if stale_keys:
+        print("Sensitivity allowlist contains stale or unexercised entries:", file=sys.stderr)
+        for key in stale_keys:
+            print(f"  path={key[0]} rule={key[1]} line_sha256={key[2]}", file=sys.stderr)
+    if unreviewed:
         print("Public repository sensitivity scan requires review:", file=sys.stderr)
-        for finding in sorted(set(findings)):
+        for finding in unreviewed:
             print(f"  {finding}", file=sys.stderr)
+    if stale_keys or unreviewed:
         return 1
+
     scope = "current tree" if args.current_only else "current tree and history reachable from HEAD"
-    print(f"PASS: no configured sensitive patterns found in {scope}")
+    print(f"PASS: no unreviewed sensitive patterns found in {scope}")
+    print(f"PASS: {allowed_count} exact reviewed synthetic finding occurrence(s) matched the allowlist")
     return 0
 
 
