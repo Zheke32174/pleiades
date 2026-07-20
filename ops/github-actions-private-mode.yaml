@@ -1,0 +1,49 @@
+apiVersion: pleiades.io/v1alpha1
+kind: GitHubActionsOperatingMode
+metadata:
+  name: private-actions-manual-only
+  effectiveDate: 2026-07-19
+spec:
+  status: active
+  reason: >-
+    GitHub-hosted Actions jobs in private repositories are being rejected before
+    step 1, while equivalent public workflows execute. Automatic private runs
+    therefore create noise without producing trustworthy build or release state.
+  publicRepositories:
+    mode: automatic
+  privateRepositories:
+    mode: workflow-dispatch-only
+    automaticTriggersDisabled:
+      - push
+      - pull_request
+      - schedule
+      - workflow_run
+      - repository_dispatch
+    preservedCapabilities:
+      - manual workflow_dispatch execution
+      - existing build and test logic
+      - existing release publication logic
+      - source history and workflow provenance
+  releasePolicy:
+    existingReleasesRemainAuthoritativeUntilRebuilt: true
+    doNotClaimFreshPrivateArtifactsWithoutSuccessfulExecution: true
+  transitionCriteria:
+    anyOf:
+      - custom-private-github-actions-plugin-operational
+      - isolated-self-hosted-runner-pool-operational
+      - github-private-hosted-runner-restriction-cleared-and-verified
+  futurePluginContract:
+    requiredOperations:
+      - enumerate-private-workflows
+      - dispatch-selected-workflow
+      - read-run-and-job-failure-reasons
+      - download-build-artifacts
+      - create-or-update-release-assets
+      - verify-checksums-and-source-archives
+      - maintain-central-ci-ledger
+    safety:
+      - no-ambient-cross-repository-write
+      - explicit-repository-and-workflow-selection
+      - least-privilege-token-scopes
+      - immutable-operation-receipts
+      - no-success-without-asset-verification
