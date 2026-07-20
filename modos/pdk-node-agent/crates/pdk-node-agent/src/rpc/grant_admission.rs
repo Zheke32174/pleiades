@@ -15,10 +15,7 @@ impl NodeAgentService {
         let peer = peer_identity(&request)?.clone();
         let envelope = request.into_inner();
 
-        let validated = match self
-            .policy
-            .validate_signed_grant(envelope, &peer.identity)
-        {
+        let validated = match self.policy.validate_signed_grant(envelope, &peer.identity) {
             Ok(validated) => validated,
             Err(error) => {
                 let event = DecisionEvent {
