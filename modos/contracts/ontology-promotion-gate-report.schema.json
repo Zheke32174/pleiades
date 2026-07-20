@@ -18,7 +18,7 @@
     "apiVersion": {"const": "modos.pleiades/v1alpha1"},
     "kind": {"const": "OntologyPromotionGateReport"},
     "candidateId": {"type": "string", "minLength": 1, "maxLength": 256},
-    "status": {"enum": ["blocked", "eligible-for-steward-review"]},
+    "status": {"enum": ["blocked", "eligible-for-authorized-decision"]},
     "bindings": {
       "type": "object",
       "additionalProperties": false,
