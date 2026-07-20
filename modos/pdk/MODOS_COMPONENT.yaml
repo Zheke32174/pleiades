@@ -1,0 +1,62 @@
+apiVersion: modos.pleiades/v1alpha1
+kind: Component
+metadata:
+  name: pleiades-pdk-reference
+  repository: Zheke32174/pleiades
+  visibility: public
+  lifecycle: experimental
+  sourceRef: modos/epoch-0-canon-and-pdk
+  labels:
+    ecology-scope: deterministic-domain-control
+    promotion-state: branch-only
+spec:
+  roles:
+    - deterministic-domain-controller-reference
+    - local-node-agent-runtime
+    - bounded-capability-enforcer
+    - signed-audit-reconciler
+  authority: domain-control
+  inputs:
+    - mutually-authenticated-node-sessions
+    - signed-bounded-capability-grants
+    - declarative-desired-state
+    - local-node-inventory
+  outputs:
+    - signed-domain-events
+    - exact-event-audit-acknowledgements
+    - workload-state-reconciliation
+    - autonomy-state-transitions
+  capabilitiesProvided:
+    - domain.control.pdk@vepoch-0
+    - node.inventory@v1alpha1
+    - workload.native.systemd@v1alpha1
+    - audit.reconcile.signed@v1alpha1
+  capabilitiesRequired:
+    - governance.contract.validate@v1alpha1
+    - host.kernel.local@v1alpha1
+    - network.mtls@v1alpha1
+    - crypto.ed25519@v1alpha1
+  dataClasses:
+    - internal
+    - evidence
+    - untrusted
+  failurePolicy: fail-closed
+  promotionPolicy: evidence-gated
+  relations:
+    - type: governed-by
+      targetRef: component:pleiades-defensive-substrate
+      scope: governance
+      required: true
+    - type: implements
+      targetRef: capability:domain.control.pdk@vepoch-0
+      scope: runtime
+      required: true
+    - type: consumes-capability
+      targetRef: capability:governance.contract.validate@v1alpha1
+      scope: governance
+      required: true
+  notes: >-
+    This component is a compiled and tested reference implementation, not a
+    deployment receipt. It remains branch-only until the Alienware/Lenovo live
+    validation gates prove bilateral identity, bounded-grant persistence,
+    partition behavior, audit recovery, systemd execution, rollback, and teardown.
