@@ -136,6 +136,14 @@ def admit_workflow_job(
         normalized_headers.get("x-hub-signature-256"),
     )
 
+    content_type = _bounded_text(
+        normalized_headers.get("content-type"),
+        "Content-Type",
+        maximum=128,
+    )
+    if content_type.split(";", 1)[0].strip().casefold() != "application/json":
+        raise AdmissionError("only application/json webhook deliveries are admitted")
+
     event = _bounded_text(
         normalized_headers.get("x-github-event"),
         "X-GitHub-Event",
@@ -156,7 +164,11 @@ def admit_workflow_job(
         raise AdmissionError("only workflow_job deliveries are admitted in v1")
 
     try:
-        payload = json.loads(raw_body)
+        payload = json.loads(
+            raw_body,
+            object_pairs_hook=_strict_json_object,
+            parse_constant=_reject_json_constant,
+        )
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise AdmissionError("webhook body is not valid UTF-8 JSON") from error
     if not isinstance(payload, dict):
@@ -241,9 +253,7 @@ def project_commit_status(
     if not isinstance(receipt, Mapping):
         raise GitHubBridgeError("receipt must be an object")
 
-    job_class = _bounded_text(
-        receipt.get("jobClass"), "receipt.jobClass", maximum=64
-    )
+    job_class = _bounded_text(receipt.get("jobClass"), "receipt.jobClass", maximum=64)
     if not _JOB_CLASS.fullmatch(job_class):
         raise GitHubBridgeError("receipt.jobClass has an unsupported shape")
     context = "pleiades/" + job_class
@@ -258,9 +268,7 @@ def project_commit_status(
     elif not isinstance(receipt_digest, str) or not _SHA256_ID.fullmatch(
         receipt_digest
     ):
-        raise GitHubBridgeError(
-            "receipt.receiptDigest must be sha256:<lowercase-hex>"
-        )
+        raise GitHubBridgeError("receipt.receiptDigest must be sha256:<lowercase-hex>")
 
     body: dict[str, str] = {
         "state": state,
@@ -286,9 +294,7 @@ def project_commit_status(
     }
 
 
-def _status_state_and_description(
-    receipt: Mapping[str, Any],
-) -> tuple[str, str]:
+def _status_state_and_description(receipt: Mapping[str, Any]) -> tuple[str, str]:
     status = receipt.get("status")
     if status in {"admitted", "pending", "queued", "running"}:
         return "pending", f"{receipt.get('jobClass', 'job')} is {status}"
@@ -307,10 +313,7 @@ def _status_state_and_description(
             failure_class, "receipt.failure.class", maximum=64
         )
         if failure_class in _DETERMINISTIC_FAILURES:
-            return (
-                "failure",
-                f"{receipt.get('jobClass', 'job')} failed: {failure_class}",
-            )
+            return "failure", f"{receipt.get('jobClass', 'job')} failed: {failure_class}"
         return "error", f"{receipt.get('jobClass', 'job')} error: {failure_class}"
     raise GitHubBridgeError("receipt.status is not projectable")
 
@@ -327,6 +330,19 @@ def _normalize_headers(headers: Mapping[str, str]) -> dict[str, str]:
             raise AdmissionError(f"duplicate header after case folding: {key}")
         normalized[lowered] = value
     return normalized
+
+
+def _strict_json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise AdmissionError(f"webhook JSON contains duplicate key: {key}")
+        value[key] = item
+    return value
+
+
+def _reject_json_constant(value: str) -> None:
+    raise AdmissionError(f"webhook JSON contains non-finite constant: {value}")
 
 
 def _object(value: Any, label: str) -> dict[str, Any]:
@@ -364,30 +380,22 @@ def _bounded_text(
 
 def _repository_name(value: Any, label: str) -> str:
     if not isinstance(value, str) or not _REPOSITORY.fullmatch(value):
-        raise GitHubBridgeError(
-            f"{label} is not a canonical owner/repository identity"
-        )
+        raise GitHubBridgeError(f"{label} is not a canonical owner/repository identity")
     owner, name = value.split("/", 1)
     if owner.endswith("-") or "--" in owner or name in {".", ".."}:
-        raise GitHubBridgeError(
-            f"{label} is not a canonical owner/repository identity"
-        )
+        raise GitHubBridgeError(f"{label} is not a canonical owner/repository identity")
     return value
 
 
 def _commit_sha(value: Any, label: str) -> str:
     if not isinstance(value, str) or not _COMMIT_SHA.fullmatch(value):
-        raise GitHubBridgeError(
-            f"{label} must be exactly 40 lowercase hexadecimal characters"
-        )
+        raise GitHubBridgeError(f"{label} must be exactly 40 lowercase hexadecimal characters")
     return value
 
 
 def _labels(value: Any) -> tuple[str, ...]:
     if not isinstance(value, list) or len(value) > MAX_LABELS:
-        raise AdmissionError(
-            f"workflow_job.labels must contain at most {MAX_LABELS} items"
-        )
+        raise AdmissionError(f"workflow_job.labels must contain at most {MAX_LABELS} items")
     labels: list[str] = []
     seen: set[str] = set()
     for item in value:
@@ -396,9 +404,7 @@ def _labels(value: Any) -> tuple[str, ...]:
         )
         folded = label.casefold()
         if folded in seen:
-            raise AdmissionError(
-                "workflow_job.labels contains a duplicate identity"
-            )
+            raise AdmissionError("workflow_job.labels contains a duplicate identity")
         seen.add(folded)
         labels.append(label)
     return tuple(labels)
@@ -413,11 +419,7 @@ def _bounded_description(value: str) -> str:
 
 
 def _https_url(value: str) -> str:
-    if (
-        not isinstance(value, str)
-        or not value
-        or len(value) > MAX_TARGET_URL_LENGTH
-    ):
+    if not isinstance(value, str) or not value or len(value) > MAX_TARGET_URL_LENGTH:
         raise GitHubBridgeError("target_url is missing or too long")
     parsed = urlsplit(value)
     if (
@@ -447,6 +449,4 @@ def _canonical_json_bytes(value: Mapping[str, Any]) -> bytes:
             allow_nan=False,
         ).encode("utf-8")
     except (TypeError, ValueError) as error:
-        raise GitHubBridgeError(
-            "receipt is not canonical-JSON encodable"
-        ) from error
+        raise GitHubBridgeError("receipt is not canonical-JSON encodable") from error
