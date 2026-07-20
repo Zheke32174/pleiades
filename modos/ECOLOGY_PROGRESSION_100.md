@@ -117,16 +117,16 @@ No item in this ledger silently grants canonical authority, issues a live grant,
 
 ## Phase I — Constitutional evolution and institutional plurality
 
-81. `queued` Define constitutional amendment proposals separately from executive decisions.
-82. `queued` Define mixed human-machine amendment deliberation.
-83. `queued` Require explicit reserved-power quorum for authority-model changes.
-84. `queued` Define institutional principals beyond one operator and one Mind.
-85. `queued` Define succession and continuity for constitutional stewards.
-86. `queued` Define conflict-of-interest and recusal rules.
-87. `queued` Define independent audit and appeal principals.
-88. `queued` Define time-locked constitutional changes and cancellation windows.
-89. `queued` Define constitutional rollback and supersession lineage.
-90. `queued` Emit constitutional-amendment receipts.
+81. `implemented` Define constitutional amendment proposals separately from executive decisions.
+82. `implemented` Define mixed human-machine amendment deliberation.
+83. `implemented` Require explicit reserved-power quorum for authority-model changes.
+84. `implemented` Define institutional principals beyond one operator and one Mind.
+85. `implemented` Define succession and continuity for constitutional stewards.
+86. `implemented` Define conflict-of-interest and recusal rules.
+87. `implemented` Define independent audit and appeal principals.
+88. `implemented` Define time-locked constitutional changes and cancellation windows.
+89. `implemented` Define constitutional rollback and supersession lineage.
+90. `implemented` Emit constitutional-amendment receipts.
 
 ## Phase J — Full symbiotic operating ecology
 
@@ -143,4 +143,4 @@ No item in this ledger silently grants canonical authority, issues a live grant,
 
 ## Current tranche
 
-The stacked governance branches implement points 1–80 as deterministic contract and validation slices. Points 81–98 remain ordered for further implementation. Points 99–100 require the actual live substrate and cannot honestly be marked complete in repository-only work.
+The stacked governance branches implement points 1–90 as deterministic contract and validation slices. Points 91–98 remain ordered for repository implementation. Points 99–100 require the actual live substrate and cannot honestly be marked complete in repository-only work.
