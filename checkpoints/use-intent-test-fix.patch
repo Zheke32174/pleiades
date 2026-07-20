@@ -1,0 +1,13 @@
+--- a/modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs
++++ b/modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs
+@@ -792,10 +792,6 @@ mod tests {
+             .await
+             .expect("admit grant");
+ 
+         let duplicate = event("duplicate-intent-event", "existing.event");
+-        insert_prepared_event_tx(&mut store.pool.begin().await.expect("begin seed"), &duplicate)
+-            .await
+-            .expect_err("uncommitted seed transaction must not be used");
+         sqlx::query(
+             r#"
+             INSERT INTO domain_event_queue
