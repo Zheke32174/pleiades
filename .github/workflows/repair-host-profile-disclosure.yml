@@ -1,0 +1,104 @@
+name: Repair host profile disclosure
+
+on:
+  push:
+    branches:
+      - governance/convergence-proof-v1
+    paths:
+      - '.github/workflows/repair-host-profile-disclosure.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: governance/convergence-proof-v1
+      - name: Replace identity-bearing profile paths with runtime discovery
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          path = Path('scripts/pleiades-install-host-autostart.sh')
+          text = path.read_text()
+          if 'detect_windows_profile()' in text:
+              raise SystemExit('profile discovery is already present')
+
+          root_check = '[[ "${EUID:-$(id -u)}" -ne 0 ]] && die "Must run as root (try: sudo bash $0)"\n'
+          if text.count(root_check) != 1:
+              raise SystemExit('root-check insertion point is not unique')
+
+          block = r'''
+
+detect_windows_profile() {
+  local raw_profile=""
+  if command -v cmd.exe >/dev/null 2>&1 && command -v wslpath >/dev/null 2>&1; then
+    raw_profile="$(cmd.exe /C 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r\n')"
+    if [[ -n "$raw_profile" && "$raw_profile" != "%USERPROFILE%" ]]; then
+      wslpath -u "$raw_profile"
+      return 0
+    fi
+  fi
+
+  local candidate=""
+  while IFS= read -r candidate; do
+    case "${candidate##*/}" in
+      Public|Default|"Default User"|"All Users") continue ;;
+    esac
+    printf '%s\n' "$candidate"
+    return 0
+  done < <(find /mnt/c/Users -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | sort)
+  return 1
+}
+
+WINDOWS_PROFILE="$(detect_windows_profile)" || die "Unable to determine the Windows profile directory"
+WINDOWS_USER="${WINDOWS_PROFILE##*/}"
+VBS_DIR="$WINDOWS_PROFILE/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup"
+VBS_PATH="$VBS_DIR/Pleiades-WSL-Start.vbs"
+'''
+          text = text.replace(root_check, root_check + block, 1)
+
+          text, removed_uninstall = re.subn(
+              r'^  VBS_PATH="/mnt/c/Users/[^"\n]+/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup/Pleiades-WSL-Start\.vbs"\n',
+              '',
+              text,
+              count=1,
+              flags=re.MULTILINE,
+          )
+          if removed_uninstall != 1:
+              raise SystemExit(f'expected one hardcoded uninstall path, removed {removed_uninstall}')
+
+          text, removed_detection = re.subn(
+              r'^WINDOWS_USER="Fixxia"\nWINDOWS_PROFILE="/mnt/c/Users/\$WINDOWS_USER"\n.*?^VBS_PATH="\$VBS_DIR/Pleiades-WSL-Start\.vbs"\n',
+              'log "Windows user: $WINDOWS_USER"\n',
+              text,
+              count=1,
+              flags=re.MULTILINE | re.DOTALL,
+          )
+          if removed_detection != 1:
+              raise SystemExit(f'expected one legacy profile block, removed {removed_detection}')
+
+          path.write_text(text)
+          PY
+      - name: Verify syntax and current-tree privacy
+        run: |
+          bash -n scripts/pleiades-install-host-autostart.sh
+          python ci/scan-public-history.py \
+            --mode current \
+            --report artifacts/current-tree-sensitivity-receipt.json
+      - name: Commit privacy repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/pleiades-install-host-autostart.sh
+          git commit -m "Discover Windows profile without public identity literals"
+          git fetch --no-tags origin governance/convergence-proof-v1
+          git rebase origin/governance/convergence-proof-v1
+          git push origin HEAD:governance/convergence-proof-v1
