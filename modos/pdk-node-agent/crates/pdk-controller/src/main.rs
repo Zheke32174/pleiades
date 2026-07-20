@@ -1,15 +1,18 @@
 mod config;
-mod heartbeat_store;
 mod rpc;
 mod state;
 mod store;
+
+mod heartbeat_store {
+    pub use pdk_controller::heartbeat_store::*;
+}
 
 use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc};
 
 use anyhow::{Context, Result, bail};
 use clap::Parser;
 use config::ControllerConfig;
-use heartbeat_store::ControllerHeartbeatStore;
+use pdk_controller::heartbeat_store::ControllerHeartbeatStore;
 use pdk_crypto::{decode_verifying_key, load_signing_key};
 use pdk_protocol::v1::control_plane_server::ControlPlaneServer;
 use pdk_transport::{CertificateIdentityInterceptor, PeerRegistry, server_tls};
