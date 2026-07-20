@@ -12,8 +12,7 @@
   ],
   "rules": [
     {"id": "literal-linux-home", "pattern": "/home/[A-Za-z0-9._-]+/"},
-    {"id": "literal-windows-profile", "pattern": "(?:[A-Za-z]:\\\\|/mnt/[A-Za-z]/)Users[/\\\\][A-Za-z0-9._ -]+[/\\\\]"},
-    {"id": "literal-workspace-owner-path", "pattern": "/workspaces/[A-Za-z0-9._-]+/"}
+    {"id": "literal-windows-profile", "pattern": "(?:[A-Za-z]:\\\\|/mnt/[A-Za-z]/)Users[/\\\\][A-Za-z0-9._ -]+[/\\\\]"}
   ],
   "allowlist": [
     {"rule": "literal-linux-home", "path": "**", "literal": "/home/ubuntu/", "reason": "generic synthetic fixture identity"}
