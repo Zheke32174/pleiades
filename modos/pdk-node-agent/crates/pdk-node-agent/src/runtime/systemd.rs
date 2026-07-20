@@ -127,6 +127,7 @@ impl RuntimeDriver for SystemdDriver {
             state: map_state(&active_state) as i32,
             observed_at_unix_ms: crate::autonomy::unix_ms(),
             detail: format!("systemd ActiveState={active_state}, SubState={sub_state}"),
+            intent: None,
         })
     }
 
@@ -143,6 +144,7 @@ impl RuntimeDriver for SystemdDriver {
             state: WorkloadState::Stopped as i32,
             observed_at_unix_ms: crate::autonomy::unix_ms(),
             detail: format!("stop requested through systemd D-Bus: {reason}"),
+            intent: None,
         })
     }
 
