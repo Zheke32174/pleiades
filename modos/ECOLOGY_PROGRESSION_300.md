@@ -4,8 +4,7 @@ These points were derived from the actual repository state after points 101–20
 
 Status vocabulary:
 
-- `implemented` — present on `governance/convergence-proof-v1` as code, contract, deterministic fixture, test, workflow, receipt surface, or reviewed documentation;
-- `provisional` — implemented but awaiting the aggregate receipt for the exact final checkpoint head;
+- `implemented` — present on `governance/convergence-proof-v1` as code, contract, deterministic fixture, test, workflow, receipt surface, reviewed documentation, or reproduced aggregate evidence;
 - `blocked` — requires real private evidence, sovereign authorization, signing identity, live infrastructure, or elapsed observation;
 - `specified` — intentionally reserved for derivation from later real receipts.
 
@@ -20,7 +19,7 @@ Status vocabulary:
 207. `implemented` Retire the completed main-ancestry convergence workflow.
 208. `implemented` Remove the remaining current-tree copy of the former workstation identity contained by repair machinery.
 209. `implemented` Preserve historical copies only as issue-#42 reachable-history evidence; perform no rewrite.
-210. `provisional` Require the exact post-retirement branch head to reproduce the complete convergence receipt.
+210. `implemented` Reproduce the complete convergence receipt on the exact post-retirement branch state.
 
 ## Phase V — Harden convergence evidence publication
 
@@ -115,7 +114,7 @@ Status vocabulary:
 287. `implemented` Carry exact operator/live actions from the frontier without executing them.
 288. `implemented` Bind every packet to the real numbered runbook anchors.
 289. `implemented` Add adversarial stale-candidate, tampered-receipt, repository-failure, and operator-action tests.
-290. `provisional` Add intake and packet proofs to the aggregate suite, contract governance, CODEOWNERS, and focused PR workflow; await exact-head receipt.
+290. `implemented` Add intake and packet proofs to the aggregate suite, contract governance, CODEOWNERS, focused PR workflow, and reproducible offline package; reproduce all 35 commands successfully.
 
 ## Phase AA — Real operator/live frontier
 
@@ -132,4 +131,4 @@ Status vocabulary:
 
 ## Current interpretation
 
-Points 201–289 are implemented repository preparation. Points 210 and 290 remain provisional until the new aggregate suite validates the exact final branch head. Points 291–299 remain genuinely private, sovereign, live, or time-dependent. Point 300 preserves organic progression: the fourth hundred must be revealed by evidence rather than invented in advance.
+Points 201–290 are implemented and reproduced by the 35-command aggregate suite. Points 291–299 remain genuinely private, sovereign, live, or time-dependent. Point 300 preserves organic progression: the fourth hundred must be revealed by evidence rather than invented in advance.
