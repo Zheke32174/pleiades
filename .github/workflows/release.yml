@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   publish-lean-source:
@@ -89,6 +91,15 @@ jobs:
           assert receipt['deployment_receipt'] is False
           PY
 
+      - name: Attest release artifacts
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            dist/pleiades-lean-*.tar.gz
+            dist/pleiades-lean-*.spdx.json
+            dist/pleiades-lean-*.build-receipt.json
+            dist/SHA256SUMS.txt
+
       - name: Write download-first release notes
         env:
           TAG: ${{ github.ref_name }}
@@ -100,7 +111,11 @@ jobs:
 
           Download **pleiades-lean-${version}.tar.gz** and verify it against **SHA256SUMS.txt** before extraction.
 
-          This is a deterministic source release for the supported `lean/` defensive runtime. It is not a Gentoo stage3, root filesystem, WSL distribution, OCI/VM image, credential bundle, evidence export, live deployment, or service activation.
+          Verify GitHub build provenance with:
+
+          \`gh attestation verify pleiades-lean-${version}.tar.gz --repo ${GITHUB_REPOSITORY}\`
+
+          This is a deterministic source release for the supported \`lean/\` defensive runtime. It is not a Gentoo stage3, root filesystem, WSL distribution, OCI/VM image, credential bundle, evidence export, live deployment, or service activation.
 
           Verification assets:
 
@@ -108,9 +123,9 @@ jobs:
           - pleiades-lean-${version}.build-receipt.json
           - SHA256SUMS.txt
 
-          Read README.md and RELEASE_SCOPE.md before use. Build and run verification inside a reviewed Gentoo container; container creation and host lifecycle belong to `pleiades-container`.
+          Read README.md and RELEASE_SCOPE.md before use. Build and run verification inside a reviewed Gentoo container; container creation and host lifecycle belong to \`pleiades-container\`.
 
-          Historical `root.x86_64`, experimental recovery material, and the unintegrated MODOS/PDK authority chain are intentionally excluded from this archive.
+          Historical \`root.x86_64\`, experimental recovery material, and the unintegrated MODOS/PDK authority chain are intentionally excluded from this archive.
           EOF
 
       - name: Create release once
