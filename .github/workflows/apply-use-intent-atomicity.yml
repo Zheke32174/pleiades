@@ -1,5 +1,6 @@
 name: Apply capability use intent atomicity
 
+# Branch-scoped one-shot. Success deletes this workflow and both patch files.
 on:
   push:
     branches:
