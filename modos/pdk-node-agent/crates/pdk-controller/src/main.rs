@@ -1,8 +1,12 @@
 mod config;
+mod heartbeat_read_store;
 mod heartbeat_store;
 mod rpc;
 mod state;
 mod store;
+
+#[cfg(test)]
+mod heartbeat_read_tests;
 
 use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc};
 
