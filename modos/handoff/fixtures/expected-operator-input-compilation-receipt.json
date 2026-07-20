@@ -1,0 +1,25 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "kind": "OperatorInputCompilationReceipt",
+  "candidateId": "operator-input-candidate:synthetic-ready-0001",
+  "candidateDigest": "sha256:63f923727ca0ab01a2ab4b07232c45e94097d5b3628bedd69d1914e5f31889f3",
+  "sourceCommit": "1111111111111111111111111111111111111111",
+  "state": "ready-to-derive-next-progression",
+  "satisfiedInputs": ["authorityGrant", "canaryPlan", "historyDecision", "nodeInventory", "observationPlan", "observedInventory", "privateEcology", "signingIdentity"],
+  "pendingInputs": [],
+  "outputPlans": [
+    {"outputId": "canary-admission-plan", "status": "ready-for-sovereign-review", "requiredInputs": ["nodeInventory", "canaryPlan"], "missingBindings": [], "evidenceRefs": ["urn:pleiades:artifact:canary-plan:synthetic-0001", "urn:pleiades:artifact:nodes:synthetic-0001"], "executionApplied": false, "canonicalMutationApplied": false, "planDigest": "sha256:ec2ac24c6484160e88d1f8eaa60f7c079ade398007c02b432f3e5d290f3dc4da"},
+    {"outputId": "grant-issuance-proposal", "status": "ready-for-sovereign-review", "requiredInputs": ["authorityGrant", "signingIdentity"], "missingBindings": [], "evidenceRefs": ["urn:pleiades:receipt:grant-proposal:synthetic-0001", "urn:pleiades:receipt:signing-identity:synthetic-0001"], "executionApplied": false, "canonicalMutationApplied": false, "planDigest": "sha256:40cb5e1a7159ce3ba0adc34261d098e1953e5981541d1c68fb9bf63bfc47dff5"},
+    {"outputId": "history-rewrite-decision-record", "status": "ready-for-sovereign-review", "requiredInputs": ["historyDecision"], "missingBindings": [], "evidenceRefs": ["urn:pleiades:receipt:history-decision:synthetic-0001"], "executionApplied": false, "canonicalMutationApplied": false, "planDigest": "sha256:d696280f99226a4a51fcfb39748cdd05c0b07befc251cfe1f5f16bcbc4a685c3"},
+    {"outputId": "next-progression-candidate", "status": "ready-for-sovereign-review", "requiredInputs": ["privateEcology", "observedInventory", "nodeInventory", "signingIdentity", "historyDecision", "authorityGrant", "canaryPlan", "observationPlan"], "missingBindings": [], "evidenceRefs": ["urn:pleiades:artifact:canary-plan:synthetic-0001", "urn:pleiades:artifact:nodes:synthetic-0001", "urn:pleiades:artifact:observation-plan:synthetic-0001", "urn:pleiades:private:ecology:synthetic-0001", "urn:pleiades:private:inventory:synthetic-0001", "urn:pleiades:receipt:grant-proposal:synthetic-0001", "urn:pleiades:receipt:history-decision:synthetic-0001", "urn:pleiades:receipt:signing-identity:synthetic-0001"], "executionApplied": false, "canonicalMutationApplied": false, "planDigest": "sha256:e527e189aa985461e11b9adf34f78a140a4c449f4ef15dc0d4e8a69674025bc3"},
+    {"outputId": "node-admission-candidate", "status": "ready-for-sovereign-review", "requiredInputs": ["nodeInventory", "signingIdentity"], "missingBindings": [], "evidenceRefs": ["urn:pleiades:artifact:nodes:synthetic-0001", "urn:pleiades:receipt:signing-identity:synthetic-0001"], "executionApplied": false, "canonicalMutationApplied": false, "planDigest": "sha256:28127b6426e790d999caca06b7b7af88d465569d72e71a02ab9b75b5f869828d"},
+    {"outputId": "observation-window-plan", "status": "ready-for-sovereign-review", "requiredInputs": ["observationPlan"], "missingBindings": [], "evidenceRefs": ["urn:pleiades:artifact:observation-plan:synthetic-0001"], "executionApplied": false, "canonicalMutationApplied": false, "planDigest": "sha256:142851602246502ff971d8a5188d51a4874efee94f6ab8642204527d7017754f"},
+    {"outputId": "private-closure-candidate", "status": "ready-for-sovereign-review", "requiredInputs": ["privateEcology", "observedInventory"], "missingBindings": [], "evidenceRefs": ["urn:pleiades:private:ecology:synthetic-0001", "urn:pleiades:private:inventory:synthetic-0001"], "executionApplied": false, "canonicalMutationApplied": false, "planDigest": "sha256:51eb7d38fdbcb43853f6421bcb3b92153707c1bc777137992424cd17db67e0e6"}
+  ],
+  "readyOutputCount": 7,
+  "blockedOutputCount": 0,
+  "blockers": [],
+  "contentSafety": {"embeddedPayloadDetected": false, "privateKeyMaterialDetected": false, "secretPatternDetected": false},
+  "authority": {"ceiling": "none", "proposalOnly": true, "canonicalMutationApplied": false, "liveExecutionApplied": false, "historyRewriteApplied": false, "grantIssued": false},
+  "receiptDigest": "sha256:7381dc6432319c009d7fbd33ebd2ff56f28daee6a14518cd08561bdb9168ca9e"
+}
