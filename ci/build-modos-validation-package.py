@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a reproducible, secret-free MODOS validation package."""
+"""Build a reproducible, secret-free MODOS validation package and SBOM."""
 from __future__ import annotations
 
 import argparse
@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 import tarfile
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -28,7 +29,7 @@ INCLUDE_ROOTS = (
     Path("modos/ECOLOGY_PROGRESSION_200.md"),
 )
 EXCLUDED_PARTS = {"__pycache__", ".pytest_cache", "artifacts", "target", ".git"}
-ALLOWED_SUFFIXES = {".py", ".json", ".md", ".sql", ".txt", ".yaml", ".yml", ".toml", ".proto"}
+ALLOWED_SUFFIXES = {".py", ".json", ".md", ".sql", ".txt", ".yaml", ".yml", ".toml", ".proto", ".sh"}
 
 
 class PackageError(ValueError):
@@ -86,8 +87,46 @@ def normalized_info(path: str, size: int) -> tarfile.TarInfo:
     info.gid = 0
     info.uname = ""
     info.gname = ""
-    info.mode = 0o755 if path.endswith(".py") else 0o644
+    info.mode = 0o755 if path.endswith((".py", ".sh")) else 0o644
     return info
+
+
+def build_sbom(commit: str, entries: list[dict[str, Any]], manifest_digest: str) -> dict[str, Any]:
+    seed = hashlib.sha256((commit + manifest_digest).encode("ascii")).hexdigest()[:32]
+    serial = str(uuid.UUID(seed))
+    components = []
+    for row in entries:
+        components.append(
+            {
+                "type": "file",
+                "bom-ref": row["path"],
+                "name": row["path"],
+                "version": commit[:12],
+                "hashes": [{"alg": "SHA-256", "content": row["digest"][7:]}],
+                "properties": [{"name": "pleiades:file-bytes", "value": str(row["bytes"])}],
+            }
+        )
+    return {
+        "bomFormat": "CycloneDX",
+        "specVersion": "1.6",
+        "serialNumber": "urn:uuid:" + serial,
+        "version": 1,
+        "metadata": {
+            "component": {
+                "type": "application",
+                "bom-ref": "pleiades-modos-validation",
+                "name": "pleiades-modos-validation",
+                "version": commit,
+                "hashes": [{"alg": "SHA-256", "content": manifest_digest[7:]}],
+            },
+            "properties": [
+                {"name": "pleiades:network-resolution-allowed", "value": "false"},
+                {"name": "pleiades:private-material-included", "value": "false"},
+                {"name": "pleiades:source-commit", "value": commit},
+            ],
+        },
+        "components": components,
+    }
 
 
 def build(root: Path, output: Path, commit: str) -> dict[str, Any]:
@@ -117,6 +156,11 @@ def build(root: Path, output: Path, commit: str) -> dict[str, Any]:
     manifest_bytes = json.dumps(manifest, indent=2, sort_keys=True).encode("utf-8") + b"\n"
     payloads.append(("PACKAGE_MANIFEST.json", manifest_bytes))
 
+    sbom = build_sbom(commit, entries, manifest["manifestDigest"])
+    sbom_bytes = json.dumps(sbom, indent=2, sort_keys=True).encode("utf-8") + b"\n"
+    sbom_digest = sha256_bytes(canonical_bytes(sbom))
+    payloads.append(("PACKAGE_SBOM.cdx.json", sbom_bytes))
+
     output.parent.mkdir(parents=True, exist_ok=True)
     raw = io.BytesIO()
     with tarfile.open(fileobj=raw, mode="w", format=tarfile.PAX_FORMAT) as archive:
@@ -132,6 +176,7 @@ def build(root: Path, output: Path, commit: str) -> dict[str, Any]:
         "kind": "ValidationPackageReceipt",
         "sourceCommit": commit,
         "manifestDigest": manifest["manifestDigest"],
+        "sbomDigest": sbom_digest,
         "packageDigest": sha256_bytes(package_bytes),
         "packageBytes": len(package_bytes),
         "fileCount": len(entries),
