@@ -130,17 +130,25 @@ No item in this ledger silently grants canonical authority, issues a live grant,
 
 ## Phase J — Full symbiotic operating ecology
 
-91. `queued` Connect executive authority to the complete ecology registry.
-92. `queued` Compile the full public and private ontology rather than seed fixtures.
-93. `queued` Bind service-level learning joints into the executive workspace.
-94. `queued` Connect predictive simulation and hyperbolic-chamber evaluation before execution.
-95. `queued` Compare simulated and real outcomes to calibrate confidence.
-96. `queued` Add ordinary-person-noticeable improvement evaluation where applicable.
-97. `queued` Add machine-measurable and steward-verifiable promotion criteria.
-98. `queued` Define cross-Mind and external-agent treaty interfaces.
+91. `implemented` Connect executive authority to the complete ecology registry through typed readiness relations.
+92. `blocked` Compile the actual public and private ontology rather than seed or synthetic fixtures; requires the live private exhaustive registry.
+93. `implemented` Bind service-level learning joints into the executive workspace.
+94. `implemented` Connect predictive simulation and hyperbolic-chamber evaluation before execution.
+95. `implemented` Compare simulated and observed outcomes to calibrate confidence.
+96. `implemented` Add ordinary-person-noticeable improvement evaluation where applicable.
+97. `implemented` Add machine-measurable and steward-verifiable promotion criteria.
+98. `implemented` Define bounded cross-Mind and external-agent treaty interfaces.
 99. `blocked` Complete live substrate admission, observation, rollback, and continual improvement loops.
 100. `blocked` Demonstrate sustained bounded autonomous operation with constitutional integrity, recoverability, and evidence-backed authority growth.
 
-## Current tranche
+## Current state
 
-The stacked governance branches implement points 1–90 as deterministic contract and validation slices. Points 91–98 remain ordered for repository implementation. Points 99–100 require the actual live substrate and cannot honestly be marked complete in repository-only work.
+The stacked governance branches implement 97 of the 100 progression points as deterministic contracts, validators, receipts, and adversarial test surfaces.
+
+The remaining three points are deliberately blocked rather than falsely completed:
+
+- point 92 requires the real private exhaustive registry and a full live ontology closure receipt;
+- point 99 requires actual substrate execution and observed rollback/learning loops;
+- point 100 requires sustained operational evidence over time.
+
+Repository fixtures cannot truthfully satisfy those live-system requirements.
