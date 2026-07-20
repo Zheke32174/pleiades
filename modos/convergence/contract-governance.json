@@ -1,0 +1,80 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "kind": "ContractGovernanceMatrix",
+  "matrixId": "pleiades-contract-governance-v1",
+  "families": [
+    {
+      "familyId": "ecology",
+      "owner": "@Zheke32174",
+      "authorityClass": "public-constitutional-contract",
+      "currentVersion": "v1alpha1",
+      "paths": [
+        "modos/contracts/component-manifest.schema.json",
+        "modos/contracts/ecology-registry.schema.json"
+      ]
+    },
+    {
+      "familyId": "ontology",
+      "owner": "@Zheke32174",
+      "authorityClass": "proposal-and-evidence-contract",
+      "currentVersion": "v1alpha1",
+      "pathPatterns": [
+        "modos/contracts/change-proposal.schema.json",
+        "modos/contracts/ontology-*.schema.json",
+        "modos/contracts/source-manifest.schema.json"
+      ]
+    },
+    {
+      "familyId": "executive-governance",
+      "owner": "@Zheke32174",
+      "authorityClass": "delegated-runtime-governance-contract",
+      "currentVersion": "v1alpha1",
+      "paths": [
+        "modos/contracts/delegated-authority-grant.schema.json",
+        "modos/contracts/executive-decision.schema.json",
+        "modos/contracts/executive-authorization-receipt.schema.json",
+        "modos/contracts/admission-mandate.schema.json",
+        "modos/contracts/executive-control-plane.schema.json",
+        "modos/contracts/workspace-emergency-recovery.schema.json",
+        "modos/contracts/distributed-admission.schema.json",
+        "modos/contracts/learning-spine.schema.json",
+        "modos/contracts/constitutional-evolution.schema.json",
+        "modos/contracts/ecology-integration-readiness.schema.json"
+      ]
+    },
+    {
+      "familyId": "convergence",
+      "owner": "@Zheke32174",
+      "authorityClass": "evidence-and-handoff-contract",
+      "currentVersion": "v1alpha1",
+      "paths": [
+        "modos/contracts/operator-intervention-bundle.schema.json",
+        "modos/contracts/validation-package.schema.json"
+      ]
+    }
+  ],
+  "compatibilityPolicy": {
+    "sameVersion": "must-remain-structurally-and-semantically-compatible-or-require-explicit-migration",
+    "additiveOptionalField": "compatible-after-golden-and-consumer-tests",
+    "newRequiredField": "breaking",
+    "enumNarrowing": "breaking",
+    "authorityCeilingIncrease": "constitutional-review-required",
+    "authorityCeilingDecrease": "compatible-only-with-explicit-runtime-migration",
+    "identifierOrDigestChange": "new-evidence-generation-required",
+    "schemaIdChange": "new-contract-identity-required",
+    "unknownFutureVersion": "fail-closed"
+  },
+  "supportedTransitions": [
+    {"from": "v1alpha1", "to": "v1alpha1", "status": "current", "migrationRequired": false},
+    {"from": "v1alpha1", "to": "v1beta1", "status": "unimplemented", "migrationRequired": true},
+    {"from": "v1alpha1", "to": "v1", "status": "unimplemented", "migrationRequired": true}
+  ],
+  "reviewRules": {
+    "codeownersRequired": true,
+    "semanticDiffRequired": true,
+    "goldenReceiptReproductionRequired": true,
+    "consumerCompatibilityEvidenceRequired": true,
+    "selfPromotionAllowed": false
+  },
+  "authority": {"ceiling": "none", "mayChangeContracts": false, "mayPromoteContracts": false}
+}
