@@ -46,21 +46,41 @@ jobs:
           rustup default stable
           sudo apt-get update -qq
           sudo apt-get install -y -qq protobuf-compiler
-      - name: Apply and validate atomic operation intent checkpoint
+      - name: Capture complete atomic operation intent validation
+        id: validation
         shell: bash
         run: |
-          set -euo pipefail
-          git apply --check checkpoints/use-intent-atomicity.patch
-          git apply checkpoints/use-intent-atomicity.patch
-          git apply --check checkpoints/use-intent-test-fix.patch
-          git apply checkpoints/use-intent-test-fix.patch
-          cargo fmt --all --manifest-path modos/pdk-node-agent/Cargo.toml
-          cargo clippy --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- -D warnings
-          cargo test --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- --nocapture
-          git diff --check
-          grep -Fq 'consume_use_with_intent' modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs
-          ! grep -Fq 'consume_durable_use' modos/pdk-node-agent/crates/pdk-node-agent/src/rpc.rs
-          grep -Fq 'OperationIntentReceipt intent = 7;' modos/pdk-node-agent/proto/pdk/v1/pdk.proto
+          set +e
+          {
+            set -x
+            git apply --check checkpoints/use-intent-atomicity.patch
+            git apply checkpoints/use-intent-atomicity.patch
+            git apply --check checkpoints/use-intent-test-fix.patch
+            git apply checkpoints/use-intent-test-fix.patch
+            cargo fmt --all --manifest-path modos/pdk-node-agent/Cargo.toml
+            cargo clippy --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- -D warnings
+            cargo test --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- --nocapture
+            git diff --check
+            grep -Fq 'consume_use_with_intent' modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs
+            ! grep -Fq 'consume_durable_use' modos/pdk-node-agent/crates/pdk-node-agent/src/rpc.rs
+            grep -Fq 'OperationIntentReceipt intent = 7;' modos/pdk-node-agent/proto/pdk/v1/pdk.proto
+          } > use-intent-validation.log 2>&1
+          status=$?
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          tail -n 240 use-intent-validation.log
+          exit 0
+      - name: Upload atomic intent validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: use-intent-validation-${{ github.sha }}
+          path: use-intent-validation.log
+          if-no-files-found: error
+          retention-days: 14
+      - name: Enforce atomic intent validation
+        env:
+          VALIDATION_EXIT: ${{ steps.validation.outputs.exit_code }}
+        run: test "$VALIDATION_EXIT" = 0
       - name: Commit only permanent validated files
         shell: bash
         run: |
