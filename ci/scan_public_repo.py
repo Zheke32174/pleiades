@@ -84,17 +84,31 @@ def scan_text(scope: str, identity: str, path: str, text: str) -> list[str]:
 
 
 def scan_current(root: pathlib.Path) -> list[str]:
-    listed = git(root, "ls-files", "-z", text=False)
+    listed = git(root, "ls-files", "-s", "-z", text=False)
     if listed.returncode != 0:
         raise RuntimeError(listed.stderr.decode("utf-8", errors="replace"))
     findings: list[str] = []
-    for raw_path in listed.stdout.split(b"\0"):
-        if not raw_path:
+    for record in listed.stdout.split(b"\0"):
+        if not record:
             continue
+        metadata, separator, raw_path = record.partition(b"\t")
+        if not separator:
+            raise RuntimeError("unexpected git ls-files record")
+        mode, object_sha, stage = metadata.decode("ascii").split()
         path = raw_path.decode("utf-8")
-        text = decode_text((root / path).read_bytes())
+        if stage != "0":
+            raise RuntimeError(f"unmerged index entry cannot be scanned: {path}")
+        if mode == "160000":
+            continue
+        content = git(root, "cat-file", "blob", object_sha, text=False)
+        if content.returncode != 0:
+            raise RuntimeError(
+                content.stderr.decode("utf-8", errors="replace").strip()
+                or f"cannot read tracked blob {object_sha}: {path}"
+            )
+        text = decode_text(content.stdout)
         if text is not None:
-            findings.extend(scan_text("current", "HEAD", path, text))
+            findings.extend(scan_text("current", object_sha, path, text))
     return findings
 
 
