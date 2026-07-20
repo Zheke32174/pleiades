@@ -1,0 +1,41 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "authority": {
+    "executionOnly": true,
+    "mayAlterPlan": false,
+    "mayChangeTarget": false,
+    "mayExpandAuthority": false
+  },
+  "candidateDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "candidateRef": "fixture:eligible-ontology-candidate",
+  "constraints": {
+    "automaticRollbackOnFailure": true,
+    "maxAttempts": 2,
+    "networkScope": [],
+    "reversible": true,
+    "timeoutSeconds": 600,
+    "writeScope": [
+      "ontology:admitted-snapshot"
+    ]
+  },
+  "decisionDigest": "sha256:43732c70508f764d79b91753c37c8c85c29b74dfa15ba16425f31b3f3cf088f8",
+  "decisionRef": "decision:ontology-candidate-0001",
+  "executor": {
+    "capabilityRef": "capability:ontology.snapshot.admit@v1alpha1",
+    "decisionAuthority": "none",
+    "principalRef": "service:ontology-admission-executor"
+  },
+  "expiresAt": "2026-07-21T21:00:00Z",
+  "kind": "AdmissionMandate",
+  "mandateId": "mandate:ontology-candidate-0001",
+  "postconditions": [
+    "target-digest-installed",
+    "closure-receipt-retained",
+    "predecessor-remains-recoverable"
+  ],
+  "stateTransition": {
+    "predecessorDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "rollbackDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "targetDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  }
+}
