@@ -1,0 +1,46 @@
+name: Temporary format observation read
+
+on:
+  push:
+    branches:
+      - storage/controller-observation-reads-v1
+    paths:
+      - 'modos/pdk-node-agent/crates/pdk-controller/src/heartbeat_read_store.rs'
+      - 'modos/pdk-node-agent/crates/pdk-controller/src/heartbeat_read_tests.rs'
+      - 'modos/pdk-node-agent/crates/pdk-controller/src/main.rs'
+      - '.github/workflows/temporary-format-observation-read.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-format-observation-read
+  cancel-in-progress: false
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: storage/controller-observation-reads-v1
+          show-progress: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Format Rust workspace
+        working-directory: modos/pdk-node-agent
+        run: cargo fmt --all
+      - name: Commit formatting when needed
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'Already formatted.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add modos/pdk-node-agent
+          git commit -m 'style: format durable heartbeat reads'
+          git push origin HEAD:storage/controller-observation-reads-v1
