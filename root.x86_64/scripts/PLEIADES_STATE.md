@@ -329,7 +329,7 @@ These things look wrong but are intentional. Do not "fix" them.
 **Task file:** `/workspaces/gentoo/.taskmaster/tasks/tasks.json`
 **Readable without task-master:** `jq '.master.tasks[]' /workspaces/gentoo/.taskmaster/tasks/tasks.json`
 
-**WSL memory note:** WSL crashed twice on 2026-05-29 when running parallel claude-code expand calls. Root cause: 8 MCP servers (~650 MB) + Claude Code (~450 MB) + nspawn container (~500 MB) leaves almost no headroom on the 3.7 GB default allocation. `.wslconfig` written at `C:\Users\Fixxia\.wslconfig` to raise limit to 6 GB / 2 GB swap — **requires `wsl --shutdown` from PowerShell to take effect.** Until then, do NOT run parallel task-master expand calls.
+**WSL memory note:** WSL crashed twice on 2026-05-29 when running parallel claude-code expand calls. Root cause: 8 MCP servers (~650 MB) + Claude Code (~450 MB) + nspawn container (~500 MB) leaves almost no headroom on the 3.7 GB default allocation. The user-profile `.wslconfig` was set to 6 GB memory / 2 GB swap and requires `wsl --shutdown` from PowerShell to take effect. Until then, do NOT run parallel task-master expand calls.
 
 **Task-master provider note:** Only `claude-code` (main) works. `gemini-cli` and `codex-cli` providers call the API directly (not the local CLIs) — both fail with auth errors. Gemini/Codex agents should read `tasks.json` directly.
 
