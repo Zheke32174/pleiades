@@ -10,6 +10,7 @@ SECURITY.md
 THIRD_PARTY_NOTICES.md
 VERSION
 ci/check-lean-security.sh
+ci/public-sensitivity-allowlist.json
 ci/scan_public_repo.py
 docs
 lean
