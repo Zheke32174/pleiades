@@ -42,5 +42,5 @@ EXPECTED_DIGESTS={
  "rollbackExecutionReceipt":"sha256:943b203375c4ec27ba21c1423bc9b2fd81f5dcb94a51b67a82c9b005b99e25e3",
  "rollbackEvidenceReceipt":"sha256:0847fe371c3a68360bf2e2037d759a0a8b7b5179ba963422320b63dd6d750f7d",
  "competenceProfile":"sha256:dfa96debe77610bbc838c73ca3c9ba4bd519ebe51ea4a8e1b0160f013ff6a648",
- "competenceReceipt":"sha256:99e1c371a9097fb8863a83808cb3ea49de6fcab7126acbe2361ecc1d59808386"
+ "competenceReceipt":"sha256:dd025b9cf40f2e724a4ce8902aa01b6bedb15037f51aaa1228d10ecc6cb6505f"
 }
