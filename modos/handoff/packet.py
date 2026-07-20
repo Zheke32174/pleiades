@@ -17,12 +17,12 @@ except ImportError:
     import intake  # type: ignore
 
 RUNBOOK_REFS = [
-    "modos/convergence/OPERATOR_RUNBOOKS.md#private-ecology-closure",
-    "modos/convergence/OPERATOR_RUNBOOKS.md#delegated-authority-grant-lifecycle",
-    "modos/convergence/OPERATOR_RUNBOOKS.md#canary-admission",
-    "modos/convergence/OPERATOR_RUNBOOKS.md#rollback-and-failed-postconditions",
-    "modos/convergence/OPERATOR_RUNBOOKS.md#public-history-rewrite",
-    "modos/convergence/OPERATOR_RUNBOOKS.md#sustained-autonomy-observation",
+    "modos/convergence/OPERATOR_RUNBOOKS.md#2-private-exhaustive-registry-closure",
+    "modos/convergence/OPERATOR_RUNBOOKS.md#3-delegated-authority-grant-issuance-and-revocation",
+    "modos/convergence/OPERATOR_RUNBOOKS.md#4-canary-deployment",
+    "modos/convergence/OPERATOR_RUNBOOKS.md#5-rollback-after-failed-postconditions",
+    "modos/convergence/OPERATOR_RUNBOOKS.md#7-public-history-rewrite-authorization-and-recovery",
+    "modos/convergence/OPERATOR_RUNBOOKS.md#9-sustained-bounded-autonomy-observation",
 ]
 
 
@@ -85,10 +85,7 @@ def build_packet(
         (_plan_summary(row) for row in compilation.get("outputPlans", []) if row.get("status") == "blocked"),
         key=lambda row: row["outputId"],
     )
-    operator_actions = sorted(
-        frontier.get("operatorOrLiveActions", []),
-        key=lambda row: row.get("id", ""),
-    )
+    operator_actions = sorted(frontier.get("operatorOrLiveActions", []), key=lambda row: row.get("id", ""))
 
     if not all(readiness.values()):
         state = "repository-repair-required"
