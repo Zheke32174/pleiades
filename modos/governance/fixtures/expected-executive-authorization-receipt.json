@@ -1,0 +1,45 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "authority": {
+    "authorityExpansionApplied": false,
+    "constitutionalMutationApplied": false,
+    "decisionPrincipal": "delegated-mind",
+    "executionStillPending": true,
+    "executorDecisionAuthority": "none"
+  },
+  "bindings": {
+    "decisionDigest": "sha256:43732c70508f764d79b91753c37c8c85c29b74dfa15ba16425f31b3f3cf088f8",
+    "grantId": "grant:mind-pleiades:ontology-bounded-v1",
+    "mandateDigest": "sha256:014f916071e3a22490393a541be2f1136c132c1da9e4b81922275c99ca11fba1",
+    "mindId": "mind:pleiades",
+    "predecessorDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "proposalDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "rollbackDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "targetDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "checks": [
+    {"name": "mind-principal-bound", "status": "pass"},
+    {"name": "grant-reference-bound", "status": "pass"},
+    {"name": "domain-covered", "status": "pass"},
+    {"name": "permission-covered", "status": "pass"},
+    {"name": "risk-within-ceiling", "status": "pass"},
+    {"name": "grant-valid-for-decision-window", "status": "pass"},
+    {"name": "decision-approved", "status": "pass"},
+    {"name": "rollback-required-by-grant", "status": "pass"},
+    {"name": "reversibility-required-by-grant", "status": "pass"},
+    {"name": "decision-digest-bound", "status": "pass"},
+    {"name": "candidate-bound", "status": "pass"},
+    {"name": "target-bound", "status": "pass"},
+    {"name": "predecessor-bound", "status": "pass"},
+    {"name": "rollback-bound", "status": "pass"},
+    {"name": "execution-budget-bound", "status": "pass"},
+    {"name": "mandate-within-decision-window", "status": "pass"},
+    {"name": "executor-is-decisionless", "status": "pass"},
+    {"name": "authority-not-expanded", "status": "pass"},
+    {"name": "constitution-unchanged", "status": "pass"}
+  ],
+  "decisionId": "decision:ontology-candidate-0001",
+  "kind": "ExecutiveAuthorizationReceipt",
+  "mandateId": "mandate:ontology-candidate-0001",
+  "status": "authorized"
+}
