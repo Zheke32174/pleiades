@@ -1,10 +1,17 @@
-# Ontology contracts, deterministic compilers, projection, and promotion gates.
+# Ontology and executive-governance contracts, deterministic compilers, projection, and gates.
 # This is a review-routing boundary only; CODEOWNERS does not grant canonical authority.
 /modos/contracts/change-proposal.schema.json @Zheke32174
 /modos/contracts/ontology-*.schema.json @Zheke32174
 /modos/contracts/source-manifest.schema.json @Zheke32174
+/modos/contracts/delegated-authority-grant.schema.json @Zheke32174
+/modos/contracts/executive-*.schema.json @Zheke32174
+/modos/contracts/admission-mandate.schema.json @Zheke32174
 /modos/ontology/ @Zheke32174
+/modos/governance/ @Zheke32174
+/modos/EXECUTIVE_AUTHORITY.md @Zheke32174
 /ci/validate-change-proposals.py @Zheke32174
 /ci/validate-promotion-evidence.py @Zheke32174
+/ci/validate-executive-authority.py @Zheke32174
 /.github/workflows/change-proposal-contracts.yml @Zheke32174
 /.github/workflows/ontology-promotion-evidence.yml @Zheke32174
+/.github/workflows/executive-authority-contracts.yml @Zheke32174
