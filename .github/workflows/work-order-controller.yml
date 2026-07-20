@@ -34,9 +34,9 @@ jobs:
       - name: Compile
         run: >-
           python -m py_compile
-          model.py store.py controller.py gateway.py github_bridge.py
-          test_smoke.py test_gateway.py test_github_bridge.py
-      - name: Test durable state, semantic authority, and GitHub bridge boundaries
+          model.py store.py controller.py gateway.py github_bridge.py drive_bridge.py
+          test_smoke.py test_gateway.py test_github_bridge.py test_drive_bridge.py
+      - name: Test durable state, semantic authority, GitHub, and Drive bridge boundaries
         run: >-
           python -m unittest -v
-          test_smoke.py test_gateway.py test_github_bridge.py
+          test_smoke.py test_gateway.py test_github_bridge.py test_drive_bridge.py
