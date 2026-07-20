@@ -149,7 +149,7 @@ jobs:
           path.write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
           PY
 
-      - name: Commit evidence summary to the feature branch
+      - name: Commit evidence summary to the latest feature-branch head
         shell: bash
         run: |
           set -euo pipefail
@@ -161,6 +161,8 @@ jobs:
             exit 0
           fi
           git commit -m "Record convergence evidence for $GITHUB_SHA"
+          git fetch --no-tags origin governance/convergence-proof-v1
+          git rebase origin/governance/convergence-proof-v1
           git push origin HEAD:governance/convergence-proof-v1
 
       - name: Fail after publishing when repository validation failed
