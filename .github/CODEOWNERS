@@ -10,6 +10,7 @@
 /modos/contracts/distributed-admission.schema.json @Zheke32174
 /modos/contracts/learning-spine.schema.json @Zheke32174
 /modos/contracts/constitutional-evolution.schema.json @Zheke32174
+/modos/contracts/ecology-integration-readiness.schema.json @Zheke32174
 /modos/ontology/ @Zheke32174
 /modos/governance/ @Zheke32174
 /modos/EXECUTIVE_AUTHORITY.md @Zheke32174
@@ -22,6 +23,7 @@
 /ci/validate-distributed-admission.py @Zheke32174
 /ci/validate-learning-spine.py @Zheke32174
 /ci/validate-constitutional.py @Zheke32174
+/ci/validate-ecology-integration.py @Zheke32174
 /.github/workflows/change-proposal-contracts.yml @Zheke32174
 /.github/workflows/ontology-promotion-evidence.yml @Zheke32174
 /.github/workflows/executive-authority-contracts.yml @Zheke32174
@@ -30,3 +32,4 @@
 /.github/workflows/distributed-admission.yml @Zheke32174
 /.github/workflows/learning-spine.yml @Zheke32174
 /.github/workflows/constitutional-evolution.yml @Zheke32174
+/.github/workflows/ecology-integration-readiness.yml @Zheke32174
