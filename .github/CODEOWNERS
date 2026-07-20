@@ -1,20 +1,15 @@
-# Ontology and executive-governance contracts, deterministic compilers, projection, and gates.
-# This is a review-routing boundary only; CODEOWNERS does not grant canonical authority.
-/modos/contracts/change-proposal.schema.json @Zheke32174
-/modos/contracts/ontology-*.schema.json @Zheke32174
-/modos/contracts/source-manifest.schema.json @Zheke32174
-/modos/contracts/delegated-authority-grant.schema.json @Zheke32174
-/modos/contracts/executive-*.schema.json @Zheke32174
-/modos/contracts/admission-mandate.schema.json @Zheke32174
-/modos/contracts/workspace-emergency-recovery.schema.json @Zheke32174
-/modos/contracts/distributed-admission.schema.json @Zheke32174
-/modos/contracts/learning-spine.schema.json @Zheke32174
-/modos/contracts/constitutional-evolution.schema.json @Zheke32174
-/modos/contracts/ecology-integration-readiness.schema.json @Zheke32174
+# Ontology, ecology, executive-governance, convergence, and release-evidence review routing.
+# CODEOWNERS is not constitutional, admission, execution, or canonical authority.
+/MODOS_COMPONENT.yaml @Zheke32174
+/requirements-modos.txt @Zheke32174
+/modos/contracts/ @Zheke32174
+/modos/ecology/ @Zheke32174
 /modos/ontology/ @Zheke32174
 /modos/governance/ @Zheke32174
+/modos/convergence/ @Zheke32174
 /modos/EXECUTIVE_AUTHORITY.md @Zheke32174
 /modos/ECOLOGY_PROGRESSION_100.md @Zheke32174
+/modos/ECOLOGY_PROGRESSION_200.md @Zheke32174
 /ci/validate-change-proposals.py @Zheke32174
 /ci/validate-promotion-evidence.py @Zheke32174
 /ci/validate-executive-authority.py @Zheke32174
@@ -24,6 +19,15 @@
 /ci/validate-learning-spine.py @Zheke32174
 /ci/validate-constitutional.py @Zheke32174
 /ci/validate-ecology-integration.py @Zheke32174
+/ci/validate-contract-catalog.py @Zheke32174
+/ci/validate-ecology.py @Zheke32174
+/ci/validate-stack-manifest.py @Zheke32174
+/ci/validate-operator-runbooks.py @Zheke32174
+/ci/scan-public-history.py @Zheke32174
+/ci/public-history-sensitivity.json @Zheke32174
+/ci/build-modos-validation-package.py @Zheke32174
+/ci/run-modos-convergence.py @Zheke32174
+/ci/run-modos-offline.sh @Zheke32174
 /.github/workflows/change-proposal-contracts.yml @Zheke32174
 /.github/workflows/ontology-promotion-evidence.yml @Zheke32174
 /.github/workflows/executive-authority-contracts.yml @Zheke32174
@@ -33,3 +37,7 @@
 /.github/workflows/learning-spine.yml @Zheke32174
 /.github/workflows/constitutional-evolution.yml @Zheke32174
 /.github/workflows/ecology-integration-readiness.yml @Zheke32174
+/.github/workflows/modos-ecology.yml @Zheke32174
+/.github/workflows/modos-convergence.yml @Zheke32174
+/.github/workflows/release.yml @Zheke32174
+/root.x86_64/scripts/PLEIADES_STATE.md @Zheke32174
