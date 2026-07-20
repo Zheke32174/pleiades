@@ -32,6 +32,11 @@ jobs:
         with:
           python-version: '3.12'
       - name: Compile
-        run: python -m py_compile model.py store.py controller.py gateway.py test_smoke.py test_gateway.py
-      - name: Test durable state and semantic authority boundaries
-        run: python -m unittest -v test_smoke.py test_gateway.py
+        run: >-
+          python -m py_compile
+          model.py store.py controller.py gateway.py github_bridge.py
+          test_smoke.py test_gateway.py test_github_bridge.py
+      - name: Test durable state, semantic authority, and GitHub bridge boundaries
+        run: >-
+          python -m unittest -v
+          test_smoke.py test_gateway.py test_github_bridge.py
