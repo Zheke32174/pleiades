@@ -24,9 +24,11 @@ INCLUDE_ROOTS = (
     Path("modos/ontology"),
     Path("modos/governance"),
     Path("modos/convergence"),
+    Path("modos/handoff"),
     Path("modos/EXECUTIVE_AUTHORITY.md"),
     Path("modos/ECOLOGY_PROGRESSION_100.md"),
     Path("modos/ECOLOGY_PROGRESSION_200.md"),
+    Path("modos/ECOLOGY_PROGRESSION_300.md"),
 )
 EXCLUDED_PARTS = {"__pycache__", ".pytest_cache", "artifacts", "target", ".git"}
 ALLOWED_SUFFIXES = {".py", ".json", ".md", ".sql", ".txt", ".yaml", ".yml", ".toml", ".proto", ".sh"}
