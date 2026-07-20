@@ -1,0 +1,70 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "authority": {
+    "canonicalMutationApplied": false,
+    "ceiling": "none",
+    "liveExecutionApplied": false
+  },
+  "currentTreeSensitivity": {
+    "findingCount": 99,
+    "receiptDigest": "sha256:7524f1be5b8310287d821dbf6320a6a8d857649dbcace5a18fbe10ac71de93ab",
+    "status": "blocked"
+  },
+  "evidenceDigest": "sha256:6d241af099f6c86ae6d353961dda0d379099db83cc0bf61a901584513e8f0a34",
+  "interventionFrontier": {
+    "autonomousActionCount": 0,
+    "operatorActionCount": 11,
+    "receiptDigest": "sha256:0bf5e453e5cb1f70016a6cbf82ed935e678bb6c26e72203654da2afda3905601",
+    "status": "operator-intervention-required"
+  },
+  "kind": "BranchConvergenceEvidence",
+  "publicEcologyAdapter": {
+    "blockers": [
+      "receipt-missing"
+    ],
+    "exitCode": 1,
+    "objectCount": null,
+    "receiptDigest": null,
+    "relationCount": null,
+    "resultSnapshotDigest": null
+  },
+  "reachableHistorySensitivity": {
+    "contentDisclosed": false,
+    "exitCode": 2,
+    "findingCount": 562,
+    "receiptDigest": "sha256:ce0a5e9b919a570b9bbd527cbef7782e4cb586e86110959596192f4f8ff1e36b",
+    "status": "blocked"
+  },
+  "suite": {
+    "commandCount": 32,
+    "executedCount": 32,
+    "exitCode": 1,
+    "failures": [
+      "current-tree-sensitivity",
+      "ontology-projection-tests",
+      "ecology-adapter-tests",
+      "executive-control-plane",
+      "control-plane-unit-tests",
+      "synthetic-rehearsal-unit-tests",
+      "synthetic-rehearsal"
+    ],
+    "notRun": [],
+    "receiptDigest": "sha256:5d3954a647eb3de66f566a7ec96e5e009846e6362ee52c830b4f42d3a3a0630d",
+    "status": "fail"
+  },
+  "syntheticRehearsal": {
+    "receiptDigest": null,
+    "remainingBlockers": [
+      "receipt-missing"
+    ],
+    "status": "missing"
+  },
+  "validatedCommit": "3bb1f7dacb59519be667e583a4d162f8e6b725ee",
+  "validationPackage": {
+    "manifestDigest": "sha256:8c3874f4b897d613741cf6524ce5c2ea0966648f7ffc4d9221f54c7755dcbe3e",
+    "packageDigest": "sha256:6f77b3b0e402292396da6ef3af0d80f444552ced13d180adf4b337f8e4c0f4f4",
+    "privateMaterialIncluded": false,
+    "receiptDigest": "sha256:c176dbd492915836f9d7360d3e6e8267c5d98fa3f90d93a87106102cac32feef",
+    "sbomDigest": "sha256:ad1358679041c273e00b15d43fe8e439a62b61ea51dd2b79a0971ddec4370b1f"
+  }
+}
