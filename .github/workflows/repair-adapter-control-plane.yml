@@ -1,0 +1,60 @@
+name: Repair adapter and control-plane golden
+
+on:
+  push:
+    branches:
+      - governance/convergence-proof-v1
+    paths:
+      - '.github/workflows/repair-adapter-control-plane.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: governance/convergence-proof-v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply exact repairs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          adapter = Path('modos/ontology/ecology_adapter.py')
+          text = adapter.read_text()
+          old = '_relation("mind:pleiades", "operates-through", "workspace:pleiades", source="ecology-adapter")'
+          new = '_relation("mind:pleiades", "operates-through", "workspace:pleiades", evidenceSource="ecology-adapter")'
+          assert text.count(old) == 1, text.count(old)
+          adapter.write_text(text.replace(old, new))
+
+          fixture = Path('modos/governance/control_plane_fixtures.py')
+          text = fixture.read_text()
+          old = '"competenceReceipt":"sha256:99e1c371a9097fb8863a83808cb3ea49de6fcab7126acbe2361ecc1d59808386"'
+          new = '"competenceReceipt":"sha256:dd025b9cf40f2e724a4ce8902aa01b6bedb15037f51aaa1228d10ecc6cb6505f"'
+          assert text.count(old) == 1, text.count(old)
+          fixture.write_text(text.replace(old, new))
+          PY
+      - name: Verify adapter, control plane, and rehearsal
+        run: |
+          python modos/ontology/test_ecology_adapter.py
+          python ci/validate-executive-control-plane.py
+          python modos/governance/test_control_plane.py
+          python modos/convergence/test_synthetic_rehearsal.py
+          python modos/convergence/synthetic_rehearsal.py --report artifacts/synthetic-rehearsal-receipt.json
+      - name: Commit repairs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add modos/ontology/ecology_adapter.py modos/governance/control_plane_fixtures.py
+          git commit -m "Repair ecology adapter and competence golden"
+          git fetch --no-tags origin governance/convergence-proof-v1
+          git rebase origin/governance/convergence-proof-v1
+          git push origin HEAD:governance/convergence-proof-v1
