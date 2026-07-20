@@ -1,0 +1,63 @@
+name: Apply capability use intent atomicity
+
+on:
+  push:
+    branches:
+      - modos/checkpoint-use-intent-atomicity
+    paths:
+      - '.github/workflows/apply-use-intent-atomicity.yml'
+      - 'checkpoints/use-intent-atomicity.patch'
+      - 'checkpoints/use-intent-test-fix.patch'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-use-intent-atomicity-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - name: Install Rust and protobuf
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq protobuf-compiler
+      - name: Apply and validate atomic intent repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply --check checkpoints/use-intent-atomicity.patch
+          git apply checkpoints/use-intent-atomicity.patch
+          git apply --check checkpoints/use-intent-test-fix.patch
+          git apply checkpoints/use-intent-test-fix.patch
+          cargo fmt --all --manifest-path modos/pdk-node-agent/Cargo.toml
+          cargo clippy --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- -D warnings
+          cargo test --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- --nocapture
+          git diff --check
+          grep -Fq 'consume_use_with_intent' modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs
+          ! grep -Fq 'consume_durable_use' modos/pdk-node-agent/crates/pdk-node-agent/src/rpc.rs
+          grep -Fq 'OperationIntentReceipt intent = 7;' modos/pdk-node-agent/proto/pdk/v1/pdk.proto
+      - name: Commit permanent implementation only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm \
+            checkpoints/use-intent-atomicity.patch \
+            checkpoints/use-intent-test-fix.patch \
+            .github/workflows/apply-use-intent-atomicity.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            modos/pdk-node-agent/crates/pdk-node-agent/src/authority.rs \
+            modos/pdk-node-agent/crates/pdk-node-agent/src/runtime/systemd.rs
+          git commit -m 'feat: commit capability use and operation intent atomically'
+          git push origin "HEAD:${{ github.ref_name }}"
