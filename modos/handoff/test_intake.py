@@ -10,11 +10,18 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-SPEC = importlib.util.spec_from_file_location("pleiades_operator_intake", HERE / "intake.py")
-assert SPEC and SPEC.loader
-intake = importlib.util.module_from_spec(SPEC)
-sys.modules[SPEC.name] = intake
-SPEC.loader.exec_module(intake)
+
+INTAKE_SPEC = importlib.util.spec_from_file_location("pleiades_operator_intake", HERE / "intake.py")
+assert INTAKE_SPEC and INTAKE_SPEC.loader
+intake = importlib.util.module_from_spec(INTAKE_SPEC)
+sys.modules[INTAKE_SPEC.name] = intake
+INTAKE_SPEC.loader.exec_module(intake)
+
+TEMPLATE_SPEC = importlib.util.spec_from_file_location("pleiades_operator_template", HERE / "template.py")
+assert TEMPLATE_SPEC and TEMPLATE_SPEC.loader
+template = importlib.util.module_from_spec(TEMPLATE_SPEC)
+sys.modules[TEMPLATE_SPEC.name] = template
+TEMPLATE_SPEC.loader.exec_module(template)
 
 
 def load(path: Path):
@@ -35,6 +42,24 @@ class OperatorIntakeTests(unittest.TestCase):
 
     def test_identical_candidate_is_deterministic(self):
         self.assertEqual(intake.canonical_bytes(self.compile()), intake.canonical_bytes(self.compile()))
+
+    def test_empty_template_is_schema_valid_and_non_authoritative(self):
+        candidate = template.build_template(
+            "2" * 40,
+            "2026-07-20T23:30:00Z",
+            "operator-input-candidate:empty-template-0001",
+        )
+        receipt = self.compile(candidate)
+        self.assertEqual(receipt["state"], "operator-inputs-required")
+        self.assertEqual(receipt["satisfiedInputs"], [])
+        self.assertEqual(len(receipt["pendingInputs"]), 8)
+        self.assertTrue(all(row["artifactRef"] is None for row in candidate["inputs"].values()))
+        self.assertFalse(receipt["authority"]["liveExecutionApplied"])
+
+    def test_template_generation_is_deterministic_for_explicit_inputs(self):
+        first = template.build_template("2" * 40, "2026-07-20T23:30:00Z", "operator-input-candidate:empty-template-0001")
+        second = template.build_template("2" * 40, "2026-07-20T23:30:00Z", "operator-input-candidate:empty-template-0001")
+        self.assertEqual(intake.canonical_bytes(first), intake.canonical_bytes(second))
 
     def test_receipt_remains_proposal_only(self):
         receipt = self.compile()
