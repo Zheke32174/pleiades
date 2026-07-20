@@ -29,13 +29,15 @@ concurrency:
 
 jobs:
   apply-use-intent-atomicity:
-    if: github.event_name == 'push' && github.ref_name == 'modos/checkpoint-use-intent-atomicity'
+    if: >-
+      (github.event_name == 'push' && github.ref_name == 'modos/checkpoint-use-intent-atomicity') ||
+      (github.event_name == 'pull_request' && github.head_ref == 'modos/checkpoint-use-intent-atomicity')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
           show-progress: false
       - name: Install stable Rust, rustfmt, Clippy, and protobuf
@@ -63,6 +65,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          target_branch="${{ github.head_ref || github.ref_name }}"
           git fetch origin modos/checkpoint-grant-activation-phases
           git checkout origin/modos/checkpoint-grant-activation-phases -- .github/workflows/pdk-diagnostics.yml
           git rm \
@@ -79,10 +82,14 @@ jobs:
             modos/pdk-node-agent/crates/pdk-node-agent/src/runtime/systemd.rs \
             modos/pdk-node-agent/proto/pdk/v1/pdk.proto
           git commit -m 'feat: commit capability use and operation intent atomically'
-          git push origin "HEAD:${{ github.ref_name }}"
+          git push origin "HEAD:${target_branch}"
 
   rust-report:
-    if: github.event_name != 'push' || github.ref_name != 'modos/checkpoint-use-intent-atomicity'
+    if: >-
+      !(
+        (github.event_name == 'push' && github.ref_name == 'modos/checkpoint-use-intent-atomicity') ||
+        (github.event_name == 'pull_request' && github.head_ref == 'modos/checkpoint-use-intent-atomicity')
+      )
     runs-on: ubuntu-latest
     defaults:
       run:
