@@ -25,6 +25,67 @@
       ]
     },
     {
+      "familyId": "autonomy-work-orders",
+      "owner": "@Zheke32174",
+      "authorityClass": "bounded-work-orchestration-contract",
+      "currentVersion": "v1alpha1",
+      "paths": [
+        "modos/contracts/action-receipt.schema.json",
+        "modos/contracts/capability-definition.schema.json",
+        "modos/contracts/checkpoint-record.schema.json",
+        "modos/contracts/evidence-record.schema.json",
+        "modos/contracts/stage-approval.schema.json",
+        "modos/contracts/work-order.schema.json",
+        "modos/contracts/work-order-stage.schema.json"
+      ]
+    },
+    {
+      "familyId": "domain-runtime",
+      "owner": "@Zheke32174",
+      "authorityClass": "runtime-domain-contract",
+      "currentVersion": "v1alpha1",
+      "paths": [
+        "modos/contracts/capability-lease.schema.json",
+        "modos/contracts/context-envelope.schema.json",
+        "modos/contracts/delivery-stream-state.schema.json",
+        "modos/contracts/desired-state.schema.json",
+        "modos/contracts/domain-event.schema.json",
+        "modos/contracts/domain-object.schema.json",
+        "modos/contracts/experience-record.schema.json",
+        "modos/contracts/workload-binding.schema.json"
+      ]
+    },
+    {
+      "familyId": "observation-ingress",
+      "owner": "@Zheke32174",
+      "authorityClass": "authenticated-observation-contract",
+      "currentVersion": "v1alpha1",
+      "paths": [
+        "modos/contracts/observation-ingress-batch.schema.json",
+        "modos/contracts/observation-ingress-receipt.schema.json"
+      ]
+    },
+    {
+      "familyId": "workspace-convergence",
+      "owner": "@Zheke32174",
+      "authorityClass": "cognitive-contribution-contract",
+      "currentVersion": "v1alpha1",
+      "paths": [
+        "modos/contracts/agent-convergence-contract.schema.json",
+        "modos/contracts/workspace-contribution.schema.json"
+      ]
+    },
+    {
+      "familyId": "promotion-admission",
+      "owner": "@Zheke32174",
+      "authorityClass": "review-and-promotion-transaction-contract",
+      "currentVersion": "v1alpha1",
+      "paths": [
+        "modos/contracts/promotion-review-eligibility-bundle.schema.json",
+        "modos/contracts/promotion-transaction.schema.json"
+      ]
+    },
+    {
       "familyId": "executive-governance",
       "owner": "@Zheke32174",
       "authorityClass": "delegated-runtime-governance-contract",
