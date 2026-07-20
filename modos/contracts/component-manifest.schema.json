@@ -1,0 +1,59 @@
+{
+  "$id": "https://pleiades.local/schemas/modos-component-v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "Component"},
+    "metadata": {
+      "additionalProperties": false,
+      "properties": {
+        "defaultBranch": {"type": "string"},
+        "labels": {"additionalProperties": {"type": "string"}, "type": "object"},
+        "lifecycle": {"enum": ["canonical", "operational", "experimental", "reference", "backup", "quarantined", "parked", "human-only"]},
+        "name": {"pattern": "^[a-z0-9][a-z0-9._-]*$", "type": "string"},
+        "repository": {"pattern": "^[^/]+/[^/]+$", "type": "string"},
+        "sourceRef": {"type": "string"},
+        "visibility": {"enum": ["public", "private"]}
+      },
+      "required": ["name", "repository", "visibility", "lifecycle"],
+      "type": "object"
+    },
+    "spec": {
+      "additionalProperties": false,
+      "properties": {
+        "authority": {"enum": ["none", "proposal", "local-enforcement", "domain-control", "steward-only"]},
+        "capabilitiesProvided": {"items": {"pattern": "^[a-z0-9][a-z0-9._-]*@v[0-9a-z.-]+$", "type": "string"}, "type": "array", "uniqueItems": true},
+        "capabilitiesRequired": {"items": {"pattern": "^[a-z0-9][a-z0-9._-]*@v[0-9a-z.-]+$", "type": "string"}, "type": "array", "uniqueItems": true},
+        "dataClasses": {"items": {"enum": ["public", "internal", "private", "secret", "evidence", "untrusted"]}, "type": "array", "uniqueItems": true},
+        "failurePolicy": {"enum": ["fail-closed", "degrade-local", "read-only", "retry", "quarantine", "non-operational"]},
+        "inputs": {"items": {"type": "string"}, "type": "array"},
+        "notes": {"type": "string"},
+        "outputs": {"items": {"type": "string"}, "type": "array"},
+        "promotionPolicy": {"enum": ["signed-pr", "steward-approval", "evidence-gated", "never-promote", "archive-only"]},
+        "relations": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "evidenceRef": {"type": "string"},
+              "required": {"default": false, "type": "boolean"},
+              "scope": {"enum": ["governance", "runtime", "build", "observation", "memory", "lineage", "distribution", "human-interface"]},
+              "targetRef": {"pattern": "^(repo|component|capability|scope):.+$", "type": "string"},
+              "type": {"enum": ["depends-on", "implements", "governed-by", "subsystem-of", "derived-from", "supersedes", "mirror-of", "archive-of", "canonical-for", "replaced-by", "provides-capability", "consumes-capability", "produces", "observes", "stores-evidence-for", "supports", "human-interface-for"]}
+            },
+            "required": ["type", "targetRef", "scope", "required"],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "roles": {"items": {"type": "string"}, "minItems": 1, "type": "array", "uniqueItems": true},
+        "surrogates": {"items": {"type": "string"}, "type": "array"}
+      },
+      "required": ["roles", "authority", "inputs", "outputs", "failurePolicy", "promotionPolicy"],
+      "type": "object"
+    }
+  },
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "title": "MODOS Component Manifest",
+  "type": "object"
+}
