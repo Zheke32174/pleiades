@@ -8,7 +8,7 @@ from jsonschema import Draft202012Validator,FormatChecker
 from modos_semantics_legacy import semantic_errors
 from modos_validation_common import load_json
 
-DELEGATED_FIXTURE_PREFIXES=("extended-autonomy-",)
+DELEGATED_FIXTURE_PREFIXES=("extended-autonomy-","change-proposal")
 
 def main()->int:
  parser=argparse.ArgumentParser();parser.add_argument("--contracts",type=Path,default=Path("modos/contracts"));args=parser.parse_args()

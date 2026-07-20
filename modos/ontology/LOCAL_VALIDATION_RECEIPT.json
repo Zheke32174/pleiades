@@ -1,0 +1,173 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "authorityCeiling": "none",
+  "baseHeadSha": "c54363f00ca10fa57900b3ee722b156d92c6c664",
+  "commands": [
+    "python ci/validate-change-proposals.py",
+    "python modos/ontology/test_compiler.py",
+    "python modos/ontology/test_projection.py",
+    "python -m py_compile ci/validate-change-proposals.py modos/ontology/compiler.py modos/ontology/projection.py modos/ontology/test_compiler.py modos/ontology/test_projection.py"
+  ],
+  "dependencyGitBlobs": [
+    {
+      "gitBlobSha": "3c58f162b93e451f2862891d411cf43c1566b241",
+      "path": "modos/contracts/change-proposal.schema.json"
+    },
+    {
+      "gitBlobSha": "ef41561cd3c4390be61fbef51e191434698577ea",
+      "path": "modos/contracts/change-proposal.fixtures.json"
+    },
+    {
+      "gitBlobSha": "975114995754a776c0b134575574dfe590c8f2ea",
+      "path": "modos/contracts/domain-object.schema.json"
+    }
+  ],
+  "environment": {
+    "implementation": "CPython",
+    "platform": "Linux-4.4.0-x86_64-with-glibc2.41",
+    "python": "3.13.5"
+  },
+  "kind": "LocalValidationReceipt",
+  "limitations": [
+    "No hosted runner receipt.",
+    "No live Supabase migration was applied.",
+    "No default branch change.",
+    "No live Drive, Replit, model, or substrate mutation.",
+    "This receipt is review evidence and grants no canonical authority."
+  ],
+  "promotionTransactionRequired": true,
+  "results": [
+    {
+      "compiledReceipts": 1,
+      "name": "ontology-schema-proposal-compiler-projection-validation",
+      "projectionBundles": 1,
+      "proposalCases": 3,
+      "schemas": 4,
+      "status": "pass"
+    },
+    {
+      "name": "ontology-compiler-unit-tests",
+      "status": "pass",
+      "tests": 11
+    },
+    {
+      "name": "ontology-projection-unit-tests",
+      "status": "pass",
+      "tests": 6
+    },
+    {
+      "files": 5,
+      "name": "python-bytecode-compilation",
+      "status": "pass"
+    }
+  ],
+  "runnerAssumption": "hosted-runners-unavailable",
+  "validatedAt": "2026-07-20T19:49:30Z",
+  "validatedFiles": [
+    {
+      "bytes": 6557,
+      "path": "ci/validate-change-proposals.py",
+      "sha256": "aa8aa09617eaebccb4b2f25191c32d2f5bac4da8ff8697acfb942863da23436e"
+    },
+    {
+      "bytes": 2523,
+      "path": "ci/validate-modos-contracts.py",
+      "sha256": "f502d3e4965770b6ce2ad1aa8ed3fc7da3938f574c88cdb63a62fb467911b6e8"
+    },
+    {
+      "bytes": 748,
+      "path": ".github/workflows/change-proposal-contracts.yml",
+      "sha256": "4d71e7ff131f02406b19511dac15070db11b386fe8413dbc4a7be5384703e517"
+    },
+    {
+      "bytes": 1228,
+      "path": "modos/contracts/ontology-snapshot.schema.json",
+      "sha256": "580da729ee10475897b627b2448eba8ebcaed6134f1f010bb4f88565017191c7"
+    },
+    {
+      "bytes": 3394,
+      "path": "modos/contracts/ontology-closure-receipt.schema.json",
+      "sha256": "8b95b9afd8f5ccf9b78c2326755b5dd9bd6ec9fef91f277ef95fb6ba3ffc43e0"
+    },
+    {
+      "bytes": 1512,
+      "path": "modos/contracts/ontology-projection-bundle.schema.json",
+      "sha256": "f7647d4e0033ed95ff6d224e9b60ca6d12a64d7ffdebac4bf028fe882e741954"
+    },
+    {
+      "bytes": 2626,
+      "path": "modos/ontology/README.md",
+      "sha256": "debc7e434aa159f4417ac37738c47d2caf368bbfacc256a6fd2db7b142884082"
+    },
+    {
+      "bytes": 18095,
+      "path": "modos/ontology/compiler.py",
+      "sha256": "cda01acce3afac4c970c18f6710c4cadd41cda078df71aa07da97d5c3b02ddca"
+    },
+    {
+      "bytes": 4551,
+      "path": "modos/ontology/projection.py",
+      "sha256": "f6ce3953ef7b47dcffdff36adf426d5b28287e5e2d4ef8634890f82f069d0671"
+    },
+    {
+      "bytes": 4929,
+      "path": "modos/ontology/test_compiler.py",
+      "sha256": "d3b158c039b321843528c21432e3971315af491a65eec5fd734085b3df6ac992"
+    },
+    {
+      "bytes": 3123,
+      "path": "modos/ontology/test_projection.py",
+      "sha256": "a6e0b7b448631a0db570a61151fce897aee493b81e5a28aae7edc307b81866f5"
+    },
+    {
+      "bytes": 2665,
+      "path": "modos/ontology/sql/001_ontology_projection.sql",
+      "sha256": "ef5f3b905329c1e366b23db63aefcc72a5f2551b43943edf690c59028099ed9c"
+    },
+    {
+      "bytes": 1857,
+      "path": "modos/ontology/fixtures/seed-snapshot.json",
+      "sha256": "c6d6c8c57be7e694f2ad1ff930167bfdc9466a085c88e0dfc6d3e694699ba761"
+    },
+    {
+      "bytes": 1028,
+      "path": "modos/ontology/fixtures/link-workspace.proposal.json",
+      "sha256": "1b6c08eb2f031d8486785b4b7c9f22744973156326ff8fe5c0435538073d1681"
+    },
+    {
+      "bytes": 1781,
+      "path": "modos/ontology/fixtures/create-model.proposal.json",
+      "sha256": "67966dc17071ae2584d2adff16fc1a1f7738aaa3246323af88849192c4fa8429"
+    },
+    {
+      "bytes": 1786,
+      "path": "modos/ontology/fixtures/create-whole-mind-model.proposal.json",
+      "sha256": "2457c250f37cf5bd606466cfe06b38104c15f5f4db89a1c69262c64d45c09b3d"
+    },
+    {
+      "bytes": 1892,
+      "path": "modos/ontology/fixtures/update-mind.proposal.json",
+      "sha256": "f2d425aa9bd2efbb37ad759c1151824c09260d6dd5bb887bcb1d07712559f48e"
+    },
+    {
+      "bytes": 908,
+      "path": "modos/ontology/fixtures/delete-workspace.proposal.json",
+      "sha256": "cae19be23545c8cee2496ccc4a657e96fd41894bef57bb4876dfb987bf77f173"
+    },
+    {
+      "bytes": 1980,
+      "path": "modos/ontology/fixtures/expected-candidate-snapshot.json",
+      "sha256": "188cf5b330b3aba64ff0901c28acb0c64f6c9d69af8ff8a17ee71f7719e83e21"
+    },
+    {
+      "bytes": 1865,
+      "path": "modos/ontology/fixtures/expected-closure-receipt.json",
+      "sha256": "ffd26496cb3ff775cf4e5f50eaa4ded220bbeabd28f330e75ffb8ae5df6e831c"
+    },
+    {
+      "bytes": 5680,
+      "path": "modos/ontology/fixtures/expected-projection-bundle.json",
+      "sha256": "ae47941b92b74d1075bd46d355b112152ab5c681b3dc2225fe3ae2b31df8deef"
+    }
+  ]
+}

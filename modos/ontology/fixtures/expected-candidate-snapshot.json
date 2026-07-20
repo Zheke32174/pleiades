@@ -1,0 +1,72 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "kind": "OntologySnapshot",
+  "mindId": "mind:pleiades",
+  "objects": [
+    {
+      "apiVersion": "modos.pleiades/v1alpha1",
+      "kind": "Mind",
+      "metadata": {
+        "createdAt": "2026-07-20T00:00:00Z",
+        "generation": 1,
+        "id": "mind:pleiades",
+        "name": "Pleiades persistent mind"
+      },
+      "partitionPolicy": {
+        "conflictVisibility": "steward",
+        "globalAuthorityRequired": true,
+        "merge": "steward-review",
+        "read": "allow-cached",
+        "write": "provisional"
+      },
+      "provenance": {
+        "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "lineage": [],
+        "source": "fixture:seed",
+        "trust": "verified",
+        "visibility": "public"
+      },
+      "spec": {
+        "dissentPreserved": true,
+        "modelReplaceability": true,
+        "persistentOrganization": true
+      }
+    },
+    {
+      "apiVersion": "modos.pleiades/v1alpha1",
+      "kind": "CognitiveWorkspace",
+      "metadata": {
+        "createdAt": "2026-07-20T00:00:00Z",
+        "generation": 1,
+        "id": "workspace:pleiades",
+        "name": "Pleiades shared cognitive workspace"
+      },
+      "partitionPolicy": {
+        "conflictVisibility": "steward",
+        "globalAuthorityRequired": true,
+        "merge": "steward-review",
+        "read": "allow-cached",
+        "write": "provisional"
+      },
+      "provenance": {
+        "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "lineage": [],
+        "source": "fixture:seed",
+        "trust": "verified",
+        "visibility": "public"
+      },
+      "spec": {
+        "firstPassIsolation": true,
+        "typedContributions": true
+      }
+    }
+  ],
+  "relations": [
+    {
+      "sourceRef": "mind:pleiades",
+      "targetRef": "workspace:pleiades",
+      "type": "participatesIn"
+    }
+  ],
+  "schemaVersion": "v1alpha1"
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/ontology-projection-bundle-v1.json",
+  "title": "Pleiades Ontology Projection Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "projectionVersion", "source", "authority", "snapshotRow", "objectRows", "relationRows"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "OntologyProjectionBundle"},
+    "projectionVersion": {"const": "v1alpha1"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshotDigest", "closureReceiptDigest", "mindId", "schemaVersion"],
+      "properties": {
+        "snapshotDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "closureReceiptDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "mindId": {"type": "string", "minLength": 1},
+        "schemaVersion": {"type": "string", "minLength": 1}
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ceiling", "canonical", "writeBackAllowed"],
+      "properties": {
+        "ceiling": {"const": "none"},
+        "canonical": {"const": false},
+        "writeBackAllowed": {"const": false}
+      }
+    },
+    "snapshotRow": {"type": "object"},
+    "objectRows": {"type": "array", "items": {"type": "object"}},
+    "relationRows": {"type": "array", "items": {"type": "object"}}
+  }
+}
