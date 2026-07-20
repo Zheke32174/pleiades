@@ -5,6 +5,7 @@
   "commands": [
     {"id": "contract-catalog", "category": "contracts", "argv": ["python", "ci/validate-contract-catalog.py", "--report", "artifacts/contract-catalog.json"]},
     {"id": "stack-closure", "category": "convergence", "argv": ["python", "ci/validate-stack-manifest.py", "--manifest", "modos/convergence/stack-manifest.json", "--report", "artifacts/stack-closure-receipt.json"]},
+    {"id": "convergence-metadata", "category": "convergence", "argv": ["python", "ci/validate-convergence-metadata.py", "--report", "artifacts/convergence-metadata-receipt.json"]},
     {"id": "operator-runbooks", "category": "convergence", "argv": ["python", "ci/validate-operator-runbooks.py", "--report", "artifacts/operator-runbook-validation.json"]},
     {"id": "current-tree-sensitivity", "category": "release", "argv": ["python", "ci/scan-public-history.py", "--mode", "current", "--report", "artifacts/current-tree-sensitivity-receipt.json"]},
     {"id": "public-ecology-closure", "category": "ecology", "argv": ["python", "ci/validate-ecology.py", "--registry", "modos/ecology/public-ecology.json", "--schema", "modos/contracts/ecology-registry.schema.json", "--report", "artifacts/public-ecology-closure.json"]},
