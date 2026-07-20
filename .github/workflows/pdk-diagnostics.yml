@@ -9,6 +9,7 @@ on:
       - 'modos/pdk-node-agent/**'
       - '.github/workflows/pdk-diagnostics.yml'
       - 'checkpoints/apply-use-intent-atomicity.py'
+      - 'checkpoints/run-use-intent-transform.py'
   pull_request:
     branches:
       - main
@@ -18,6 +19,7 @@ on:
       - 'modos/pdk-node-agent/**'
       - '.github/workflows/pdk-diagnostics.yml'
       - 'checkpoints/apply-use-intent-atomicity.py'
+      - 'checkpoints/run-use-intent-transform.py'
 
 permissions:
   contents: write
@@ -53,7 +55,7 @@ jobs:
           (
             set -euo pipefail
             set -x
-            python3 checkpoints/apply-use-intent-atomicity.py
+            python3 checkpoints/run-use-intent-transform.py
             cargo fmt --all --manifest-path modos/pdk-node-agent/Cargo.toml
             cargo clippy --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- -D warnings
             cargo test --manifest-path modos/pdk-node-agent/Cargo.toml --workspace --all-targets --all-features -- --nocapture
@@ -84,7 +86,9 @@ jobs:
         run: |
           set -euo pipefail
           target_branch="${{ github.head_ref || github.ref_name }}"
-          git rm checkpoints/apply-use-intent-atomicity.py
+          git rm \
+            checkpoints/apply-use-intent-atomicity.py \
+            checkpoints/run-use-intent-transform.py
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add \
