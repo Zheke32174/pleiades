@@ -48,6 +48,7 @@ jobs:
             ci/validate-contract-catalog.py \
             ci/validate-ecology.py \
             ci/validate-stack-manifest.py \
+            ci/validate-convergence-metadata.py \
             ci/validate-operator-runbooks.py \
             ci/scan-public-history.py \
             ci/build-modos-validation-package.py \
