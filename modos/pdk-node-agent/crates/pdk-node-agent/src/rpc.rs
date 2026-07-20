@@ -1,6 +1,8 @@
+mod grant_admission;
+
 use serde::Serialize;
 use tonic::{Request, Response, Status};
-use tracing::{info, warn};
+use tracing::warn;
 
 use pdk_protocol::v1::{
     AgentStatus, CapabilityGrantAck, GetWorkloadStatusRequest, SignedCapabilityGrant,
@@ -10,7 +12,7 @@ use pdk_transport::peer_identity;
 
 use crate::{
     audit::OfflineAuditBuffer,
-    authority::{AuthorityStateStore, GrantAdmission},
+    authority::AuthorityStateStore,
     autonomy::{AutonomyStateMachine, unix_ms},
     policy::PolicyEnforcer,
     runtime::RuntimeManager,
@@ -88,76 +90,7 @@ impl NodeAgent for NodeAgentService {
         &self,
         request: Request<SignedCapabilityGrant>,
     ) -> Result<Response<CapabilityGrantAck>, Status> {
-        let peer = peer_identity(&request)?.clone();
-        let envelope = request.into_inner();
-        let signature_base64 = envelope.signature_base64.clone();
-        match self
-            .policy
-            .cache_signed_grant(envelope, &peer.identity)
-            .await
-        {
-            Ok(grant) => {
-                let event = DecisionEvent {
-                    decision: "allow",
-                    operation: "push_capability_grant",
-                    controller_id: &peer.identity,
-                    token_id: &grant.token_id,
-                    workload_id: &grant.subject_workload_id,
-                    detail: "signature, domain, target, validity interval, Connected state, durable sequence floor, token identity, and signed admission receipt verified",
-                };
-                let prepared = self
-                    .audit
-                    .prepare_event("capability.grant.cached", &grant.token_id, &event)
-                    .map_err(|error| {
-                        Status::internal(format!(
-                            "preparing signed capability admission receipt failed: {error}"
-                        ))
-                    })?;
-                let admission = self
-                    .authority_state
-                    .admit_grant(&grant, &signature_base64, &prepared)
-                    .await
-                    .map_err(|error| {
-                        Status::failed_precondition(format!(
-                            "transactional capability admission failed: {error}"
-                        ))
-                    })?;
-                let admission_state = match admission {
-                    GrantAdmission::New { .. } => "new",
-                    GrantAdmission::Recovered { .. } => "recovered",
-                    GrantAdmission::Idempotent { .. } => "idempotent",
-                };
-                info!(
-                    token_id = %grant.token_id,
-                    workload_id = %grant.subject_workload_id,
-                    controller = %peer.identity,
-                    admission_state,
-                    "committed signed capability grant with atomic authority and audit state"
-                );
-                Ok(Response::new(CapabilityGrantAck {
-                    token_id: grant.token_id,
-                    accepted: true,
-                    message: format!(
-                        "capability grant transactionally admitted ({admission_state})"
-                    ),
-                }))
-            }
-            Err(error) => {
-                let token_id = "rejected";
-                let event = DecisionEvent {
-                    decision: "deny",
-                    operation: "push_capability_grant",
-                    controller_id: &peer.identity,
-                    token_id,
-                    workload_id: "unknown",
-                    detail: "grant failed deterministic validation",
-                };
-                let _ = self
-                    .audit_decision(token_id, "capability.grant.denied", &event)
-                    .await;
-                Err(Status::permission_denied(error.to_string()))
-            }
-        }
+        self.admit_capability_grant(request).await
     }
 
     async fn spawn_workload(
