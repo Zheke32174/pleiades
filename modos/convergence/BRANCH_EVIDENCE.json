@@ -11,7 +11,7 @@
     "receiptDigest": "sha256:0b5b48e2331283ee960263209e081f0f337b0bd44bd826105b5d6e3653b89c3c",
     "status": "clear"
   },
-  "evidenceDigest": "sha256:107853f94175b621b6cdc58afa2e4d8ec4a1ab0963544a13f301a3d1b86ca0aa",
+  "evidenceDigest": "sha256:c2eb04961b89ab2708cd60069ec13d79e074240d11435625e0bc2c4007106bef",
   "interventionFrontier": {
     "autonomousActionCount": 0,
     "operatorActionCount": 11,
@@ -39,12 +39,21 @@
   "suite": {
     "commandCount": 32,
     "executedCount": 32,
-    "exitCode": 0,
-    "failureDetails": {},
-    "failures": [],
+    "exitCode": 1,
+    "failureDetails": {
+      "convergence-metadata": {
+        "privacyScrubbed": true,
+        "stderrTail": "error: contract is not assigned to a governance family: modos/contracts/operator-input-candidate.schema.json\n",
+        "stdoutTail": "",
+        "tailByteLimit": 4096
+      }
+    },
+    "failures": [
+      "convergence-metadata"
+    ],
     "notRun": [],
-    "receiptDigest": "sha256:68a7fbbc725edd8f92ff5136b61d296a347dbfab4a8b431b46c63d89ba10092b",
-    "status": "pass"
+    "receiptDigest": "sha256:82c18fcda2c678772504ed53a0f87d37d8cad9db6f3b0e5f4bbb6ecc0d16792e",
+    "status": "fail"
   },
   "syntheticRehearsal": {
     "receiptDigest": "sha256:37f0fe5e17087ecf595faf3dc520144a698deb78fb3728d62373c058a3a3e40d",
@@ -55,12 +64,12 @@
     ],
     "status": "pass"
   },
-  "validatedCommit": "64a3ee8dadc8faac3bd52f986b0e29e17f95d7d5",
+  "validatedCommit": "1b23fa029ebba1df630bdade54bd0b12b533250b",
   "validationPackage": {
-    "manifestDigest": "sha256:449500bec0b29deb19563c1c3c5c4e2913d1de47dc377e70d9f70dac2049feab",
-    "packageDigest": "sha256:4d6e9de12291051bada41f2c618c4aa749980dcc59781eec79114189c02e2039",
+    "manifestDigest": "sha256:429f30cb76dac27f5304a5e8b5b86571b9c679c1e4d38ea1cbe229f59b290f48",
+    "packageDigest": "sha256:4607a1fc9d3a5773af0cd83a3fe60ac8cf4cc8a30b7c4459506cb8453a2e48ff",
     "privateMaterialIncluded": false,
-    "receiptDigest": "sha256:0e27fc6711b6754207a4bbe79c3cc5d7451667afa7e9108cc3dfba11ac918d67",
-    "sbomDigest": "sha256:f82a49ff58b1683cd1a3d7d646fdbc4eef48569e3d58ea4c5448c6d0a531bbc1"
+    "receiptDigest": "sha256:b57e1bd448b7a618c6b15ad16decf78144dd3189f4db91218824e2c8c4f3ee61",
+    "sbomDigest": "sha256:c82fa94cc274001ac74fbd9a28d711783b1fb091f191eddcbf45f241b78b3f99"
   }
 }
