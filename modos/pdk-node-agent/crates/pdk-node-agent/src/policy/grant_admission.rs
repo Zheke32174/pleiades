@@ -23,7 +23,8 @@ impl ValidatedGrant {
         &self.envelope.signature_base64
     }
 
-    pub fn sequence_key(&self) -> &str {
+    #[cfg(test)]
+    pub(super) fn sequence_key(&self) -> &str {
         &self.sequence_key
     }
 }
