@@ -1,0 +1,163 @@
+name: Apply guarded convergence repairs
+
+on:
+  push:
+    branches:
+      - governance/convergence-proof-v1
+    paths:
+      - '.github/workflows/apply-convergence-repairs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-guarded-convergence-repairs-v1
+  cancel-in-progress: false
+
+jobs:
+  repair-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: governance/convergence-proof-v1
+          show-progress: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned validation dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check --no-input
+          -r requirements-modos.txt
+
+      - name: Apply exact guarded source and fixture repairs
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          root = Path('.')
+
+          adapter = root / 'modos/ontology/ecology_adapter.py'
+          text = adapter.read_text()
+          old = '_relation("mind:pleiades", "operates-through", "workspace:pleiades", source="ecology-adapter")'
+          new = '_relation("mind:pleiades", "operates-through", "workspace:pleiades", evidenceSource="ecology-adapter")'
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one adapter collision, found {text.count(old)}')
+          adapter.write_text(text.replace(old, new))
+
+          fixture = root / 'modos/governance/control_plane_fixtures.py'
+          text = fixture.read_text()
+          old = '"competenceReceipt":"sha256:99e1c371a9097fb8863a83808cb3ea49de6fcab7126acbe2361ecc1d59808386"'
+          new = '"competenceReceipt":"sha256:dd025b9cf40f2e724a4ce8902aa01b6bedb15037f51aaa1228d10ecc6cb6505f"'
+          if text.count(old) != 1:
+              raise SystemExit('competence golden digest source did not match the diagnosed generation')
+          fixture.write_text(text.replace(old, new))
+
+          script = root / 'scripts/pleiades-install-host-autostart.sh'
+          text = script.read_text()
+          root_check = '[[ "${EUID:-$(id -u)}" -ne 0 ]] && die "Must run as root (try: sudo bash $0)"\n'
+          detection = r'''
+
+          detect_windows_profile() {
+            local raw_profile=""
+            if command -v cmd.exe >/dev/null 2>&1 && command -v wslpath >/dev/null 2>&1; then
+              raw_profile="$(cmd.exe /C 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r\n')"
+              if [[ -n "$raw_profile" && "$raw_profile" != "%USERPROFILE%" ]]; then
+                wslpath -u "$raw_profile"
+                return 0
+              fi
+            fi
+
+            local candidate=""
+            while IFS= read -r candidate; do
+              case "${candidate##*/}" in
+                Public|Default|"Default User"|"All Users") continue ;;
+              esac
+              printf '%s\n' "$candidate"
+              return 0
+            done < <(find /mnt/c/Users -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | sort)
+            return 1
+          }
+
+          WINDOWS_PROFILE="$(detect_windows_profile)" || die "Unable to determine the Windows profile directory"
+          WINDOWS_USER="${WINDOWS_PROFILE##*/}"
+          VBS_DIR="$WINDOWS_PROFILE/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup"
+          VBS_PATH="$VBS_DIR/Pleiades-WSL-Start.vbs"
+          '''.strip('\n') + '\n'
+          if text.count(root_check) != 1:
+              raise SystemExit('root-check insertion point was not unique')
+          text = text.replace(root_check, root_check + detection, 1)
+
+          hardcoded_uninstall = '  VBS_PATH="/mnt/c/Users/Fixxia/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup/Pleiades-WSL-Start.vbs"\n'
+          if text.count(hardcoded_uninstall) != 1:
+              raise SystemExit('hardcoded uninstall profile path was not found exactly once')
+          text = text.replace(hardcoded_uninstall, '', 1)
+
+          old_detection = '''WINDOWS_USER="Fixxia"
+          WINDOWS_PROFILE="/mnt/c/Users/$WINDOWS_USER"
+          if [[ ! -d "$WINDOWS_PROFILE" ]]; then
+            # Auto-detect Windows user
+            WINDOWS_USER=$(ls /mnt/c/Users/ 2>/dev/null | grep -v "^Public$\\|^Default$\\|^All Users" | head -1)
+            WINDOWS_PROFILE="/mnt/c/Users/$WINDOWS_USER"
+          fi
+          log "Windows user: $WINDOWS_USER"
+
+          VBS_DIR="$WINDOWS_PROFILE/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup"
+          VBS_PATH="$VBS_DIR/Pleiades-WSL-Start.vbs"
+          '''
+          if text.count(old_detection) != 1:
+              raise SystemExit('legacy Windows-profile detection block was not found exactly once')
+          text = text.replace(old_detection, 'log "Windows user: $WINDOWS_USER"\n', 1)
+          script.write_text(text)
+
+          ontology = root / 'modos/ontology'
+          sys.path.insert(0, str(ontology.resolve()))
+          import projection
+
+          snapshot = json.loads((ontology / 'fixtures/expected-candidate-snapshot.json').read_text())
+          receipt = json.loads((ontology / 'fixtures/expected-closure-receipt.json').read_text())
+          bundle = projection.build_projection_bundle(snapshot, receipt)
+          (ontology / 'fixtures/expected-projection-bundle.json').write_text(
+              json.dumps(bundle, ensure_ascii=False, sort_keys=True, indent=2) + '\n'
+          )
+          PY
+
+      - name: Verify all diagnosed roots and downstream rehearsal
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/pleiades-install-host-autostart.sh
+          python ci/scan-public-history.py \
+            --mode current \
+            --report artifacts/current-tree-sensitivity-receipt.json
+          python modos/ontology/test_projection.py
+          python modos/ontology/test_ecology_adapter.py
+          python ci/validate-executive-control-plane.py
+          python modos/governance/test_control_plane.py
+          python modos/convergence/test_synthetic_rehearsal.py
+          python modos/convergence/synthetic_rehearsal.py \
+            --report artifacts/synthetic-rehearsal-receipt.json
+
+      - name: Commit guarded repairs to latest feature-branch head
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            modos/ontology/ecology_adapter.py \
+            modos/ontology/fixtures/expected-projection-bundle.json \
+            modos/governance/control_plane_fixtures.py \
+            scripts/pleiades-install-host-autostart.sh
+          git commit -m "Repair aggregate convergence failures"
+          git fetch --no-tags origin governance/convergence-proof-v1
+          git rebase origin/governance/convergence-proof-v1
+          git push origin HEAD:governance/convergence-proof-v1
