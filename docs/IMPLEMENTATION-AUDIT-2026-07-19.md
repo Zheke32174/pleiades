@@ -41,7 +41,18 @@ The July 19 workflow-containment pass implemented the following:
 - separated Android build intent from release publication intent in the Recall workflows;
 - corrected `purple-team-polyglot-backup-wslbak/.github/workflows/ci.yml`, the one broad trigger that had remained after the earlier pass.
 
-The account-level reason private GitHub-hosted Actions were previously rejected before job execution remains an external/account-state question and is not considered solved by trigger containment.
+The account-level reason private GitHub-hosted Actions were previously rejected before job execution remains unresolved. It is now owned durably by Pleiades issue #38:
+
+`https://github.com/Zheke32174/pleiades/issues/38`
+
+### Audit preservation
+
+This ledger was committed to the Pleiades default branch so that session discoveries and implementation state no longer depend on conversation history.
+
+Repository-local release-status records were also added to:
+
+- `Zheke32174/recall-xed-editor-c8278404e4/RELEASE-STATUS.md`;
+- `Zheke32174/recall-underward-d0ccef5ee4/RELEASE-STATUS.md`.
 
 ## Android application estate
 
@@ -67,27 +78,39 @@ Completion requires:
 
 ### Recall Xed Editor
 
-State: **RECORDED, NOT VERIFIED**
+State: **VERIFICATION INTENT OPEN; BUILD NOT YET VERIFIED**
 
 Repository: `https://github.com/Zheke32174/recall-xed-editor-c8278404e4`
 
-The repository contains Android build and release workflows, but this audit has not verified a completed package in a durable Release, a current Actions artifact, or a committed binary path.
+Durable records:
 
-Completion requires an explicit CI/release-intent run, retained exact-commit package output, checksum, package/signing record, and a verified durable Release when publication is intended.
+- repository-local completion contract: `RELEASE-STATUS.md`;
+- build-verification branch: `ci/verify-apk-20260719`;
+- draft PR #1: `https://github.com/Zheke32174/recall-xed-editor-c8278404e4/pull/1`.
+
+The branch contains only a non-publishing CI intent marker. This audit has not yet retrieved a completed package from a durable Release or current Actions artifact, so no APK claim is made.
+
+Completion requires retained exact-commit package output, checksum, package/signing record, workflow-run identity, artifact identity, and a verified durable Release when publication is intended.
 
 ### Recall Underward
 
-State: **RECORDED, NOT VERIFIED**
+State: **VERIFICATION INTENT OPEN; BUILD NOT YET VERIFIED**
 
 Repository: `https://github.com/Zheke32174/recall-underward-d0ccef5ee4`
 
-The repository contains the Android suite and release workflow, but this audit has not verified completed package outputs in a durable Release, a current Actions artifact, or committed binary paths.
+Durable records:
 
-Completion requires an explicit CI/release-intent run, retention of every expected package output and checksum, exact-commit provenance, and verification of a durable Release when publication is intended.
+- repository-local completion contract: `RELEASE-STATUS.md`;
+- build-verification branch: `ci/verify-apks-20260719`;
+- draft PR #1: `https://github.com/Zheke32174/recall-underward-d0ccef5ee4/pull/1`.
+
+The branch contains only a non-publishing CI intent marker. This audit has not yet retrieved the expected package set from a durable Release or current Actions artifact, so no APK-set claim is made.
+
+Completion requires retention of every expected package output and checksum, expected-versus-produced inventory, package/signing records, exact-commit provenance, workflow-run identity, artifact identity, and verification of a durable Release when publication is intended.
 
 ### Other Android repositories
 
-Prior sessions reported 27 durable Releases across the public and private Android repositories. That claim must be treated as **NEEDS RE-AUDIT** until a current release-asset inventory is captured in GitHub-accessible evidence. Do not infer completion from workflow files or old notifications.
+Prior sessions reported 27 durable Releases across the public and private Android repositories. That claim remains **NEEDS RE-AUDIT** until a current release-asset inventory is captured in GitHub-accessible evidence. Do not infer completion from workflow files or old notifications.
 
 ## Existing durable cross-repository backlog
 
@@ -120,7 +143,7 @@ The following requirements already exist on GitHub and are therefore not trapped
 ### Host and edge adapters
 
 - `pleiades-container` issue #8 and PR #9 — transactional host binding and ambient nspawn-settings refusal.
-- `pleiades-container` issue #10 — compensate systemd manager state after reload failure.
+- `pleiades-container` issue #10 — **implemented on PR #9 and closed as completed**. The branch now performs a compensating `daemon-reload`, preserves both failure results, reports manager uncertainty on double failure, and includes deterministic tests. The implementation is still unmerged.
 - `pleiades-termux` issue #3 and Pleiades issue #19 — authenticated delivery/acknowledgement design.
 - `pleiades-termux` PR #5 — delivery-stream continuity without transport.
 - `pleiades-termux` issue #6 — symlink-safe state and lock handling.
@@ -142,8 +165,8 @@ The following requirements already exist on GitHub and are therefore not trapped
 
 1. **Release workflow present, but no release asset verified.** Applies currently to Yojimbo, Recall Xed, and Recall Underward until evidence says otherwise.
 2. **Open PR exists, but change is not on the default branch.** The stacked Pleiades/MODOS PR graph must not be described as merged implementation.
-3. **Issue specifies a repair, but no code has landed.** Issues #25, container #10, Factory #6, Factory Stack #7, and Termux #6 are examples.
-4. **Actions failure noise was contained, but the private Actions account restriction was not diagnosed at the account banner/billing/policy layer.**
+3. **Issue specifies a repair, but no code has landed.** Pleiades issue #25, Factory issue #6, Factory Stack issue #7, and Termux issue #6 are current examples.
+4. **Actions failure noise was contained, but the private Actions account restriction was not diagnosed at the account banner/billing/policy layer.** Pleiades issue #38 now owns that work.
 5. **Prior release counts require a current asset inventory.** Do not preserve old numbers as fact without retrievable evidence.
 6. **Live-hardware validations remain separate from repository CI.** Pleiades issue #6 owns Alienware/Lenovo capability-lease validation and cannot be completed by repository edits alone.
 
@@ -151,9 +174,9 @@ The following requirements already exist on GitHub and are therefore not trapped
 
 1. Keep every newly discovered gap durable in an issue, PR, or this ledger before ending a review session.
 2. Finish exact, narrow correctness repairs on already-reviewed PR stacks before opening broad new implementation waves.
-3. Produce and retain verified Xed and Underward Android build outputs.
+3. Produce and retain verified Xed and Underward Android build outputs through draft PRs #1 in their respective repositories.
 4. Merge and publish the Yojimbo engineering-preview stack after review.
-5. Resolve the private Actions account restriction and run one canary from each workflow family.
+5. Resolve Pleiades issue #38 and run one private canary from each workflow family.
 6. Capture a machine-readable Android release/artifact inventory rather than relying on remembered counts.
 7. Continue Pleiades issue #4 repository-by-repository with explicit dispositions: canonical, active-supporting, upstream/reference, archive, or delete candidate.
 
