@@ -3,117 +3,15 @@
   "kind": "ContractGovernanceMatrix",
   "matrixId": "pleiades-contract-governance-v1",
   "families": [
-    {
-      "familyId": "ecology",
-      "owner": "@Zheke32174",
-      "authorityClass": "public-constitutional-contract",
-      "currentVersion": "v1alpha1",
-      "paths": [
-        "modos/contracts/component-manifest.schema.json",
-        "modos/contracts/ecology-registry.schema.json"
-      ]
-    },
-    {
-      "familyId": "ontology",
-      "owner": "@Zheke32174",
-      "authorityClass": "proposal-and-evidence-contract",
-      "currentVersion": "v1alpha1",
-      "pathPatterns": [
-        "modos/contracts/change-proposal.schema.json",
-        "modos/contracts/ontology-*.schema.json",
-        "modos/contracts/source-manifest.schema.json"
-      ]
-    },
-    {
-      "familyId": "autonomy-work-orders",
-      "owner": "@Zheke32174",
-      "authorityClass": "bounded-work-orchestration-contract",
-      "currentVersion": "v1alpha1",
-      "paths": [
-        "modos/contracts/action-receipt.schema.json",
-        "modos/contracts/capability-definition.schema.json",
-        "modos/contracts/checkpoint-record.schema.json",
-        "modos/contracts/evidence-record.schema.json",
-        "modos/contracts/stage-approval.schema.json",
-        "modos/contracts/work-order.schema.json",
-        "modos/contracts/work-order-stage.schema.json"
-      ]
-    },
-    {
-      "familyId": "domain-runtime",
-      "owner": "@Zheke32174",
-      "authorityClass": "runtime-domain-contract",
-      "currentVersion": "v1alpha1",
-      "paths": [
-        "modos/contracts/capability-lease.schema.json",
-        "modos/contracts/context-envelope.schema.json",
-        "modos/contracts/delivery-stream-state.schema.json",
-        "modos/contracts/desired-state.schema.json",
-        "modos/contracts/domain-event.schema.json",
-        "modos/contracts/domain-object.schema.json",
-        "modos/contracts/experience-record.schema.json",
-        "modos/contracts/workload-binding.schema.json"
-      ]
-    },
-    {
-      "familyId": "observation-ingress",
-      "owner": "@Zheke32174",
-      "authorityClass": "authenticated-observation-contract",
-      "currentVersion": "v1alpha1",
-      "paths": [
-        "modos/contracts/observation-ingress-batch.schema.json",
-        "modos/contracts/observation-ingress-receipt.schema.json"
-      ]
-    },
-    {
-      "familyId": "workspace-convergence",
-      "owner": "@Zheke32174",
-      "authorityClass": "cognitive-contribution-contract",
-      "currentVersion": "v1alpha1",
-      "paths": [
-        "modos/contracts/agent-convergence-contract.schema.json",
-        "modos/contracts/workspace-contribution.schema.json"
-      ]
-    },
-    {
-      "familyId": "promotion-admission",
-      "owner": "@Zheke32174",
-      "authorityClass": "review-and-promotion-transaction-contract",
-      "currentVersion": "v1alpha1",
-      "paths": [
-        "modos/contracts/promotion-review-eligibility-bundle.schema.json",
-        "modos/contracts/promotion-transaction.schema.json"
-      ]
-    },
-    {
-      "familyId": "executive-governance",
-      "owner": "@Zheke32174",
-      "authorityClass": "delegated-runtime-governance-contract",
-      "currentVersion": "v1alpha1",
-      "paths": [
-        "modos/contracts/delegated-authority-grant.schema.json",
-        "modos/contracts/executive-decision.schema.json",
-        "modos/contracts/executive-authorization-receipt.schema.json",
-        "modos/contracts/admission-mandate.schema.json",
-        "modos/contracts/executive-control-plane.schema.json",
-        "modos/contracts/workspace-emergency-recovery.schema.json",
-        "modos/contracts/distributed-admission.schema.json",
-        "modos/contracts/learning-spine.schema.json",
-        "modos/contracts/constitutional-evolution.schema.json",
-        "modos/contracts/ecology-integration-readiness.schema.json"
-      ]
-    },
-    {
-      "familyId": "convergence",
-      "owner": "@Zheke32174",
-      "authorityClass": "evidence-and-handoff-contract",
-      "currentVersion": "v1alpha1",
-      "paths": [
-        "modos/contracts/operator-input-candidate.schema.json",
-        "modos/contracts/operator-intervention-bundle.schema.json",
-        "modos/contracts/validation-package.schema.json"
-      ]
-    }
+    {"familyId": "ecology", "owner": "@Zheke32174", "authorityClass": "public-constitutional-contract", "currentVersion": "v1alpha1", "paths": ["modos/contracts/component-manifest.schema.json", "modos/contracts/ecology-registry.schema.json"]},
+    {"familyId": "ontology", "owner": "@Zheke32174", "authorityClass": "proposal-and-evidence-contract", "currentVersion": "v1alpha1", "pathPatterns": ["modos/contracts/change-proposal.schema.json", "modos/contracts/ontology-*.schema.json", "modos/contracts/source-manifest.schema.json"]},
+    {"familyId": "autonomy-work-orders", "owner": "@Zheke32174", "authorityClass": "bounded-work-orchestration-contract", "currentVersion": "v1alpha1", "paths": ["modos/contracts/action-receipt.schema.json", "modos/contracts/capability-definition.schema.json", "modos/contracts/checkpoint-record.schema.json", "modos/contracts/evidence-record.schema.json", "modos/contracts/stage-approval.schema.json", "modos/contracts/work-order.schema.json", "modos/contracts/work-order-stage.schema.json"]},
+    {"familyId": "domain-runtime", "owner": "@Zheke32174", "authorityClass": "runtime-domain-contract", "currentVersion": "v1alpha1", "paths": ["modos/contracts/capability-lease.schema.json", "modos/contracts/context-envelope.schema.json", "modos/contracts/delivery-stream-state.schema.json", "modos/contracts/desired-state.schema.json", "modos/contracts/domain-event.schema.json", "modos/contracts/domain-object.schema.json", "modos/contracts/experience-record.schema.json", "modos/contracts/workload-binding.schema.json"]},
+    {"familyId": "observation-ingress", "owner": "@Zheke32174", "authorityClass": "authenticated-observation-contract", "currentVersion": "v1alpha1", "paths": ["modos/contracts/observation-ingress-batch.schema.json", "modos/contracts/observation-ingress-receipt.schema.json"]},
+    {"familyId": "workspace-convergence", "owner": "@Zheke32174", "authorityClass": "cognitive-contribution-contract", "currentVersion": "v1alpha1", "paths": ["modos/contracts/agent-convergence-contract.schema.json", "modos/contracts/workspace-contribution.schema.json"]},
+    {"familyId": "promotion-admission", "owner": "@Zheke32174", "authorityClass": "review-and-promotion-transaction-contract", "currentVersion": "v1alpha1", "paths": ["modos/contracts/promotion-review-eligibility-bundle.schema.json", "modos/contracts/promotion-transaction.schema.json"]},
+    {"familyId": "executive-governance", "owner": "@Zheke32174", "authorityClass": "delegated-runtime-governance-contract", "currentVersion": "v1alpha1", "paths": ["modos/contracts/delegated-authority-grant.schema.json", "modos/contracts/executive-decision.schema.json", "modos/contracts/executive-authorization-receipt.schema.json", "modos/contracts/admission-mandate.schema.json", "modos/contracts/executive-control-plane.schema.json", "modos/contracts/workspace-emergency-recovery.schema.json", "modos/contracts/distributed-admission.schema.json", "modos/contracts/learning-spine.schema.json", "modos/contracts/constitutional-evolution.schema.json", "modos/contracts/ecology-integration-readiness.schema.json"]},
+    {"familyId": "convergence", "owner": "@Zheke32174", "authorityClass": "evidence-and-handoff-contract", "currentVersion": "v1alpha1", "paths": ["modos/contracts/operator-handoff-packet.schema.json", "modos/contracts/operator-input-candidate.schema.json", "modos/contracts/operator-intervention-bundle.schema.json", "modos/contracts/validation-package.schema.json"]}
   ],
   "compatibilityPolicy": {
     "sameVersion": "must-remain-structurally-and-semantically-compatible-or-require-explicit-migration",
@@ -131,12 +29,6 @@
     {"from": "v1alpha1", "to": "v1beta1", "status": "unimplemented", "migrationRequired": true},
     {"from": "v1alpha1", "to": "v1", "status": "unimplemented", "migrationRequired": true}
   ],
-  "reviewRules": {
-    "codeownersRequired": true,
-    "semanticDiffRequired": true,
-    "goldenReceiptReproductionRequired": true,
-    "consumerCompatibilityEvidenceRequired": true,
-    "selfPromotionAllowed": false
-  },
+  "reviewRules": {"codeownersRequired": true, "semanticDiffRequired": true, "goldenReceiptReproductionRequired": true, "consumerCompatibilityEvidenceRequired": true, "selfPromotionAllowed": false},
   "authority": {"ceiling": "none", "mayChangeContracts": false, "mayPromoteContracts": false}
 }
