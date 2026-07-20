@@ -18,11 +18,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
-        with:
-          fetch-depth: 0
-          show-progress: false
-          persist-credentials: false
+      - name: Fetch exact validation ref
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${REPOSITORY}.git"
+          if [[ "$EVENT_NAME" == 'pull_request' ]]; then
+            test -n "$PR_NUMBER"
+            git fetch --no-tags --prune origin "+refs/pull/${PR_NUMBER}/merge:refs/remotes/pull/${PR_NUMBER}/merge"
+            git checkout --detach "refs/remotes/pull/${PR_NUMBER}/merge"
+          else
+            git fetch --no-tags --prune origin "+refs/heads/main:refs/remotes/origin/main"
+            git checkout --detach refs/remotes/origin/main
+          fi
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git diff --quiet
+          git diff --cached --quiet
 
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
