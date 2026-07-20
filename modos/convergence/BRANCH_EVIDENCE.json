@@ -6,29 +6,12 @@
     "liveExecutionApplied": false
   },
   "currentTreeSensitivity": {
-    "findingCount": 2,
-    "findings": [
-      {
-        "blobSha": null,
-        "lineHashPrefix": "0f00025d3e12",
-        "lineNumber": 99,
-        "path": ".github/workflows/apply-convergence-repairs.yml",
-        "rule": "literal-windows-profile",
-        "scope": "current-tree"
-      },
-      {
-        "blobSha": null,
-        "lineHashPrefix": "03233ce7c58c",
-        "lineNumber": 19,
-        "path": "ci/public-history-sensitivity.json",
-        "rule": "literal-linux-home",
-        "scope": "current-tree"
-      }
-    ],
-    "receiptDigest": "sha256:2bfedc34045bcf28e31a39bbd1c34b26c90dcfc71355d7c1555c09f4e2d423ab",
-    "status": "blocked"
+    "findingCount": 0,
+    "findings": [],
+    "receiptDigest": "sha256:0b5b48e2331283ee960263209e081f0f337b0bd44bd826105b5d6e3653b89c3c",
+    "status": "clear"
   },
-  "evidenceDigest": "sha256:d58604736668204f64ff9c3be456ee727d10f398b3c21b8f408f5ef7f8735b86",
+  "evidenceDigest": "sha256:107853f94175b621b6cdc58afa2e4d8ec4a1ab0963544a13f301a3d1b86ca0aa",
   "interventionFrontier": {
     "autonomousActionCount": 0,
     "operatorActionCount": 11,
@@ -49,42 +32,19 @@
   "reachableHistorySensitivity": {
     "contentDisclosed": false,
     "exitCode": 2,
-    "findingCount": 86,
-    "receiptDigest": "sha256:0accc18174b30d057902d686282d9b3ef2a1677a1ab7c5eb48b6f6eac8371612",
+    "findingCount": 85,
+    "receiptDigest": "sha256:7ba0098368132a346fbb166439f046c783416b73dfafab9da2d0944b0c4a012a",
     "status": "blocked"
   },
   "suite": {
     "commandCount": 32,
     "executedCount": 32,
-    "exitCode": 1,
-    "failureDetails": {
-      "current-tree-sensitivity": {
-        "privacyScrubbed": true,
-        "stderrTail": "",
-        "stdoutTail": "public history scan blocked: 2 findings; sha256:2bfedc34045bcf28e31a39bbd1c34b26c90dcfc71355d7c1555c09f4e2d423ab\n",
-        "tailByteLimit": 4096
-      },
-      "ecology-adapter-tests": {
-        "privacyScrubbed": true,
-        "stderrTail": "test_authority_ceiling_is_preserved_on_repository_objects (__main__.EcologyAdapterTests.test_authority_ceiling_is_preserved_on_repository_objects) ... ok\ntest_compilation_is_deterministic_under_input_array_reordering (__main__.EcologyAdapterTests.test_compilation_is_deterministic_under_input_array_reordering) ... FAIL\ntest_duplicate_membership_is_rejected (__main__.EcologyAdapterTests.test_duplicate_membership_is_rejected) ... ok\ntest_every_registry_repository_becomes_resource (__main__.EcologyAdapterTests.test_every_registry_repository_becomes_resource) ... ok\ntest_public_projection_cannot_claim_private_closure (__main__.EcologyAdapterTests.test_public_projection_cannot_claim_private_closure) ... ok\ntest_public_projection_compiles_to_closed_snapshot (__main__.EcologyAdapterTests.test_public_projection_compiles_to_closed_snapshot) ... ok\ntest_unknown_relation_endpoint_fails_ontology_closure (__main__.EcologyAdapterTests.test_unknown_relation_endpoint_fails_ontology_closure) ... ok\n\n======================================================================\nFAIL: test_compilation_is_deterministic_under_input_array_reordering (__main__.EcologyAdapterTests.test_compilation_is_deterministic_under_input_array_reordering)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/ontology/test_ecology_adapter.py\", line 44, in test_compilation_is_deterministic_under_input_array_reordering\n    self.assertEqual(compiler.canonical_bytes(first_snapshot), compiler.canonical_bytes(second_snapshot))\nAssertionError: b'{\"a[7836 chars]a256:75f0d613633808527fa0b03e2f305db1412654995[7912 chars]a1\"}' != b'{\"a[7836 chars]a256:da91b35aad213ea6aab718b09f68a9707ec3c8b4d[7912 chars]a1\"}'\n\n----------------------------------------------------------------------\nRan 7 tests in 0.148s\n\nFAILED (failures=1)\n",
-        "stdoutTail": "",
-        "tailByteLimit": 4096
-      },
-      "synthetic-rehearsal-unit-tests": {
-        "privacyScrubbed": true,
-        "stderrTail": "ent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/test_synthetic_rehearsal.py\", line 56, in test_reordering_public_ecology_preserves_semantics_but_changes_source_evidence\n    self.assertEqual(first[\"mergedSnapshotDigest\"], second[\"mergedSnapshotDigest\"])\nAssertionError: 'sha256:d148a20732e1cee2dbfd42aabbd015d63ac5285b73b9e0ae1ec870fffb5a8a04' != 'sha256:3b4b6bbb1fcffe89d6197f097136c4b77eb4c7a71d5ca9d1e66bd7602ca146eb'\n- sha256:d148a20732e1cee2dbfd42aabbd015d63ac5285b73b9e0ae1ec870fffb5a8a04\n+ sha256:3b4b6bbb1fcffe89d6197f097136c4b77eb4c7a71d5ca9d1e66bd7602ca146eb\n\n\n======================================================================\nFAIL: test_synthetic_private_registry_contains_no_real_project_owner (__main__.SyntheticRehearsalTests.test_synthetic_private_registry_contains_no_real_project_owner)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/home/<redacted>/work/pleiades/pleiades/modos/convergence/test_synthetic_rehearsal.py\", line 66, in test_synthetic_private_registry_contains_no_real_project_owner\n    self.assertNotIn(\"undergrowth\", rendered.lower())\nAssertionError: 'undergrowth' unexpectedly found in '{\"apiversion\": \"modos.pleiades/v1alpha1\", \"kind\": \"ecologyregistry\", \"metadata\": {\"name\": \"synthetic-private-ecology\", \"notes\": \"rehearsal-only private scope. never substitute for undergrowth.\", \"observedat\": \"2026-07-20t22:00:00z\", \"owner\": \"syntheticlab\", \"source\": \"synthetic fixture containing no real private identities\", \"sourcedigest\": \"sha256:304f2e464d918ae6662db78f3294edfcf6b1d2543421525a5a7b297356057e09\", \"visibility\": \"private\"}, \"spec\": {\"canonicalscopes\": {\"synthetic-private-ecology\": \"repo:syntheticlab/private-spine\", \"synthetic-private-runtime\": \"repo:syntheticlab/private-runtime\"}, \"capabilities\": [{\"id\": \"synthetic.private.ecology.close\", \"providerref\": \"repo:syntheticlab/private-spine\", \"status\": \"canonical\", \"version\": \"v1alpha1\"}, {\"id\": \"synthetic.private.runtime.observe\", \"providerref\": \"repo:syntheticlab/private-runtime\", \"status\": \"operational\", \"version\": \"v1alpha1\"}], \"components\": [{\"componentid\": \"synthetic-private-spine\", \"manifestpath\": \"modos_component.yaml\", \"manifeststate\": \"present\", \"repository\": \"syntheticlab/private-spine\"}, {\"componentid\": \"synthetic-private-node\", \"manifestpath\": \"modos_component.yaml\", \"manifeststate\": \"present\", \"repository\": \"syntheticlab/private-runtime\"}], \"exceptions\": [], \"groups\": [{\"authorityceiling\": \"domain-control\", \"description\": \"synthetic private governance spine\", \"disposition\": \"canonical\", \"id\": \"synthetic-private-governance\", \"lifecycle\": \"canonical\", \"repositories\": [\"syntheticlab/private-spine\"], \"subsystem\": \"private-governance\"}, {\"authorityceiling\": \"local-enforcement\", \"description\": \"synthetic private runtime substrate\", \"disposition\": \"active\", \"id\": \"synthetic-private-runtime\", \"lifecycle\": \"operational\", \"repositories\": [\"syntheticlab/private-runtime\"], \"subsystem\": \"private-runtime\"}], \"invariants\": {\"archiveisolation\": true, \"authoritymonotonicity\": true, \"completeinventory\": true, \"nodanglingrequiredrelations\": true, \"singlecanonicalprovider\": true, \"uniquemembership\": true}, \"inventory\": {\"expectedcount\": 2, \"repositories\": [\"syntheticlab/private-runtime\", \"syntheticlab/private-spine\"]}, \"precedence\": [\"promoted pleiades constitution and public contracts\", \"synthetic rehearsal private registry\", \"synthetic component manifests\"], \"relations\": [{\"required\": true, \"scope\": \"governance\", \"sourceref\": \"repo:syntheticlab/private-spine\", \"targetref\": \"scope:synthetic-private-ecology\", \"type\": \"canonical-for\"}, {\"required\": true, \"scope\": \"runtime\", \"sourceref\": \"repo:syntheticlab/private-runtime\", \"targetref\": \"scope:synthetic-private-runtime\", \"type\": \"canonical-for\"}, {\"required\": true, \"scope\": \"governance\", \"sourceref\": \"repo:syntheticlab/private-runtime\", \"targetref\": \"repo:syntheticlab/private-spine\", \"type\": \"governed-by\"}]}}'\n\n----------------------------------------------------------------------\nRan 6 tests in 0.253s\n\nFAILED (failures=2)\n",
-        "stdoutTail": "",
-        "tailByteLimit": 4096
-      }
-    },
-    "failures": [
-      "current-tree-sensitivity",
-      "ecology-adapter-tests",
-      "synthetic-rehearsal-unit-tests"
-    ],
+    "exitCode": 0,
+    "failureDetails": {},
+    "failures": [],
     "notRun": [],
-    "receiptDigest": "sha256:4fa96bec1053b90bbc4dfded45c9a3cbc4ae1c91458488f99626c74d640008c1",
-    "status": "fail"
+    "receiptDigest": "sha256:68a7fbbc725edd8f92ff5136b61d296a347dbfab4a8b431b46c63d89ba10092b",
+    "status": "pass"
   },
   "syntheticRehearsal": {
     "receiptDigest": "sha256:37f0fe5e17087ecf595faf3dc520144a698deb78fb3728d62373c058a3a3e40d",
@@ -95,12 +55,12 @@
     ],
     "status": "pass"
   },
-  "validatedCommit": "647f094a7092972710a0b1e167f8defa65c19cad",
+  "validatedCommit": "64a3ee8dadc8faac3bd52f986b0e29e17f95d7d5",
   "validationPackage": {
-    "manifestDigest": "sha256:e96250dd41a4eb3e9dbec97ac66e064c80256aa4fd2e3605dc56f0ca10f1c051",
-    "packageDigest": "sha256:b66657c6c32764595ddcb765dce518ec98a9e6fd20b9e18ac07ece46cd60aca4",
+    "manifestDigest": "sha256:449500bec0b29deb19563c1c3c5c4e2913d1de47dc377e70d9f70dac2049feab",
+    "packageDigest": "sha256:4d6e9de12291051bada41f2c618c4aa749980dcc59781eec79114189c02e2039",
     "privateMaterialIncluded": false,
-    "receiptDigest": "sha256:a3d500f058f45ea9c927822eee42b28a4a2a35d312d9b9bb388ec4591586b925",
-    "sbomDigest": "sha256:d1494ec923171e470c7442749bfa2edafbcf0b2adc4ce6df6d669ef018cb56d1"
+    "receiptDigest": "sha256:0e27fc6711b6754207a4bbe79c3cc5d7451667afa7e9108cc3dfba11ac918d67",
+    "sbomDigest": "sha256:f82a49ff58b1683cd1a3d7d646fdbc4eef48569e3d58ea4c5448c6d0a531bbc1"
   }
 }
