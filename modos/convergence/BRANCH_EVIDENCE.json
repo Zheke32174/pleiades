@@ -11,7 +11,7 @@
     "receiptDigest": "sha256:0b5b48e2331283ee960263209e081f0f337b0bd44bd826105b5d6e3653b89c3c",
     "status": "clear"
   },
-  "evidenceDigest": "sha256:54914dd8276a02f069f1a9c7abad400496c0d3bbf8fe9356fa659c36e286f787",
+  "evidenceDigest": "sha256:be9806a5bca4f0598b35046533de3ea959b7bbbe994715cc4e35a2f89a3b41a3",
   "interventionFrontier": {
     "autonomousActionCount": 0,
     "operatorActionCount": 11,
@@ -37,23 +37,14 @@
     "status": "blocked"
   },
   "suite": {
-    "commandCount": 32,
-    "executedCount": 32,
-    "exitCode": 1,
-    "failureDetails": {
-      "convergence-metadata": {
-        "privacyScrubbed": true,
-        "stderrTail": "error: contract is not assigned to a governance family: modos/contracts/operator-input-candidate.schema.json\n",
-        "stdoutTail": "",
-        "tailByteLimit": 4096
-      }
-    },
-    "failures": [
-      "convergence-metadata"
-    ],
+    "commandCount": 34,
+    "executedCount": 34,
+    "exitCode": 0,
+    "failureDetails": {},
+    "failures": [],
     "notRun": [],
-    "receiptDigest": "sha256:3e05a48a944d97d99a78b3af84a6e59a36ac4795d11fc040778259a869a90610",
-    "status": "fail"
+    "receiptDigest": "sha256:334b1ebbab24b2a11aed05573e94856fcc935b043adab7e257a4b2d577e96195",
+    "status": "pass"
   },
   "syntheticRehearsal": {
     "receiptDigest": "sha256:37f0fe5e17087ecf595faf3dc520144a698deb78fb3728d62373c058a3a3e40d",
@@ -64,12 +55,12 @@
     ],
     "status": "pass"
   },
-  "validatedCommit": "fa3d0eca6a9a13fbeb9e34142ffc578e2316645c",
+  "validatedCommit": "d8fa8feab248e66fc50e95154befed113215ee25",
   "validationPackage": {
-    "manifestDigest": "sha256:dd556b1f4fe344a79e17a83e0c4e87171f8d9db2c3176516deb20e8df4ec8d6c",
-    "packageDigest": "sha256:e55647660707338b895d01e2603579c3491d18839fef7f5062d430e762c09385",
+    "manifestDigest": "sha256:b44d5376018271527986a1f936f8216b06ef7755abcdabcbadde21a251e34380",
+    "packageDigest": "sha256:8cae12685333ba5f8250219c00c9f648580f046d3285e2da1a324cbf7f7a61a9",
     "privateMaterialIncluded": false,
-    "receiptDigest": "sha256:f62cf70bed5cc5e2d9ed05793007953ed0f3e682ff786eb1f62c9ea175bf7e09",
-    "sbomDigest": "sha256:b34dff2c3f7fb3d2c5a1bf279e11cdcaeb154e98d0501762f8141a45a6ee62a1"
+    "receiptDigest": "sha256:7be52d4cdcab928389d2a4c606404ef93b2237bd95f946076206d7fd7827bb78",
+    "sbomDigest": "sha256:dfa52c34b3bdc56aa1ca0b9424230ec2c049d757ad79200bc166204293a7b4f1"
   }
 }
