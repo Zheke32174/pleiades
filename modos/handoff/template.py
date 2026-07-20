@@ -61,7 +61,7 @@ def build_template(source_commit: str, created_at: str, candidate_id: str) -> di
             "canaryNodeId": None,
             "observationWindowSeconds": None,
         },
-        "requestedOutputs": REQUESTED_OUTPUTS,
+        "requestedOutputs": list(REQUESTED_OUTPUTS),
         "authority": {
             "ceiling": "none",
             "proposalOnly": True,
