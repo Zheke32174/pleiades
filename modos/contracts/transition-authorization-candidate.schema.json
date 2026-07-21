@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/transition-authorization-candidate-v1.json",
+  "title": "Pleiades Transition Authorization Candidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "authorizationId", "candidateDigest", "compilationReceiptDigest", "evidenceTrustReceiptDigest", "plan", "decision", "proposerRef", "executorRef", "executorCapability", "grantRef", "grantDigest", "lineage", "approvals", "authority"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "TransitionAuthorizationCandidate"},
+    "authorizationId": {"type": "string", "pattern": "^transition-authorization:[a-z0-9][A-Za-z0-9._:-]{2,191}$"},
+    "candidateDigest": {"$ref": "#/$defs/sha256"},
+    "compilationReceiptDigest": {"$ref": "#/$defs/sha256"},
+    "evidenceTrustReceiptDigest": {"$ref": "#/$defs/sha256"},
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outputId", "planDigest"],
+      "properties": {
+        "outputId": {"type": "string", "minLength": 1},
+        "planDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decisionType", "domain", "action", "riskTier", "authorizationMode"],
+      "properties": {
+        "decisionType": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,63}$"},
+        "domain": {"type": "string", "pattern": "^[a-z][a-z0-9._/-]{1,127}$"},
+        "action": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,127}$"},
+        "riskTier": {"enum": ["observe-only", "reversible-local", "bounded-persistent", "high-impact", "constitutional"]},
+        "authorizationMode": {"enum": ["delegated-machine-executive", "mixed-quorum", "human-steward"]}
+      }
+    },
+    "proposerRef": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,255}$"},
+    "executorRef": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,255}$"},
+    "executorCapability": {"type": "string", "pattern": "^[a-z][a-z0-9._-]{1,127}$"},
+    "grantRef": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,255}$"},
+    "grantDigest": {"$ref": "#/$defs/sha256"},
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["predecessorDigest", "targetDigest", "rollbackDigest"],
+      "properties": {
+        "predecessorDigest": {"$ref": "#/$defs/sha256"},
+        "targetDigest": {"$ref": "#/$defs/sha256"},
+        "rollbackDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "approvals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["approvalId", "principalRef", "keyRef", "position", "signedAt", "firstPassIndependent", "conflictDeclared", "recused", "nonce", "algorithm", "signatureBase64"],
+        "properties": {
+          "approvalId": {"type": "string", "pattern": "^approval:[a-z0-9][A-Za-z0-9._:-]{2,191}$"},
+          "principalRef": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,255}$"},
+          "keyRef": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{1,255}$"},
+          "position": {"enum": ["approve", "reject", "abstain", "audit"]},
+          "signedAt": {"$ref": "#/$defs/dateTime"},
+          "firstPassIndependent": {"const": true},
+          "conflictDeclared": {"type": "boolean"},
+          "recused": {"type": "boolean"},
+          "nonce": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "algorithm": {"const": "Ed25519"},
+          "signatureBase64": {"type": "string", "pattern": "^[A-Za-z0-9+/]{86}==$"}
+        }
+      }
+    },
+    "authority": {
+      "const": {
+        "ceiling": "none",
+        "preflightOnly": true,
+        "mandateConstructed": false,
+        "authorizationApplied": false,
+        "executionApplied": false
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^sha256:(?!0{64}$)[0-9a-f]{64}$"},
+    "dateTime": {"type": "string", "format": "date-time"}
+  }
+}

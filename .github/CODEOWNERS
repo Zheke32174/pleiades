@@ -1,4 +1,4 @@
-# Ontology, ecology, executive-governance, convergence, handoff, and release-evidence review routing.
+# Ontology, ecology, executive-governance, convergence, handoff, trust, and release-evidence review routing.
 # CODEOWNERS is not constitutional, admission, execution, or canonical authority.
 /MODOS_COMPONENT.yaml @Zheke32174
 /requirements-modos.txt @Zheke32174
@@ -8,10 +8,12 @@
 /modos/governance/ @Zheke32174
 /modos/convergence/ @Zheke32174
 /modos/handoff/ @Zheke32174
+/modos/trust/ @Zheke32174
 /modos/EXECUTIVE_AUTHORITY.md @Zheke32174
 /modos/ECOLOGY_PROGRESSION_100.md @Zheke32174
 /modos/ECOLOGY_PROGRESSION_200.md @Zheke32174
 /modos/ECOLOGY_PROGRESSION_300.md @Zheke32174
+/modos/ECOLOGY_PROGRESSION_400.md @Zheke32174
 /ci/validate-change-proposals.py @Zheke32174
 /ci/validate-promotion-evidence.py @Zheke32174
 /ci/validate-executive-authority.py @Zheke32174
@@ -27,6 +29,7 @@
 /ci/validate-convergence-metadata.py @Zheke32174
 /ci/validate-operator-runbooks.py @Zheke32174
 /ci/validate-operator-intake.py @Zheke32174
+/ci/validate-operational-trust.py @Zheke32174
 /ci/write-branch-convergence-evidence.py @Zheke32174
 /ci/scan-public-history.py @Zheke32174
 /ci/public-history-sensitivity.json @Zheke32174
@@ -43,6 +46,7 @@
 /.github/workflows/constitutional-evolution.yml @Zheke32174
 /.github/workflows/ecology-integration-readiness.yml @Zheke32174
 /.github/workflows/operator-intake-contracts.yml @Zheke32174
+/.github/workflows/operational-trust-contracts.yml @Zheke32174
 /.github/workflows/publish-branch-convergence-evidence.yml @Zheke32174
 /.github/workflows/modos-ecology.yml @Zheke32174
 /.github/workflows/modos-convergence.yml @Zheke32174
