@@ -1,0 +1,261 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "kind": "OntologyRevisionProposal",
+  "metadata": {
+    "id": "recover-deliberate-conspiratorial-middle",
+    "title": "Recover distributed institutional intention from the deliberate/conspiratorial false binary",
+    "mindId": "pleiades",
+    "generatedAt": "2026-07-21T17:30:00Z",
+    "steward": "Pleiades ecology",
+    "status": "experimental",
+    "branchRef": "research/ontological-self-criticism",
+    "notes": "Reference proposal demonstrating anomaly-driven concept formation without deleting either established term."
+  },
+  "spec": {
+    "trigger": {
+      "kind": "repeated-collapse",
+      "summary": "Multiple reasoning episodes forced intentional but decentralized institutional conduct into either conspiracy or accident.",
+      "evidenceRefs": [
+        "pleiades:conversation/2026-07/deliberate-conspiratorial",
+        "thesis:klein-2004-distributed-ontologies",
+        "thesis:javed-2013-ontology-change-patterns",
+        "doi:10.1177/030631289019003001"
+      ],
+      "recurrenceCount": 6,
+      "affectedScopes": [
+        "institutional-analysis",
+        "media-analysis",
+        "regulatory-analysis",
+        "clinical-language-analogy"
+      ],
+      "observedResiduals": [
+        {
+          "id": "local-intent-no-central-plan",
+          "description": "Several institutions intentionally selected compatible framings without evidence of a secret command structure.",
+          "currentClassification": "Either conspiracy or accidental emergence",
+          "consequence": "The system could not attribute local responsibility without overstating coordination."
+        },
+        {
+          "id": "anticipated-emergent-effect",
+          "description": "Actors continued choices after the aggregate effect became foreseeable, although no actor controlled the whole system.",
+          "currentClassification": "Unintended emergence",
+          "consequence": "Foreseeability and continued participation disappeared from the causal account."
+        },
+        {
+          "id": "parallel-incentive-strategy",
+          "description": "Organizations independently converged on the same salience strategy because incentives and risk structures aligned.",
+          "currentClassification": "Coincidence or collusion",
+          "consequence": "A recurrent middle mechanism remained unnamed and therefore difficult to compare across domains."
+        }
+      ],
+      "metrics": {
+        "semanticEntropy": 0.71,
+        "interModelDisagreement": 0.63,
+        "intraModelVariation": 0.18,
+        "reasoningAlignment": 0.42,
+        "answerAgreement": 0.86
+      }
+    },
+    "diagnosis": {
+      "failureLayers": [
+        "vocabulary",
+        "boundary",
+        "coordination",
+        "method"
+      ],
+      "hermeneuticalGap": true,
+      "falseBinary": {
+        "left": "conspiracy",
+        "right": "accident",
+        "missingMiddle": [
+          "distributed institutional intention",
+          "parallel incentive alignment",
+          "anticipated emergence"
+        ]
+      },
+      "currentConceptRefs": [
+        "distinction:deliberate-vs-conspiratorial",
+        "distinction:emergence-vs-accident"
+      ],
+      "rationale": "The recurrent residuals are not noise. They identify a missing interpretive resource spanning intention, coordination, and system-level emergence."
+    },
+    "change": {
+      "operation": "add-distinction",
+      "intent": "Make intentional decentralized conduct representable while preserving conspiracy and accident as narrower concepts.",
+      "atomicChanges": [
+        {
+          "op": "add",
+          "targetRef": "distinction:deliberate-vs-conspiratorial",
+          "description": "Register distributed institutional intention as a legitimate middle-space concept."
+        },
+        {
+          "op": "link",
+          "targetRef": "distinction:emergence-vs-accident",
+          "description": "Link local intention to global emergence without equating emergence with accident."
+        },
+        {
+          "op": "scope",
+          "targetRef": "concept:conspiracy",
+          "description": "Require evidence of concealed multi-party coordination before asserting conspiracy."
+        }
+      ],
+      "compositePattern": "false-binary-recovery-through-scoped-concept-splitting",
+      "preservesRefs": [
+        "concept:deliberate",
+        "concept:conspiracy",
+        "concept:accident",
+        "concept:emergence"
+      ],
+      "weakensRefs": [
+        "axiom:deliberate-implies-conspiracy",
+        "axiom:nonconspiratorial-implies-accidental"
+      ],
+      "deprecatesRefs": [],
+      "resultingConcepts": [
+        {
+          "id": "distributed-institutional-intention",
+          "label": "Distributed institutional intention",
+          "definition": "Deliberate choices by multiple institutions whose interaction produces a system-level pattern without a single concealed command structure.",
+          "scope": "institutional/systemic"
+        },
+        {
+          "id": "parallel-incentive-alignment",
+          "label": "Parallel incentive alignment",
+          "definition": "Independent adoption of similar strategies because incentives, constraints, or risk structures converge.",
+          "scope": "institutional/causal"
+        },
+        {
+          "id": "anticipated-emergence",
+          "label": "Anticipated emergence",
+          "definition": "A system-level effect that participants foresee and continue contributing to without centrally controlling it.",
+          "scope": "systemic/causal"
+        }
+      ]
+    },
+    "plurality": {
+      "sharedCore": "All viewpoints distinguish intentional conduct, coordination evidence, and aggregate system effects, but weight them differently.",
+      "localInterpretations": [
+        {
+          "viewpointId": "legal",
+          "scope": "liability and proof",
+          "interpretation": "Conspiracy remains a narrow claim requiring evidence of agreement or coordination; local intent is assessed separately.",
+          "invariantRefs": [
+            "invariant:no-intent-coordination-collapse"
+          ]
+        },
+        {
+          "viewpointId": "institutional",
+          "scope": "organizational causation",
+          "interpretation": "Organizations can intentionally optimize local objectives that combine into a harmful global pattern.",
+          "invariantRefs": [
+            "invariant:local-and-global-levels-remain-separate"
+          ]
+        },
+        {
+          "viewpointId": "public-discourse",
+          "scope": "ordinary explanatory language",
+          "interpretation": "People need a usable middle vocabulary between secret plot and nobody chose anything.",
+          "invariantRefs": [
+            "invariant:ordinary-language-retains-functional-descriptors"
+          ]
+        }
+      ],
+      "translationRules": [
+        {
+          "fromViewpoint": "institutional",
+          "toViewpoint": "legal",
+          "rule": "Translate claims of distributed intention into actor-specific decisions and effects; do not translate them into agreement without coordination evidence.",
+          "lossWarning": "Systemic responsibility may be understated when only agreement-based legal categories are available."
+        },
+        {
+          "fromViewpoint": "public-discourse",
+          "toViewpoint": "institutional",
+          "rule": "Resolve broad words such as deliberate into actor, decision, scope, incentive, and interaction fields.",
+          "lossWarning": "Over-formalization can erase the practical pattern the ordinary descriptor was naming."
+        }
+      ]
+    },
+    "alternatives": [
+      {
+        "id": "retain-binary-with-disclaimer",
+        "operation": "no-change",
+        "description": "Keep conspiracy/accident as the only options and add prose disclaimers.",
+        "status": "rejected",
+        "rationale": "The failure is representational, so prose warnings do not give agents a type they can preserve, query, or validate."
+      },
+      {
+        "id": "replace-conspiracy-with-intent",
+        "operation": "revise-relation",
+        "description": "Broaden conspiracy until it includes all deliberate institutional interaction.",
+        "status": "rejected",
+        "rationale": "This destroys the useful narrower meaning of concealed coordination and reproduces the category collapse in the opposite direction."
+      },
+      {
+        "id": "boundary-object-only",
+        "operation": "add-boundary-object",
+        "description": "Use a shared umbrella term across legal, institutional, and public viewpoints without adding middle concepts.",
+        "status": "deferred",
+        "rationale": "Boundary translation is useful, but the recurring causal mechanisms still require explicit concepts."
+      }
+    ],
+    "proofObligations": {
+      "competencyQuestions": [
+        "Can Atlas represent intentional institutional conduct without asserting secret coordination?",
+        "Can the ecology distinguish evidence of local intent, inter-organizational coordination, foreseeability, and global emergence?",
+        "Can Forge retain responsibility-relevant facts when the conspiracy threshold is not met?"
+      ],
+      "counterexamples": [
+        "Independent firms deliberately copy a visible pricing strategy without communicating.",
+        "A concealed agreement among firms remains conspiratorial even when its market effect would also have emerged from incentives.",
+        "A one-off accidental synchronization lacks the repeated intentional local choices required for distributed institutional intention."
+      ],
+      "independentFirstPass": true,
+      "minimumIndependentSourceGroups": 3,
+      "dissentRetention": true,
+      "rollbackPlan": "Remove the experimental bindings and restore the previous registry version; retain the proposal, evidence, and test receipts as historical records.",
+      "migrationPlan": "Map existing claims tagged conspiracy-or-accident into unresolved candidates, then reclassify only after actor-level intent and coordination evidence are reviewed.",
+      "ordinaryPersonTest": "A reader without systems terminology should be able to distinguish secret plot, deliberate decentralized conduct, and accident in blind examples.",
+      "consistencyIllusionMitigation": "Audit reasoning paths separately from answer agreement and preserve any agent that identifies actor-level intent without coordination evidence.",
+      "evaluationMetrics": [
+        {
+          "name": "false-binary forced classifications",
+          "direction": "decrease",
+          "threshold": 0.5
+        },
+        {
+          "name": "actor-intent fields retained",
+          "direction": "at-least",
+          "threshold": 0.95
+        },
+        {
+          "name": "unacknowledged dissent",
+          "direction": "at-most",
+          "threshold": 0.0
+        }
+      ]
+    },
+    "review": {
+      "evidenceSourceGroups": [
+        "pleiades-conversation",
+        "ontology-evolution-theses",
+        "science-and-technology-studies",
+        "multi-agent-reasoning"
+      ],
+      "argumentRefs": [
+        "argument:middle-category-improves-causal-fidelity",
+        "argument:risk-of-concept-proliferation",
+        "argument:legal-translation-must-remain-narrow"
+      ],
+      "decision": "experiment",
+      "decidedBy": "Pleiades steward",
+      "decidedAt": "2026-07-21T17:30:00Z",
+      "rationale": "The proposal is sufficiently grounded for branch-level experimentation but must earn canonical promotion through competency tests and observed reduction in category collapse."
+    },
+    "invariants": {
+      "noCanonicalMutationWithoutApproval": true,
+      "preferWeakeningBeforeDeletion": true,
+      "preserveScopedPlurality": true,
+      "retainDissent": true
+    }
+  }
+}
