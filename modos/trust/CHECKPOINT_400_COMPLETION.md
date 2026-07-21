@@ -2,10 +2,12 @@
 
 This record supersedes point 390's provisional marker in `modos/ECOLOGY_PROGRESSION_400.md`.
 
-Hosted evidence validated source commit `747dae43c3a18794619950af2aa2ed99a2f9bd6b`:
+Hosted evidence validated source commit `25f2b548398b24ea6902fa178b68b47ea880d06f`:
 
-- 38 of 38 commands passed;
+- 38 of 38 aggregate commands passed;
 - zero failures and zero skipped commands;
+- the focused operational-trust workflow passed;
+- the focused operator-handoff workflow passed;
 - current-tree sensitivity was clear with zero findings;
 - synthetic rehearsal passed;
 - the reproducible package contained no private material;
@@ -13,8 +15,8 @@ Hosted evidence validated source commit `747dae43c3a18794619950af2aa2ed99a2f9bd6
 
 Bindings:
 
-- suite receipt: `sha256:df77bdf43c78d7d82b23865b5a8beb8790890ea99761fac5df556178ced0eb1e`;
-- branch evidence: `sha256:8132fd20a4f470619e6e92d3d82f6c1780d47475844901a8a2f8138635aa98be`;
-- package digest: `sha256:90337c3a4e79414105dc643c80dbca99038dbc0e7593342d67ef7c5dae85df82`.
+- suite receipt: `sha256:a9f582e936732fb35b79d7a5e4844bd976ae12150c795d1cd79a91d46cfe28cd`;
+- branch evidence: `sha256:70fc6028718e1bfa4e44d7bc157cb9d29424dd8049cdad38b32907c8fb07a86b`;
+- package digest: `sha256:cf5a75f2cd2856f841aaaaae940c867936129ca58dc31a7e516bcb368d405a7b`.
 
 Point 390 is therefore implemented. Points 391–399 remain blocked on real external inputs and observations. Point 400 continues to reserve the next hundred for derivation from those later receipts.
