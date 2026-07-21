@@ -11,7 +11,7 @@
     "receiptDigest": "sha256:0b5b48e2331283ee960263209e081f0f337b0bd44bd826105b5d6e3653b89c3c",
     "status": "clear"
   },
-  "evidenceDigest": "sha256:f02d0cde439e30426a7cd98b4912fe982ed68d7e1e37c23992910ffb3a440091",
+  "evidenceDigest": "sha256:8132fd20a4f470619e6e92d3d82f6c1780d47475844901a8a2f8138635aa98be",
   "interventionFrontier": {
     "autonomousActionCount": 0,
     "operatorActionCount": 11,
@@ -39,21 +39,12 @@
   "suite": {
     "commandCount": 38,
     "executedCount": 38,
-    "exitCode": 1,
-    "failureDetails": {
-      "validation-package-unit-tests": {
-        "privacyScrubbed": true,
-        "stderrTail": "tracts/transition-authorization-candidate.schema.json', 'modos/governance/constitutional_fixtures.py', 'modos/convergence/test_synthetic_rehearsal.py', 'ci/validate-ecology.py', 'modos/contracts/ontology-promotion-candidate.schema.json', 'modos/governance/DISTRIBUTED_ADMISSION.md', 'modos/contracts/executive-control-plane.schema.json', 'modos/governance/ecology_integration_fixtures.py', 'modos/governance/CONSTITUTIONAL_EVOLUTION.md', 'modos/governance/ECOLOGY_INTEGRATION_READINESS.md', 'modos/governance/LEARNING_SPINE.md', 'modos/contracts/capability-definition.schema.json', 'modos/handoff/test_intake.py', 'modos/contracts/experience-record.schema.json', 'modos/ontology/projection.py', 'ci/modos_validation_common.py', 'modos/governance/test_learning_spine.py', 'modos/contracts/ontology-projection-bundle.schema.json', 'ci/public-history-sensitivity.json', 'modos/trust/test_evidence.py', 'modos/contracts/stage-approval.schema.json', 'modos/trust/fixtures/expected-operator-evidence-trust-receipt.json', 'ci/validate-distributed-admission.py', 'modos/contracts/operational-authority-registry.schema.json', 'ci/run-modos-convergence.py', 'modos/ontology/test_projection.py', 'modos/handoff/template.py', 'modos/governance/test_ecology_integration.py', 'modos/trust/fixtures/transition-authorization-candidate.synthetic.json', 'modos/handoff/intake.py', 'modos/contracts/delegated-authority-grant.schema.json', 'modos/contracts/promotion-transaction.schema.json', 'modos/convergence/OPERATOR_RUNBOOKS.md', 'modos/contracts/evidence-attestation.schema.json', 'modos/governance/fixtures/expected-executive-authorization-receipt.json', 'modos/contracts/work-order.schema.json', 'modos/contracts/ontology-promotion-gate-report.schema.json', 'modos/ontology/promotion.py', 'modos/governance/test_distributed_admission.py', 'modos/contracts/action-receipt.schema.json', 'modos/governance/learning_spine.py', 'modos/ontology/README.md', 'modos/governance/workspace_emergency_fixtures.py', 'modos/ontology/LOCAL_VALIDATION_RECEIPT.json', 'modos/handoff/test_packet.py', 'modos/trust/test_preflight.py', 'modos/ECOLOGY_PROGRESSION_300.md', 'modos/convergence/contract-governance.json', 'modos/ontology/ecology_adapter.py', 'modos/ontology/fixtures/update-mind.proposal.json', 'modos/contracts/change-proposal.fixtures.json', 'ci/modos_semantics_legacy.py', 'modos/convergence/validation-suite.json', 'modos/governance/distributed_fixtures.py', 'modos/ontology/test_compiler.py', 'modos/governance/ecology_integration.py', 'modos/convergence/intervention_frontier.py', 'modos/governance/execution.py', 'ci/validate-extended-autonomy.py', 'modos/ontology/fixtures/expected-candidate-snapshot.json', 'modos/contracts/domain-object.schema.json', 'modos/contracts/observation-ingress.fixtures.json', 'modos/contracts/context-envelope.schema.json', 'modos/contracts/operator-input-candidate.schema.json', 'modos/convergence/synthetic_rehearsal.py', 'modos/contracts/canon-wave-v1.fixtures.json', 'modos/trust/fixtures/evidence-attestations.synthetic.json', 'ci/scan-public-history.py', 'modos/contracts/ecology-registry.schema.json', 'modos/ontology/fixtures/source-manifest.json', 'modos/trust/preflight.py', 'modos/ontology/fixtures/expected-projection-bundle.json', 'modos/governance/test_control_plane.py', 'modos/governance/test_workspace_emergency.py', 'modos/contracts/workspace-contribution.schema.json', 'modos/contracts/observation-ingress-receipt.schema.json', 'modos/contracts/executive-decision.schema.json', 'ci/validate-operational-trust.py', 'modos/convergence/test_validation_package.py', 'modos/ontology/sql/001_ontology_projection.sql', 'modos/handoff/packet.py', 'modos/contracts/workload-binding.schema.json', 'modos/governance/test_executive.py', 'ci/validate-executive-control-plane.py', 'modos/contracts/domain-event.schema.json', 'modos/convergence/mainline-collision-map.json', 'modos/convergence/stack-manifest.json', 'modos/ontology/test_ecology_adapter.py'}\n\n----------------------------------------------------------------------\nRan 5 tests in 0.594s\n\nFAILED (failures=1)\n",
-        "stdoutTail": "",
-        "tailByteLimit": 4096
-      }
-    },
-    "failures": [
-      "validation-package-unit-tests"
-    ],
+    "exitCode": 0,
+    "failureDetails": {},
+    "failures": [],
     "notRun": [],
-    "receiptDigest": "sha256:827dd4dd99a8c23c5e3a957b975e47e53a6649466e176f20aaac172d4305466e",
-    "status": "fail"
+    "receiptDigest": "sha256:df77bdf43c78d7d82b23865b5a8beb8790890ea99761fac5df556178ced0eb1e",
+    "status": "pass"
   },
   "syntheticRehearsal": {
     "receiptDigest": "sha256:37f0fe5e17087ecf595faf3dc520144a698deb78fb3728d62373c058a3a3e40d",
@@ -64,12 +55,12 @@
     ],
     "status": "pass"
   },
-  "validatedCommit": "33ae5ae0ae300c8659b66325b86406c9aeaddd25",
+  "validatedCommit": "747dae43c3a18794619950af2aa2ed99a2f9bd6b",
   "validationPackage": {
-    "manifestDigest": "sha256:9e6a48cf388041f29a7fe9f2d06353027fd6878443aa3316512599197eaf046b",
-    "packageDigest": "sha256:105b37c646839f46068465017729a47ad5c85e352595bfe676a489ae1d7ff5c5",
+    "manifestDigest": "sha256:8c20b7ee238472abaa37110a46947f06dfa1f9dcff1b772b3e9e9f8595bb1b3f",
+    "packageDigest": "sha256:90337c3a4e79414105dc643c80dbca99038dbc0e7593342d67ef7c5dae85df82",
     "privateMaterialIncluded": false,
-    "receiptDigest": "sha256:2fd3cbbcc72430d0ca6d7decb240c21b9cc1b6c3613e29866cb2ce93145a51ff",
-    "sbomDigest": "sha256:fcd8639132d0be7905ae29226b993fcf29c2dc8d4e72407951ba99993c2d4989"
+    "receiptDigest": "sha256:1b8f81448db8bcab6e50f6d9dea62e2cdb1f03b3237169af93305ce7c589dfe0",
+    "sbomDigest": "sha256:ec46f86e244d214ab718d06fedd7c01b2ab1f568d4e3f9d9a1c7fe5c1a69c25c"
   }
 }
