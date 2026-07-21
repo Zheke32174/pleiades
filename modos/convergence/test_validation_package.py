@@ -37,7 +37,7 @@ class ValidationPackageTests(unittest.TestCase):
             self.assertEqual(first.read_bytes(), second.read_bytes())
             self.assertEqual(first_receipt, second_receipt)
 
-    def test_package_contains_manifest_sbom_and_handoff_checkpoint(self):
+    def test_package_contains_handoff_and_operational_trust_checkpoints(self):
         with tempfile.TemporaryDirectory() as raw:
             output, receipt = self.build(Path(raw), "package.tar.gz")
             with tarfile.open(output, mode="r:gz") as archive:
@@ -46,9 +46,15 @@ class ValidationPackageTests(unittest.TestCase):
                 self.assertIn("PACKAGE_SBOM.cdx.json", names)
                 self.assertIn("modos/handoff/intake.py", names)
                 self.assertIn("modos/handoff/packet.py", names)
+                self.assertIn("modos/trust/evidence.py", names)
+                self.assertIn("modos/trust/preflight.py", names)
                 self.assertIn("modos/contracts/operator-input-candidate.schema.json", names)
                 self.assertIn("modos/contracts/operator-handoff-packet.schema.json", names)
+                self.assertIn("modos/contracts/operational-authority-registry.schema.json", names)
+                self.assertIn("modos/contracts/evidence-attestation.schema.json", names)
+                self.assertIn("modos/contracts/transition-preflight-receipt.schema.json", names)
                 self.assertIn("modos/ECOLOGY_PROGRESSION_300.md", names)
+                self.assertIn("modos/ECOLOGY_PROGRESSION_400.md", names)
                 manifest = json.load(archive.extractfile("PACKAGE_MANIFEST.json"))
                 sbom = json.load(archive.extractfile("PACKAGE_SBOM.cdx.json"))
             Draft202012Validator(self.schema).validate(manifest)
