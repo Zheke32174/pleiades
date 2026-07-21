@@ -3,7 +3,7 @@ name: Publish branch convergence evidence
 on:
   push:
     branches:
-      - governance/convergence-proof-v1
+      - governance/operational-trust-preflight-v1
     paths-ignore:
       - 'modos/convergence/BRANCH_EVIDENCE.json'
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: publish-branch-convergence-evidence-v2
+  group: publish-operational-trust-evidence-v1
   cancel-in-progress: true
 
 jobs:
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: governance/convergence-proof-v1
+          ref: governance/operational-trust-preflight-v1
           show-progress: false
 
       - uses: actions/setup-python@v5
@@ -77,9 +77,9 @@ jobs:
             exit 0
           fi
           git commit -m "Record convergence evidence for $GITHUB_SHA"
-          git fetch --no-tags origin governance/convergence-proof-v1
-          git rebase origin/governance/convergence-proof-v1
-          git push origin HEAD:governance/convergence-proof-v1
+          git fetch --no-tags origin governance/operational-trust-preflight-v1
+          git rebase origin/governance/operational-trust-preflight-v1
+          git push origin HEAD:governance/operational-trust-preflight-v1
 
       - name: Fail after publishing when repository validation failed
         if: steps.validate.outputs.suite_status != '0' || steps.validate.outputs.adapter_status != '0'
