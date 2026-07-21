@@ -34,6 +34,7 @@ Pleiades                 greater governed computing world
 10. Canon changes are promoted from isolated branches only after evidence and review.
 11. Catalog membership, ancestry, naming, or persistence never grants authority.
 12. Every repository is either classified in the ecology or treated as an unresolved closure defect.
+13. Convergence never silently erases provenance, active dissent, or a registered distinction.
 
 ## Ecology contract
 
@@ -46,6 +47,19 @@ The public ecology foundation consists of:
 - `../ci/validate-ecology.py` — deterministic structural and semantic closure checks.
 
 The exhaustive private registry lives in Undergrowth. A repository-scoped GitHub Actions token cannot prove the complete private account inventory, so exact live-inventory comparison must run in the private spine or with a separately delegated read-only inventory credential. The public validator itself is network-independent and accepts an exported observed inventory.
+
+## Epistemic governance contract
+
+The first public ontological self-criticism layer consists of:
+
+- `contracts/distinction-registry.schema.json` — executable non-equivalence, middle-space, competency-question, counterexample, and collapse-hazard contract;
+- `contracts/epistemic-ledger.schema.json` — evidence, claim, dependency, revision, argument, confidence, decision, and dissent contract;
+- `ontology/distinctions.json` — initial cross-domain distinction registry;
+- `ontology/epistemic-ledger.example.json` — reference Atlas/Forge-compatible ledger;
+- `../ci/validate_epistemic_governance.py` — deterministic semantic checks and grounded argument observability;
+- `../ci/test_epistemic_governance.py` — regression proofs against silent collapse and erased dissent.
+
+The validator does not decide whether a proposition is true. It proves that category-sensitive reasoning retains the provenance, alternatives, distinctions, attacks, and explicit promotion record needed to evaluate and revise it.
 
 ## Repository policy
 
