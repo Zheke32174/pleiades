@@ -1,0 +1,55 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "authority": {
+    "authorizationApplied": false,
+    "ceiling": "none",
+    "executionApplied": false,
+    "mandateConstructed": false,
+    "preflightOnly": true,
+    "registryMutationApplied": false
+  },
+  "authorizationId": "transition-authorization:synthetic-canary-v1",
+  "bindings": {
+    "authorizationCandidateDigest": "sha256:41cf7b8ad02b38a63d7540037a4298b2b540d52418fd1d3915086492ae952302",
+    "compilationReceiptDigest": "sha256:7381dc6432319c009d7fbd33ebd2ff56f28daee6a14518cd08561bdb9168ca9e",
+    "evidenceTrustReceiptDigest": "sha256:be064effd41274e9cb24987c1793ca0c559ac74d244103f16914740db0c59b48",
+    "grantDigest": "sha256:2c72505ecf2ecba995c7f56bd7068f9b221483d4442abf486a7dee926007ffdd",
+    "operatorCandidateDigest": "sha256:63f923727ca0ab01a2ab4b07232c45e94097d5b3628bedd69d1914e5f31889f3",
+    "planDigest": "sha256:ec2ac24c6484160e88d1f8eaa60f7c079ade398007c02b432f3e5d290f3dc4da",
+    "predecessorDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "registryDigest": "sha256:af430b6ff1baacbb423f1773221e0148fdac8512db75d6d530ead65956f3ac60",
+    "rollbackDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "targetDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "blockers": [],
+  "checks": [
+    {"name": "trusted-evidence-bound", "status": "pass"},
+    {"name": "plan-lineage-bound", "status": "pass"},
+    {"name": "decision-policy-closed", "status": "pass"},
+    {"name": "grant-active-and-in-scope", "status": "pass"},
+    {"name": "approval-signatures-valid", "status": "pass"},
+    {"name": "required-role-quorum-satisfied", "status": "pass"},
+    {"name": "independent-audit-satisfied", "status": "pass"},
+    {"name": "proposer-executor-approval-separated", "status": "pass"},
+    {"name": "rollback-restores-predecessor", "status": "pass"}
+  ],
+  "decision": {
+    "action": "authorize-admission",
+    "authorizationMode": "mixed-quorum",
+    "decisionType": "canary-admission",
+    "domain": "ontology",
+    "executorCapability": "ontology.admission.apply",
+    "riskTier": "bounded-persistent"
+  },
+  "evaluatedAt": "2026-07-20T23:30:00Z",
+  "kind": "TransitionPreflightReceipt",
+  "quorum": {
+    "countedApprovers": ["human:synthetic-steward", "mind:pleiades"],
+    "independentAuditors": ["service:synthetic-auditor"],
+    "recusedPrincipals": [],
+    "rejects": 0,
+    "roleApprovals": {"machine-executive": 1, "sovereign-steward": 1}
+  },
+  "receiptDigest": "sha256:7c15f2a76f19d8bf5a9f5be30459c408316ece1068e1e4787fedeb7b0f7fc2a1",
+  "status": "eligible-for-mandate-construction"
+}
