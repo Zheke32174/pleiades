@@ -23,6 +23,7 @@
 /ci/validate-learning-spine.py @Zheke32174
 /ci/validate-constitutional.py @Zheke32174
 /ci/validate-ecology-integration.py @Zheke32174
+/ci/validate-administrative-judgment.py @Zheke32174
 /ci/validate-contract-catalog.py @Zheke32174
 /ci/validate-ecology.py @Zheke32174
 /ci/validate-stack-manifest.py @Zheke32174
@@ -45,6 +46,7 @@
 /.github/workflows/learning-spine.yml @Zheke32174
 /.github/workflows/constitutional-evolution.yml @Zheke32174
 /.github/workflows/ecology-integration-readiness.yml @Zheke32174
+/.github/workflows/administrative-judgment.yml @Zheke32174
 /.github/workflows/operator-intake-contracts.yml @Zheke32174
 /.github/workflows/operational-trust-contracts.yml @Zheke32174
 /.github/workflows/publish-branch-convergence-evidence.yml @Zheke32174

@@ -1,0 +1,36 @@
+name: Administrative judgment contracts
+
+on:
+  pull_request:
+    paths:
+      - 'modos/contracts/administrative-judgment.schema.json'
+      - 'modos/governance/judgment.py'
+      - 'modos/governance/judgment_fixtures.py'
+      - 'modos/governance/test_judgment.py'
+      - 'modos/governance/ADMINISTRATIVE_JUDGMENT.md'
+      - 'ci/validate-administrative-judgment.py'
+      - 'requirements-modos.txt'
+      - '.github/workflows/administrative-judgment.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: administrative-judgment-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check --no-input -r requirements-modos.txt
+      - run: python ci/validate-administrative-judgment.py
+      - run: python modos/governance/test_judgment.py
+      - run: python -m py_compile modos/governance/judgment.py modos/governance/judgment_fixtures.py modos/governance/test_judgment.py ci/validate-administrative-judgment.py

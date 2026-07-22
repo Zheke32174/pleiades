@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/administrative-judgment-v1.json",
+  "title": "Pleiades Administrative Judgment Contract Bundle",
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "bounded": {"type": "string", "minLength": 1, "pattern": "^[^*]+$"},
+    "bps": {"type": "integer", "minimum": 0, "maximum": 10000},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "bindings": {
+      "type": "object", "additionalProperties": false,
+      "required": ["policyReceiptDigest", "workspaceReceiptDigest", "transitionPreflightReceiptDigest", "proposalDigest", "atlasBeliefDigest", "forgeStateDigest", "evidenceSetDigest"],
+      "properties": {
+        "policyReceiptDigest": {"$ref": "#/$defs/sha"}, "workspaceReceiptDigest": {"$ref": "#/$defs/sha"},
+        "transitionPreflightReceiptDigest": {"$ref": "#/$defs/sha"}, "proposalDigest": {"$ref": "#/$defs/sha"},
+        "atlasBeliefDigest": {"$ref": "#/$defs/sha"}, "forgeStateDigest": {"$ref": "#/$defs/sha"},
+        "evidenceSetDigest": {"$ref": "#/$defs/sha"}, "caseDigest": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "assumption": {
+      "type": "object", "additionalProperties": false,
+      "required": ["assumptionId", "status", "dependsOn", "evidenceRefs", "confidenceBps", "contentDigest", "validFrom", "validUntil", "recordedAt"],
+      "properties": {
+        "assumptionId": {"$ref": "#/$defs/bounded"}, "status": {"enum": ["active", "defeated", "unknown"]},
+        "dependsOn": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/bounded"}},
+        "evidenceRefs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/bounded"}},
+        "confidenceBps": {"$ref": "#/$defs/bps"}, "contentDigest": {"$ref": "#/$defs/sha"},
+        "validFrom": {"$ref": "#/$defs/timestamp"}, "validUntil": {"$ref": "#/$defs/timestamp"}, "recordedAt": {"$ref": "#/$defs/timestamp"}
+      }
+    },
+    "riskBudget": {
+      "type": "object", "additionalProperties": false,
+      "required": ["maximumSelectiveRiskBps", "minimumCoverageBps", "maximumCalibrationErrorBps", "maximumDistributionShiftBps", "minimumCalibrationSamples"],
+      "properties": {
+        "maximumSelectiveRiskBps": {"$ref": "#/$defs/bps"}, "minimumCoverageBps": {"$ref": "#/$defs/bps"},
+        "maximumCalibrationErrorBps": {"$ref": "#/$defs/bps"}, "maximumDistributionShiftBps": {"$ref": "#/$defs/bps"},
+        "minimumCalibrationSamples": {"type": "integer", "minimum": 1}
+      }
+    },
+    "riskCertificate": {
+      "type": "object", "additionalProperties": false,
+      "required": ["certificateId", "method", "sampleSize", "coverageBps", "riskUpperBoundBps", "expectedCalibrationErrorBps", "distributionShiftBps", "scoreThresholdBps", "generatedAt", "validUntil", "evidenceDigest"],
+      "properties": {
+        "certificateId": {"$ref": "#/$defs/bounded"}, "method": {"enum": ["conformal-risk-control", "selective-risk-holdout", "calibrated-threshold"]},
+        "sampleSize": {"type": "integer", "minimum": 1}, "coverageBps": {"$ref": "#/$defs/bps"}, "riskUpperBoundBps": {"$ref": "#/$defs/bps"},
+        "expectedCalibrationErrorBps": {"$ref": "#/$defs/bps"}, "distributionShiftBps": {"$ref": "#/$defs/bps"}, "scoreThresholdBps": {"$ref": "#/$defs/bps"},
+        "generatedAt": {"$ref": "#/$defs/timestamp"}, "validUntil": {"$ref": "#/$defs/timestamp"}, "evidenceDigest": {"$ref": "#/$defs/sha"}
+      }
+    },
+    "invariant": {
+      "type": "object", "additionalProperties": false, "required": ["invariantId", "status", "evidenceDigest"],
+      "properties": {"invariantId": {"$ref": "#/$defs/bounded"}, "status": {"enum": ["pass", "fail"]}, "evidenceDigest": {"$ref": "#/$defs/sha"}}
+    },
+    "runtimeAssurance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["monitorId", "monitorPrincipalRef", "monitorIndependent", "fallbackControllerRef", "fallbackReady", "observedAt", "validUntil", "hazardScoreBps", "takeoverThresholdBps", "invariants"],
+      "properties": {
+        "monitorId": {"$ref": "#/$defs/bounded"}, "monitorPrincipalRef": {"$ref": "#/$defs/bounded"}, "monitorIndependent": {"type": "boolean"},
+        "fallbackControllerRef": {"$ref": "#/$defs/bounded"}, "fallbackReady": {"type": "boolean"}, "observedAt": {"$ref": "#/$defs/timestamp"},
+        "validUntil": {"$ref": "#/$defs/timestamp"}, "hazardScoreBps": {"$ref": "#/$defs/bps"},
+        "takeoverThresholdBps": {"type": "integer", "minimum": 1, "maximum": 10000},
+        "invariants": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/invariant"}}
+      }
+    },
+    "case": {
+      "type": "object", "additionalProperties": false,
+      "required": ["apiVersion", "kind", "judgmentId", "mindId", "domain", "action", "evaluatedAt", "bindings", "validTime", "transactionTime", "requiredAssumptionRefs", "assumptions", "nogoods", "riskBudget", "riskCertificate", "runtimeAssurance", "authority"],
+      "properties": {
+        "apiVersion": {"const": "modos.pleiades/v1alpha1"}, "kind": {"const": "AdministrativeJudgmentCase"},
+        "judgmentId": {"$ref": "#/$defs/bounded"}, "mindId": {"$ref": "#/$defs/bounded"}, "domain": {"$ref": "#/$defs/bounded"}, "action": {"$ref": "#/$defs/bounded"},
+        "evaluatedAt": {"$ref": "#/$defs/timestamp"}, "bindings": {"$ref": "#/$defs/bindings"},
+        "validTime": {"type": "object", "additionalProperties": false, "required": ["from", "until"], "properties": {"from": {"$ref": "#/$defs/timestamp"}, "until": {"$ref": "#/$defs/timestamp"}}},
+        "transactionTime": {"type": "object", "additionalProperties": false, "required": ["recordedAt", "knowledgeCutoffAt", "supersedesReceiptDigest"], "properties": {"recordedAt": {"$ref": "#/$defs/timestamp"}, "knowledgeCutoffAt": {"$ref": "#/$defs/timestamp"}, "supersedesReceiptDigest": {"anyOf": [{"$ref": "#/$defs/sha"}, {"type": "null"}]}}},
+        "requiredAssumptionRefs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/bounded"}},
+        "assumptions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/assumption"}},
+        "nogoods": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["nogoodId", "assumptionRefs"], "properties": {"nogoodId": {"$ref": "#/$defs/bounded"}, "assumptionRefs": {"type": "array", "minItems": 2, "uniqueItems": true, "items": {"$ref": "#/$defs/bounded"}}}}},
+        "riskBudget": {"$ref": "#/$defs/riskBudget"}, "riskCertificate": {"$ref": "#/$defs/riskCertificate"}, "runtimeAssurance": {"$ref": "#/$defs/runtimeAssurance"},
+        "authority": {"const": {"judgmentOnly": true, "executionApplied": false, "mandateConstructed": false, "policyMutationApplied": false, "authorityMutationApplied": false, "selfExpansionAllowed": false}}
+      }
+    },
+    "receipt": {
+      "type": "object", "additionalProperties": false,
+      "required": ["apiVersion", "kind", "judgmentId", "mindId", "domain", "action", "evaluatedAt", "disposition", "status", "bindings", "bitemporal", "assumptionState", "riskControl", "runtimeAssurance", "upstream", "blockers", "checks", "reconsiderationTriggers", "authority"],
+      "properties": {
+        "apiVersion": {"const": "modos.pleiades/v1alpha1"}, "kind": {"const": "AdministrativeJudgmentReceipt"},
+        "judgmentId": {"$ref": "#/$defs/bounded"}, "mindId": {"$ref": "#/$defs/bounded"}, "domain": {"$ref": "#/$defs/bounded"}, "action": {"$ref": "#/$defs/bounded"},
+        "evaluatedAt": {"$ref": "#/$defs/timestamp"}, "disposition": {"enum": ["approve", "reject", "defer", "abstain", "fallback-only"]},
+        "status": {"enum": ["eligible-for-mandate-construction", "not-eligible"]}, "bindings": {"$ref": "#/$defs/bindings"},
+        "bitemporal": {"type": "object"}, "assumptionState": {"type": "object"}, "riskControl": {"type": "object"}, "runtimeAssurance": {"type": "object"}, "upstream": {"type": "object"},
+        "blockers": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/bounded"}},
+        "checks": {"type": "array", "minItems": 1, "items": {"type": "object"}},
+        "reconsiderationTriggers": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/bounded"}},
+        "authority": {"const": {"decisionPrincipal": "persistent-mind", "operatorApprovalRequiredForThisJudgment": false, "mandateConstructionEligible": true, "mandateConstructed": false, "executionApplied": false, "fallbackTakeoverRequired": false, "policyMutationApplied": false, "authorityMutationApplied": false, "selfExpansionApplied": false}}
+      }
+    }
+  },
+  "oneOf": [{"$ref": "#/$defs/case"}, {"$ref": "#/$defs/receipt"}]
+}
