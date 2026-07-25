@@ -12,12 +12,19 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable
 
 API_VERSION = "modos.pleiades/v1alpha1"
+RFC3339_PATTERN = re.compile(
+    r"^(?P<date>\d{4}-\d{2}-\d{2})T"
+    r"(?P<time>\d{2}:\d{2}:\d{2})"
+    r"(?P<fraction>\.\d+)?"
+    r"(?P<offset>Z|[+-]\d{2}:\d{2})$"
+)
 
 
 class JudgmentError(ValueError):
@@ -85,14 +92,15 @@ def _sha(value: Any, field: str) -> str:
 
 
 def _time(value: Any, field: str) -> datetime:
-    if not isinstance(value, str):
+    if not isinstance(value, str) or RFC3339_PATTERN.fullmatch(value) is None:
         raise JudgmentError(f"{field} must be an RFC3339 timestamp")
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError as exc:
         raise JudgmentError(f"{field} must be an RFC3339 timestamp") from exc
-    if parsed.tzinfo is None:
-        raise JudgmentError(f"{field} must include a timezone")
+    offset = parsed.utcoffset()
+    if offset is None or not (-24 * 60 < offset.total_seconds() / 60 < 24 * 60):
+        raise JudgmentError(f"{field} must use a valid RFC3339 timezone offset")
     return parsed
 
 
@@ -323,21 +331,16 @@ def _risk_gate(case: dict[str, Any], evaluated_at: datetime) -> dict[str, Any]:
     if calibration_error > maximum_calibration_error:
         blockers.append("calibration-error-above-budget")
     if shift > maximum_shift:
-        blockers.append("distribution-shift-above-bound")
+        blockers.append("distribution-shift-above-budget")
     if not generated <= evaluated_at < valid_until:
         blockers.append("risk-certificate-not-current")
-
     return {
-        "certificateId": certificate["certificateId"],
         "method": method,
         "sampleSize": sample_size,
         "coverageBps": coverage,
         "riskUpperBoundBps": upper_risk,
         "expectedCalibrationErrorBps": calibration_error,
         "distributionShiftBps": shift,
-        "scoreThresholdBps": certificate["scoreThresholdBps"],
-        "validUntil": certificate["validUntil"],
-        "withinBudget": not blockers,
         "blockers": sorted(blockers),
     }
 
@@ -346,61 +349,51 @@ def _runtime_gate(case: dict[str, Any], evaluated_at: datetime) -> dict[str, Any
     runtime = case.get("runtimeAssurance")
     if not isinstance(runtime, dict):
         raise JudgmentError("runtimeAssurance is required")
-    monitor_id = _bounded_text(runtime.get("monitorId"), "runtimeAssurance.monitorId")
-    _bounded_text(runtime.get("monitorPrincipalRef"), "runtimeAssurance.monitorPrincipalRef")
-    _bounded_text(runtime.get("fallbackControllerRef"), "runtimeAssurance.fallbackControllerRef")
-    observed = _time(runtime.get("observedAt"), "runtimeAssurance.observedAt")
-    valid_until = _time(runtime.get("validUntil"), "runtimeAssurance.validUntil")
-    if observed >= valid_until:
-        raise JudgmentError("runtime monitor validity interval is empty")
+    monitor = _bounded_text(runtime.get("monitorPrincipal"), "runtimeAssurance.monitorPrincipal")
+    fallback = _bounded_text(runtime.get("fallbackController"), "runtimeAssurance.fallbackController")
+    independent = runtime.get("monitorIndependent")
+    fallback_ready = runtime.get("fallbackReady")
+    if not isinstance(independent, bool) or not isinstance(fallback_ready, bool):
+        raise JudgmentError("runtime monitor independence and fallback readiness must be boolean")
     hazard = _bps(runtime.get("hazardScoreBps"), "runtimeAssurance.hazardScoreBps")
     threshold = _bps(runtime.get("takeoverThresholdBps"), "runtimeAssurance.takeoverThresholdBps")
-    if threshold == 0:
-        raise JudgmentError("runtime takeover threshold must be positive")
+    issued = _time(runtime.get("issuedAt"), "runtimeAssurance.issuedAt")
+    valid_until = _time(runtime.get("validUntil"), "runtimeAssurance.validUntil")
+    if issued >= valid_until:
+        raise JudgmentError("runtime assurance validity interval is empty")
     invariants = runtime.get("invariants")
     if not isinstance(invariants, list) or not invariants:
         raise JudgmentError("runtime invariants must be nonempty")
-    invariant_ids: set[str] = set()
-    failed: list[str] = []
-    normalized = []
+    blockers: list[str] = []
+    normalized: list[dict[str, Any]] = []
+    seen: set[str] = set()
     for row in invariants:
         invariant_id = _bounded_text(row.get("invariantId"), "runtime invariantId")
-        if invariant_id in invariant_ids:
-            raise JudgmentError(f"duplicate runtime invariantId: {invariant_id}")
-        invariant_ids.add(invariant_id)
+        if invariant_id in seen:
+            raise JudgmentError(f"duplicate runtime invariant: {invariant_id}")
+        seen.add(invariant_id)
         status = row.get("status")
         if status not in {"pass", "fail"}:
             raise JudgmentError(f"runtime invariant {invariant_id} status is unsupported")
-        _sha(row.get("evidenceDigest"), f"runtime invariant {invariant_id}.evidenceDigest")
+        evidence_digest = _sha(row.get("evidenceDigest"), f"runtime invariant {invariant_id}.evidenceDigest")
+        normalized.append({"invariantId": invariant_id, "status": status, "evidenceDigest": evidence_digest})
         if status == "fail":
-            failed.append(invariant_id)
-        normalized.append({"invariantId": invariant_id, "status": status, "evidenceDigest": row["evidenceDigest"]})
-
-    blockers: list[str] = []
-    if runtime.get("monitorIndependent") is not True:
+            blockers.append(f"runtime-invariant-failed:{invariant_id}")
+    if not independent:
         blockers.append("runtime-monitor-not-independent")
-    if runtime.get("fallbackReady") is not True:
+    if not fallback_ready:
         blockers.append("runtime-fallback-not-ready")
-    if not observed <= evaluated_at < valid_until:
-        blockers.append("runtime-monitor-not-current")
-    blockers.extend(f"runtime-invariant-failed:{name}" for name in failed)
-    threshold_breached = hazard >= threshold
-    if threshold_breached:
+    if not issued <= evaluated_at < valid_until:
+        blockers.append("runtime-assurance-not-current")
+    if hazard >= threshold:
         blockers.append("runtime-takeover-threshold-breached")
-
     return {
-        "monitorId": monitor_id,
-        "monitorPrincipalRef": runtime["monitorPrincipalRef"],
-        "fallbackControllerRef": runtime["fallbackControllerRef"],
-        "monitorIndependent": runtime.get("monitorIndependent") is True,
-        "fallbackReady": runtime.get("fallbackReady") is True,
+        "monitorPrincipal": monitor,
+        "fallbackController": fallback,
         "hazardScoreBps": hazard,
         "takeoverThresholdBps": threshold,
-        "thresholdBreached": threshold_breached,
-        "takeoverRequired": bool(blockers),
-        "validUntil": runtime["validUntil"],
-        "invariants": sorted(normalized, key=lambda row: row["invariantId"]),
-        "blockers": sorted(set(blockers)),
+        "invariants": sorted(normalized, key=lambda item: item["invariantId"]),
+        "blockers": sorted(blockers),
     }
 
 
@@ -411,147 +404,121 @@ def evaluate_judgment(
     preflight_receipt: dict[str, Any],
 ) -> dict[str, Any]:
     if case.get("apiVersion") != API_VERSION or case.get("kind") != "AdministrativeJudgmentCase":
-        raise JudgmentError("unsupported administrative judgment envelope")
-    for field in ("judgmentId", "mindId", "domain", "action"):
-        _bounded_text(case.get(field), field)
-    if case.get("authority") != {
-        "judgmentOnly": True,
-        "executionApplied": False,
-        "mandateConstructed": False,
-        "policyMutationApplied": False,
-        "authorityMutationApplied": False,
-        "selfExpansionAllowed": False,
-    }:
-        raise JudgmentError("administrative judgment authority boundary is not exact")
-
+        raise JudgmentError("unsupported administrative judgment case")
+    _assert_no_floats(case)
+    _bounded_text(case.get("judgmentId"), "judgmentId")
+    _bounded_text(case.get("mindId"), "mindId")
+    _bounded_text(case.get("domain"), "domain")
+    _bounded_text(case.get("action"), "action")
     evaluated_at = _time(case.get("evaluatedAt"), "evaluatedAt")
-    valid_time = case.get("validTime")
-    transaction_time = case.get("transactionTime")
-    if not isinstance(valid_time, dict) or not isinstance(transaction_time, dict):
-        raise JudgmentError("validTime and transactionTime are required")
-    valid_from = _time(valid_time.get("from"), "validTime.from")
-    valid_until = _time(valid_time.get("until"), "validTime.until")
-    recorded_at = _time(transaction_time.get("recordedAt"), "transactionTime.recordedAt")
-    knowledge_cutoff = _time(transaction_time.get("knowledgeCutoffAt"), "transactionTime.knowledgeCutoffAt")
-    if valid_from >= valid_until:
-        raise JudgmentError("judgment valid-time interval is empty")
-    if not valid_from <= evaluated_at < valid_until:
-        raise JudgmentError("judgment evaluation lies outside valid time")
-    if recorded_at > evaluated_at or knowledge_cutoff > evaluated_at:
-        raise JudgmentError("transaction time cannot be later than evaluation")
-    if transaction_time.get("supersedesReceiptDigest") is not None:
-        _sha(transaction_time["supersedesReceiptDigest"], "transactionTime.supersedesReceiptDigest")
-
     _validate_upstream(case, policy_receipt, workspace_receipt, preflight_receipt)
-    assumption = _assumption_closure(case, evaluated_at)
-    risk = _risk_gate(case, evaluated_at)
-    runtime = _runtime_gate(case, evaluated_at)
+
+    transaction = case.get("transactionTime")
+    world = case.get("worldTime")
+    if not isinstance(transaction, dict) or not isinstance(world, dict):
+        raise JudgmentError("worldTime and transactionTime are required")
+    world_valid_from = _time(world.get("validFrom"), "worldTime.validFrom")
+    world_valid_until = _time(world.get("validUntil"), "worldTime.validUntil")
+    evidence_cutoff = _time(world.get("evidenceKnowledgeCutoff"), "worldTime.evidenceKnowledgeCutoff")
+    recorded_at = _time(transaction.get("recordedAt"), "transactionTime.recordedAt")
+    expires_at = _time(transaction.get("decisionExpiresAt"), "transactionTime.decisionExpiresAt")
+    if world_valid_from >= world_valid_until or not world_valid_from <= evaluated_at < world_valid_until:
+        raise JudgmentError("evaluatedAt must be inside world valid time")
+    if evidence_cutoff > evaluated_at:
+        raise JudgmentError("evidence knowledge cutoff cannot be in the future")
+    if recorded_at > evaluated_at:
+        raise JudgmentError("transaction time cannot be in the future")
+    if expires_at <= evaluated_at:
+        raise JudgmentError("decision expiry must be after evaluation")
+    supersedes = transaction.get("supersedesReceiptDigest")
+    if supersedes is not None:
+        _sha(supersedes, "transactionTime.supersedesReceiptDigest")
+
+    assumption_state = _assumption_closure(case, evaluated_at)
+    risk_state = _risk_gate(case, evaluated_at)
+    runtime_state = _runtime_gate(case, evaluated_at)
 
     upstream_blockers: list[str] = []
-    preflight_status = preflight_receipt.get("status")
-    workspace_outcome = workspace_receipt.get("outcome")
-    if preflight_status != "eligible-for-mandate-construction":
+    if policy_receipt.get("decision") != "allow":
+        upstream_blockers.append("policy-decision-not-allow")
+    if workspace_receipt.get("outcome") != "approve":
+        upstream_blockers.append("workspace-deliberation-not-approve")
+    if preflight_receipt.get("status") != "eligible":
         upstream_blockers.append("transition-preflight-not-eligible")
-    if workspace_outcome not in {"approve", "reject", "defer", "request-more-evidence"}:
-        raise JudgmentError("workspace outcome is unsupported")
-    if workspace_outcome == "reject":
-        upstream_blockers.append("workspace-rejected")
-    elif workspace_outcome in {"defer", "request-more-evidence"}:
-        upstream_blockers.append(f"workspace-{workspace_outcome}")
 
-    if "transition-preflight-not-eligible" in upstream_blockers or "workspace-rejected" in upstream_blockers:
-        disposition = "reject"
-    elif runtime["blockers"]:
+    if runtime_state["blockers"]:
         disposition = "fallback-only"
-    elif assumption["blockers"]:
+    elif upstream_blockers:
+        disposition = "reject"
+    elif assumption_state["blockers"]:
         disposition = "defer"
-    elif risk["blockers"]:
+    elif risk_state["blockers"]:
         disposition = "abstain"
-    elif workspace_outcome in {"defer", "request-more-evidence"}:
-        disposition = "defer"
     else:
         disposition = "approve"
 
-    blockers = sorted(set(upstream_blockers + runtime["blockers"] + assumption["blockers"] + risk["blockers"]))
-    decision_valid_until = min(valid_until, _time(risk["validUntil"], "risk.validUntil"), _time(runtime["validUntil"], "runtime.validUntil"))
-    decision_valid_until_text = decision_valid_until.isoformat().replace("+00:00", "Z")
-
-    checks = [
-        {"name": "policy-receipt-bound", "status": "pass"},
-        {"name": "workspace-receipt-bound", "status": "pass"},
-        {"name": "transition-preflight-bound", "status": "pass"},
-        {"name": "bitemporal-validity-current", "status": "pass"},
-        {"name": "assumption-closure-consistent", "status": "pass" if not assumption["blockers"] else "fail"},
-        {"name": "calibrated-risk-within-budget", "status": "pass" if not risk["blockers"] else "fail"},
-        {"name": "runtime-envelope-safe", "status": "pass" if not runtime["blockers"] else "fail"},
-        {"name": "safe-fallback-ready", "status": "pass" if runtime["fallbackReady"] else "fail"},
-        {"name": "operator-independent-path", "status": "pass"},
-    ]
-
-    return {
+    blockers = sorted(
+        set(
+            upstream_blockers
+            + assumption_state["blockers"]
+            + risk_state["blockers"]
+            + runtime_state["blockers"]
+        )
+    )
+    status = "eligible-for-mandate-construction" if disposition == "approve" else "ineligible"
+    bindings = case["bindings"]
+    receipt = {
         "apiVersion": API_VERSION,
         "kind": "AdministrativeJudgmentReceipt",
         "judgmentId": case["judgmentId"],
         "mindId": case["mindId"],
         "domain": case["domain"],
         "action": case["action"],
-        "evaluatedAt": case["evaluatedAt"],
+        "status": status,
         "disposition": disposition,
-        "status": "eligible-for-mandate-construction" if disposition == "approve" else "not-eligible",
         "bindings": {
-            **case["bindings"],
             "caseDigest": digest(case),
-            "policyReceiptDigest": digest(policy_receipt),
-            "workspaceReceiptDigest": digest(workspace_receipt),
-            "transitionPreflightReceiptDigest": digest(preflight_receipt),
+            "policyReceiptDigest": bindings["policyReceiptDigest"],
+            "workspaceReceiptDigest": bindings["workspaceReceiptDigest"],
+            "transitionPreflightReceiptDigest": bindings["transitionPreflightReceiptDigest"],
+            "proposalDigest": bindings["proposalDigest"],
+            "atlasBeliefDigest": bindings["atlasBeliefDigest"],
+            "forgeStateDigest": bindings["forgeStateDigest"],
+            "evidenceSetDigest": bindings["evidenceSetDigest"],
         },
+        "assumptionState": assumption_state,
+        "riskState": risk_state,
+        "runtimeState": runtime_state,
         "bitemporal": {
-            "validFrom": valid_time["from"],
-            "validUntil": valid_time["until"],
-            "decisionValidUntil": decision_valid_until_text,
-            "recordedAt": transaction_time["recordedAt"],
-            "knowledgeCutoffAt": transaction_time["knowledgeCutoffAt"],
-            "supersedesReceiptDigest": transaction_time.get("supersedesReceiptDigest"),
+            "worldValidFrom": world["validFrom"],
+            "worldValidUntil": world["validUntil"],
+            "evidenceKnowledgeCutoff": world["evidenceKnowledgeCutoff"],
+            "evaluatedAt": case["evaluatedAt"],
+            "recordedAt": transaction["recordedAt"],
+            "decisionExpiresAt": transaction["decisionExpiresAt"],
+            "supersedesReceiptDigest": supersedes,
         },
-        "assumptionState": assumption,
-        "riskControl": risk,
-        "runtimeAssurance": runtime,
-        "upstream": {
-            "workspaceOutcome": workspace_outcome,
-            "transitionPreflightStatus": preflight_status,
-            "policyRiskTier": policy_receipt["classification"]["riskTier"],
-        },
-        "blockers": blockers,
-        "checks": checks,
-        "reconsiderationTriggers": [
-            "new-evidence",
-            "assumption-status-changed",
-            "risk-certificate-refreshed",
-            "distribution-shift-remeasured",
-            "runtime-envelope-restored",
-            "transition-preflight-refreshed",
-        ],
         "authority": {
-            "decisionPrincipal": "persistent-mind",
             "operatorApprovalRequiredForThisJudgment": False,
             "mandateConstructionEligible": disposition == "approve",
             "mandateConstructed": False,
             "executionApplied": False,
             "fallbackTakeoverRequired": disposition == "fallback-only",
-            "policyMutationApplied": False,
-            "authorityMutationApplied": False,
-            "selfExpansionApplied": False,
+            "authorityExpanded": False,
+            "reservedPowerExercised": False,
         },
+        "blockers": blockers,
     }
+    receipt["receiptDigest"] = digest(receipt)
+    return receipt
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case", type=Path, required=True)
     parser.add_argument("--policy-receipt", type=Path, required=True)
     parser.add_argument("--workspace-receipt", type=Path, required=True)
     parser.add_argument("--preflight-receipt", type=Path, required=True)
-    parser.add_argument("--out-receipt", type=Path, required=True)
     args = parser.parse_args()
     try:
         receipt = evaluate_judgment(
@@ -560,13 +527,11 @@ def main() -> int:
             load_json_strict(args.workspace_receipt),
             load_json_strict(args.preflight_receipt),
         )
-        args.out_receipt.parent.mkdir(parents=True, exist_ok=True)
-        args.out_receipt.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        print(receipt["disposition"])
-        return 0 if receipt["disposition"] == "approve" else 2
-    except (OSError, json.JSONDecodeError, JudgmentError) as exc:
-        print(f"administrative judgment failed: {exc}", file=sys.stderr)
+    except (JudgmentError, OSError, json.JSONDecodeError) as exc:
+        print(f"administrative judgment refused: {exc}", file=sys.stderr)
         return 1
+    print(json.dumps(receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+    return 0
 
 
 if __name__ == "__main__":
