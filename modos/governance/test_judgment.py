@@ -142,6 +142,27 @@ class AdministrativeJudgmentTests(unittest.TestCase):
         with self.assertRaisesRegex(judgment.JudgmentError, "transaction time"):
             self.evaluate()
 
+    def test_space_separated_timestamp_is_rejected(self):
+        self.case["evaluatedAt"] = "2026-07-22 04:05:00+00:00"
+        with self.assertRaisesRegex(judgment.JudgmentError, "RFC3339"):
+            self.evaluate()
+
+    def test_offset_without_colon_is_rejected(self):
+        self.case["evaluatedAt"] = "2026-07-22T04:05:00+0000"
+        with self.assertRaisesRegex(judgment.JudgmentError, "RFC3339"):
+            self.evaluate()
+
+    def test_date_only_timestamp_is_rejected(self):
+        self.case["evaluatedAt"] = "2026-07-22"
+        with self.assertRaisesRegex(judgment.JudgmentError, "RFC3339"):
+            self.evaluate()
+
+    def test_fractional_seconds_are_accepted(self):
+        self.case["evaluatedAt"] = "2026-07-22T04:05:00.123Z"
+        self.case["transactionTime"]["decisionExpiresAt"] = "2026-07-22T04:06:00.123Z"
+        receipt = self.evaluate()
+        self.assertEqual(receipt["disposition"], "approve")
+
     def test_supersession_is_preserved(self):
         self.case["transactionTime"]["supersedesReceiptDigest"] = fixtures.sha("8")
         receipt = self.evaluate()
