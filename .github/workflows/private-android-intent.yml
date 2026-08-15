@@ -64,7 +64,12 @@ jobs:
           gradle-version: ${{ inputs.gradle_version }}
       - name: Install Android SDK components
         shell: bash
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;${{ inputs.android_platform }}" "build-tools;${{ inputs.build_tools_version }}" > /dev/null
+        run: |
+          set +e
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;${{ inputs.android_platform }}" "build-tools;${{ inputs.build_tools_version }}" > /dev/null
+          sdk_rc="${PIPESTATUS[1]}"
+          set -e
+          exit "$sdk_rc"
       - name: Assemble debug APKs
         shell: bash
         run: gradle --no-daemon ${{ inputs.assemble_task }}
@@ -153,7 +158,12 @@ jobs:
           gradle-version: ${{ inputs.gradle_version }}
       - name: Install Android SDK components
         shell: bash
-        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;${{ inputs.android_platform }}" "build-tools;${{ inputs.build_tools_version }}" > /dev/null
+        run: |
+          set +e
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;${{ inputs.android_platform }}" "build-tools;${{ inputs.build_tools_version }}" > /dev/null
+          sdk_rc="${PIPESTATUS[1]}"
+          set -e
+          exit "$sdk_rc"
       - name: Assemble release and verify certificate pin
         shell: bash
         run: gradle --no-daemon ${{ inputs.release_signing_task }}
