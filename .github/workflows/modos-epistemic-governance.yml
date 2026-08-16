@@ -1,0 +1,86 @@
+name: Validate MODOS epistemic governance
+
+on:
+  push:
+    paths:
+      - 'modos/contracts/distinction-registry.schema.json'
+      - 'modos/contracts/epistemic-ledger.schema.json'
+      - 'modos/contracts/ontology-revision-proposal.schema.json'
+      - 'modos/ontology/**'
+      - 'ci/validate_epistemic_governance.py'
+      - 'ci/validate_ontology_revision.py'
+      - 'ci/test_epistemic_governance.py'
+      - 'ci/test_ontology_revision.py'
+      - 'docs/research/ontological-self-criticism*.md'
+      - '.github/workflows/modos-epistemic-governance.yml'
+  pull_request:
+    paths:
+      - 'modos/contracts/distinction-registry.schema.json'
+      - 'modos/contracts/epistemic-ledger.schema.json'
+      - 'modos/contracts/ontology-revision-proposal.schema.json'
+      - 'modos/ontology/**'
+      - 'ci/validate_epistemic_governance.py'
+      - 'ci/validate_ontology_revision.py'
+      - 'ci/test_epistemic_governance.py'
+      - 'ci/test_ontology_revision.py'
+      - 'docs/research/ontological-self-criticism*.md'
+      - '.github/workflows/modos-epistemic-governance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: modos-epistemic-governance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  epistemic-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned validators
+        run: >-
+          python -m pip install --disable-pip-version-check --no-input
+          jsonschema==4.26.0
+      - name: Compile validators and tests
+        run: >-
+          python -m py_compile
+          ci/validate_epistemic_governance.py
+          ci/validate_ontology_revision.py
+          ci/test_epistemic_governance.py
+          ci/test_ontology_revision.py
+      - name: Run semantic regression tests
+        run: >-
+          python -m unittest
+          ci/test_epistemic_governance.py
+          ci/test_ontology_revision.py -v
+      - name: Validate distinction registry and reference ledger
+        run: |
+          mkdir -p artifacts
+          python ci/validate_epistemic_governance.py \
+            --distinctions modos/ontology/distinctions.json \
+            --distinction-schema modos/contracts/distinction-registry.schema.json \
+            --ledger modos/ontology/epistemic-ledger.example.json \
+            --ledger-schema modos/contracts/epistemic-ledger.schema.json \
+            --report artifacts/epistemic-governance-report.json
+      - name: Validate reference ontology revision proposal
+        run: |
+          python ci/validate_ontology_revision.py \
+            --proposal modos/ontology/ontology-revision-proposal.example.json \
+            --schema modos/contracts/ontology-revision-proposal.schema.json \
+            --report artifacts/ontology-revision-report.json
+      - name: Upload epistemic receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: modos-epistemic-governance-${{ github.sha }}
+          path: artifacts/*.json
+          if-no-files-found: error
+          retention-days: 30
