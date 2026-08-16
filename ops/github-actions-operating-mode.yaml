@@ -16,15 +16,10 @@ spec:
     mode: intent-gated
     normalDevelopmentBranches:
       behavior: source-progress-without-hosted-runner-attempt
-      examples:
-        - main
-        - master
-        - dev
+      examples: [main, master, dev]
     automaticIntentBranches:
-      buildAndTest:
-        - ci/**
-      buildTestAndPublish:
-        - release/**
+      buildAndTest: [ci/**]
+      buildTestAndPublish: [release/**]
     manualExecution:
       workflowDispatch: true
       publishRequiresExplicitBooleanInput: true
@@ -44,22 +39,11 @@ spec:
   intentContract:
     ciBranch:
       pattern: ci/**
-      actions:
-        - assemble
-        - test
-        - upload-ephemeral-ci-artifacts
-      forbidden:
-        - mutate-github-release
-        - move-release-tags
+      actions: [assemble, test, upload-ephemeral-ci-artifacts]
+      forbidden: [mutate-github-release, move-release-tags]
     releaseBranch:
       pattern: release/**
-      actions:
-        - assemble
-        - test
-        - publish-or-update-release
-        - verify-apk-assets
-        - verify-checksums
-        - verify-source-archives
+      actions: [assemble, test, publish-or-update-release, verify-apk-assets, verify-checksums, verify-source-archives]
     manualDispatch:
       default: build-and-test-only
       publishInput: publish_release

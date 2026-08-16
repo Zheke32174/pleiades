@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/operator-input-candidate-v1.json",
+  "title": "Pleiades Operator Input Candidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "candidateId",
+    "sourceCommit",
+    "createdAt",
+    "inputs",
+    "decisions",
+    "selections",
+    "requestedOutputs",
+    "authority"
+  ],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "OperatorInputCandidate"},
+    "candidateId": {"type": "string", "pattern": "^operator-input-candidate:[a-z0-9][a-z0-9._:-]{2,127}$"},
+    "sourceCommit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "privateEcology",
+        "observedInventory",
+        "nodeInventory",
+        "signingIdentity",
+        "historyDecision",
+        "authorityGrant",
+        "canaryPlan",
+        "observationPlan"
+      ],
+      "properties": {
+        "privateEcology": {"$ref": "#/$defs/evidenceReference"},
+        "observedInventory": {"$ref": "#/$defs/evidenceReference"},
+        "nodeInventory": {"$ref": "#/$defs/evidenceReference"},
+        "signingIdentity": {"$ref": "#/$defs/evidenceReference"},
+        "historyDecision": {"$ref": "#/$defs/evidenceReference"},
+        "authorityGrant": {"$ref": "#/$defs/evidenceReference"},
+        "canaryPlan": {"$ref": "#/$defs/evidenceReference"},
+        "observationPlan": {"$ref": "#/$defs/evidenceReference"}
+      }
+    },
+    "decisions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["historyRewrite", "authorizationRef", "planDigest"],
+      "properties": {
+        "historyRewrite": {"enum": ["pending", "approved", "declined"]},
+        "authorizationRef": {"type": ["string", "null"], "pattern": "^urn:pleiades:receipt:[a-z0-9][a-z0-9._:-]{2,191}$"},
+        "planDigest": {"$ref": "#/$defs/optionalDigest"}
+      }
+    },
+    "selections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["canaryNodeId", "observationWindowSeconds"],
+      "properties": {
+        "canaryNodeId": {"type": ["string", "null"], "pattern": "^node:[a-z0-9][a-z0-9._:-]{1,127}$"},
+        "observationWindowSeconds": {"type": ["integer", "null"], "minimum": 60, "maximum": 31536000}
+      }
+    },
+    "requestedOutputs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "private-closure-candidate",
+          "history-rewrite-decision-record",
+          "node-admission-candidate",
+          "grant-issuance-proposal",
+          "canary-admission-plan",
+          "observation-window-plan",
+          "next-progression-candidate"
+        ]
+      }
+    },
+    "authority": {
+      "const": {
+        "ceiling": "none",
+        "proposalOnly": true,
+        "canonicalMutationApplied": false,
+        "liveExecutionApplied": false,
+        "historyRewriteApplied": false,
+        "grantIssued": false
+      }
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:(?!0{64}$)[0-9a-f]{64}$"},
+    "optionalDigest": {"type": ["string", "null"], "pattern": "^sha256:(?!0{64}$)[0-9a-f]{64}$"},
+    "artifactRef": {
+      "type": ["string", "null"],
+      "pattern": "^(?:urn:pleiades:(?:private|vault|receipt|artifact):[a-z0-9][a-z0-9._:-]{2,191}|github:[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:[#@][A-Za-z0-9_.:/-]+)?)$"
+    },
+    "evidenceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "supplied",
+        "classification",
+        "artifactRef",
+        "artifactDigest",
+        "receiptDigest",
+        "embeddedPayload",
+        "privateKeyMaterialIncluded",
+        "externalSideEffectApplied"
+      ],
+      "properties": {
+        "supplied": {"type": "boolean"},
+        "classification": {"enum": ["public-reference", "private-reference", "sovereign-decision", "live-evidence"]},
+        "artifactRef": {"$ref": "#/$defs/artifactRef"},
+        "artifactDigest": {"$ref": "#/$defs/optionalDigest"},
+        "receiptDigest": {"$ref": "#/$defs/optionalDigest"},
+        "embeddedPayload": {"const": false},
+        "privateKeyMaterialIncluded": {"const": false},
+        "externalSideEffectApplied": {"const": false}
+      }
+    }
+  }
+}

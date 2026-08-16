@@ -1,0 +1,66 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "kind": "OntologySnapshot",
+  "schemaVersion": "v1alpha1",
+  "mindId": "mind:pleiades",
+  "objects": [
+    {
+      "apiVersion": "modos.pleiades/v1alpha1",
+      "kind": "Mind",
+      "metadata": {
+        "id": "mind:pleiades",
+        "name": "Pleiades persistent mind",
+        "generation": 1,
+        "createdAt": "2026-07-20T00:00:00Z"
+      },
+      "spec": {
+        "persistentOrganization": true,
+        "modelReplaceability": true,
+        "dissentPreserved": true
+      },
+      "provenance": {
+        "source": "fixture:seed",
+        "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "trust": "verified",
+        "visibility": "public",
+        "lineage": []
+      },
+      "partitionPolicy": {
+        "read": "allow-cached",
+        "write": "provisional",
+        "merge": "steward-review",
+        "globalAuthorityRequired": true,
+        "conflictVisibility": "steward"
+      }
+    },
+    {
+      "apiVersion": "modos.pleiades/v1alpha1",
+      "kind": "CognitiveWorkspace",
+      "metadata": {
+        "id": "workspace:pleiades",
+        "name": "Pleiades shared cognitive workspace",
+        "generation": 1,
+        "createdAt": "2026-07-20T00:00:00Z"
+      },
+      "spec": {
+        "typedContributions": true,
+        "firstPassIsolation": true
+      },
+      "provenance": {
+        "source": "fixture:seed",
+        "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "trust": "verified",
+        "visibility": "public",
+        "lineage": []
+      },
+      "partitionPolicy": {
+        "read": "allow-cached",
+        "write": "provisional",
+        "merge": "steward-review",
+        "globalAuthorityRequired": true,
+        "conflictVisibility": "steward"
+      }
+    }
+  ],
+  "relations": []
+}

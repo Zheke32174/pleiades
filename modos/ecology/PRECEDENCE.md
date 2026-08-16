@@ -26,20 +26,11 @@ Pleiades contains the public schema, relation vocabulary, validator, and public 
 
 ## Relation semantics
 
-Relations are directional and typed. The core vocabulary is:
-
-- `part-of`, `depends-on`, `implements`, and `supports`;
-- `governed-by` and `canonical-for`;
-- `derived-from`, `produced-by`, `archive-of`, and `mirror-of`;
-- `supersedes` and `overlays`;
-- `provides-capability` and `requires-capability`;
-- `evidence-for` and `human-interface-for`.
-
-Required relations participate in closure checks. Historical, evidence, and provenance edges describe lineage without creating runtime authority.
+Relations are directional and typed. Required relations participate in closure checks. Historical, evidence, and provenance edges describe lineage without creating runtime authority.
 
 ## Local topology versus global topology
 
-Older documents such as the Understory 4+1 cluster map remain valid descriptions of a local nucleus and its history. They are not an alternative global control plane. Where a local cluster document conflicts with the promoted Pleiades contracts or the ecology registry, the higher source wins and the local document must be corrected or explicitly marked historical.
+Older cluster maps remain valid descriptions of a local nucleus and its history. They are not an alternative global control plane. Where a local document conflicts with promoted Pleiades contracts or the ecology registry, the higher source wins and the local document must be corrected or explicitly marked historical.
 
 ## Closure proof
 
@@ -65,8 +56,6 @@ Missing component manifests are reported as explicit coverage warnings rather th
 4. Add or amend typed relations and canonical scopes.
 5. Run the closure validator and retain its report.
 6. Review the semantic diff, not merely the JSON diff.
-7. Promote through the repository's normal evidence and steward gates.
+7. Promote through the repository's evidence and authorized-decision gates.
 
-## Standards lineage
-
-The envelope and catalog shape follow the established `apiVersion` / `kind` / `metadata` / `spec` pattern used by Kubernetes-style catalogs and Backstage. Directional relations follow software-catalog and SPDX relationship practice. Provenance edges are intentionally compatible with W3C PROV concepts. Structural validation uses JSON Schema Draft 2020-12; semantic closure remains a separate deterministic pass.
+Structural validation uses JSON Schema Draft 2020-12; semantic closure remains a separate deterministic pass.

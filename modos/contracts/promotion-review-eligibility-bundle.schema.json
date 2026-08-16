@@ -1,0 +1,384 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-promotion-review-eligibility-bundle-v1.json",
+  "title": "MODOS Promotion Review Eligibility Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "runManifest",
+    "observations",
+    "evaluation",
+    "integrity"
+  ],
+  "properties": {
+    "apiVersion": {
+      "const": "modos.pleiades/v1alpha1"
+    },
+    "kind": {
+      "const": "PromotionReviewEligibilityBundle"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bundleId",
+        "runId",
+        "generation",
+        "createdAt"
+      ],
+      "properties": {
+        "bundleId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "previousEvaluationDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "runManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runId",
+        "workOrderId",
+        "workOrderDigest",
+        "createdAt",
+        "authorityCeiling",
+        "aggregationPolicy",
+        "criteria",
+        "minimumReproducibilityMicros",
+        "requireRollback"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workOrderId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workOrderDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "authorityCeiling": {
+          "const": "none"
+        },
+        "aggregationPolicy": {
+          "const": "all-valid-observations-pass"
+        },
+        "criteria": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "kind",
+              "required",
+              "thresholdMicros"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "machine",
+                  "steward",
+                  "ordinary-person"
+                ]
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "thresholdMicros": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000
+              }
+            }
+          }
+        },
+        "minimumReproducibilityMicros": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "requireRollback": {
+          "type": "boolean"
+        }
+      }
+    },
+    "observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "observationId",
+          "criterionId",
+          "workOrderDigest",
+          "scoreMicros",
+          "passed",
+          "evidenceRefs",
+          "recordedBy",
+          "recordedAt",
+          "independentVerification",
+          "contentDigest"
+        ],
+        "properties": {
+          "observationId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "criterionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "workOrderDigest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "scoreMicros": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "evidenceRefs": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "recordedBy": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recordedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "independentVerification": {
+            "type": "boolean"
+          },
+          "supersedesObservationDigest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "correctionReason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "contentDigest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "supersedesObservationDigest"
+              ]
+            },
+            "then": {
+              "required": [
+                "correctionReason"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "evaluation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evaluationId",
+        "evaluatedAt",
+        "evaluatedBy",
+        "inputDigest",
+        "verdict",
+        "criterionResults",
+        "reproducibilityMicros",
+        "reproducibilityEvidenceRefs",
+        "rollbackTested",
+        "rollbackEvidenceRefs",
+        "safetyViolations",
+        "safetyEvidenceRefs",
+        "blockers",
+        "authorityCeiling",
+        "promotionTransactionRequired",
+        "decisionDigest"
+      ],
+      "properties": {
+        "evaluationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evaluatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evaluatedBy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inputDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "verdict": {
+          "enum": [
+            "eligible-for-promotion-review",
+            "blocked"
+          ]
+        },
+        "criterionResults": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "criterionId",
+              "thresholdMicros",
+              "selectedObservationDigests",
+              "status"
+            ],
+            "properties": {
+              "criterionId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "thresholdMicros": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000000
+              },
+              "selectedObservationDigests": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                }
+              },
+              "status": {
+                "enum": [
+                  "pass",
+                  "fail",
+                  "inconclusive"
+                ]
+              }
+            }
+          }
+        },
+        "reproducibilityMicros": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "reproducibilityEvidenceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "rollbackTested": {
+          "type": "boolean"
+        },
+        "rollbackEvidenceRefs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "safetyViolations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "safetyEvidenceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "blockers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "authorityCeiling": {
+          "const": "none"
+        },
+        "promotionTransactionRequired": {
+          "const": true
+        },
+        "decisionDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bundleDigest"
+      ],
+      "properties": {
+        "bundleDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
+}

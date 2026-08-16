@@ -14,6 +14,7 @@ spec:
     - public-constitutional-surface
     - defensive-node-substrate
     - ecology-schema-owner
+    - pdk-reference-implementation
     - forensic-event-source
   authority: local-enforcement
   inputs:
@@ -26,13 +27,18 @@ spec:
     - defensive-observations
     - public-contract-schemas
     - ecology-validation-receipts
+    - node-inventory
+    - workload-status
   capabilitiesProvided:
     - governance.contract.validate@v1alpha1
+    - node.inventory@v1alpha1
+    - workload.native.systemd@v1alpha1
     - telemetry.defensive@v1alpha1
     - audit.append@v1alpha1
   capabilitiesRequired:
     - host.kernel.local@v1alpha1
     - filesystem.local@v1alpha1
+    - network.mtls@v1alpha1
   dataClasses:
     - public
     - internal
@@ -57,8 +63,11 @@ spec:
       targetRef: capability:telemetry.defensive@v1alpha1
       scope: observation
       required: true
+    - type: implements
+      targetRef: component:pleiades-pdk-reference
+      scope: runtime
+      required: false
   notes: >-
-    Pleiades owns the public constitutional vocabulary and the local defensive
-    substrate. Catalog membership never grants execution authority. The compiled
-    PDK reference remains a separately promoted implementation surface until its
-    live-system gates are satisfied.
+    Pleiades owns the public constitutional vocabulary, ecology contracts, and
+    local defensive substrate. The PDK node-agent remains a separately promoted
+    reference implementation. Catalog membership never grants execution authority.

@@ -1,0 +1,82 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "authority": {
+    "constitutionalMutationApplied": false,
+    "grantBound": true,
+    "selfExpansionApplied": false
+  },
+  "authorityGrantRefs": [
+    "grant:mind-pleiades:ontology-bounded-v1"
+  ],
+  "classification": {
+    "action": "authorize-admission",
+    "changeClass": "maintenance",
+    "domain": "ontology",
+    "riskTier": "bounded-persistent"
+  },
+  "conditions": [
+    "history-blocker-cleared",
+    "closure-receipt-closed",
+    "automatic-rollback-enabled"
+  ],
+  "decision": "approve",
+  "decisionId": "decision:ontology-candidate-0001",
+  "deliberation": {
+    "assemblyRef": "assembly:pleiades-executive",
+    "contributions": [
+      {
+        "evidenceRefs": ["evidence:semantic-diff"],
+        "firstPassIndependent": true,
+        "position": "support",
+        "principalRef": "agent:proposal",
+        "role": "proposal"
+      },
+      {
+        "evidenceRefs": ["evidence:rollback-plan"],
+        "firstPassIndependent": true,
+        "position": "support",
+        "principalRef": "agent:risk",
+        "role": "risk"
+      },
+      {
+        "evidenceRefs": ["evidence:grant-coverage"],
+        "firstPassIndependent": true,
+        "position": "support",
+        "principalRef": "agent:policy",
+        "role": "policy"
+      },
+      {
+        "evidenceRefs": ["evidence:history-blocker-cleared"],
+        "firstPassIndependent": true,
+        "position": "oppose",
+        "principalRef": "agent:dissent",
+        "role": "dissent"
+      }
+    ],
+    "dissentPreserved": true,
+    "dissentSummary": "Dissent required confirmation that the public-history blocker was cleared before admission.",
+    "mode": "polycentric-recurrent"
+  },
+  "executionWindow": {
+    "expiresAt": "2026-07-21T21:00:00Z",
+    "notBefore": "2026-07-20T21:00:00Z"
+  },
+  "kind": "ExecutiveDecision",
+  "mindId": "mind:pleiades",
+  "policyDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "policyRef": "modos/EXECUTIVE_AUTHORITY.md#r2-bounded-persistent",
+  "proposalDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "proposalRef": "fixture:eligible-ontology-candidate",
+  "rationaleDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "rollback": {
+    "planDigest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "planRef": "rollback:ontology-predecessor",
+    "predecessorDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "required": true
+  },
+  "separationOfDuties": {
+    "authorityExpansionDecision": false,
+    "executorHasNoDecisionAuthority": true,
+    "proposerNotSoleDecider": true
+  }
+}

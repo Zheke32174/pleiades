@@ -1,0 +1,46 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "kind": "MainlineCollisionMap",
+  "mapId": "main-vs-governance-stack-20260720",
+  "repository": "Zheke32174/pleiades",
+  "mainHead": "ce40d41d3cb712aef20416b1227edb3d19e988f5",
+  "stackHeadBeforeConvergence": "8e7e76f27bc03ce296e73bf46aef4ee39b2b8e71",
+  "mergeBase": "8d8a8816750026ea2a1cc7e4b60f37b1ffe91e30",
+  "contentResolutions": [
+    {"path": "README.md", "resolution": "semantic-merge", "reason": "preserve public ecology role, private spine, runtime architecture, and convergence entry point"},
+    {"path": "MODOS_COMPONENT.yaml", "resolution": "semantic-merge", "reason": "combine canonical public constitution/ecology role with PDK reference and local runtime roles"},
+    {"path": "modos/README.md", "resolution": "semantic-merge", "reason": "combine contract ecology documentation with concrete PDK runtime documentation"},
+    {"path": "modos/contracts/component-manifest.schema.json", "resolution": "semantic-merge", "reason": "retain typed relations and canonical capability patterns without losing prior lifecycle fields"},
+    {"path": ".github/workflows/release.yml", "resolution": "semantic-merge", "reason": "preserve exact tagged release semantics and add convergence/history/package gates"}
+  ],
+  "mainlineImports": [
+    ".github/workflows/modos-ecology.yml",
+    ".github/workflows/private-android-intent.yml",
+    "ci/validate-ecology.py",
+    "docs/IMPLEMENTATION-AUDIT-2026-07-19.md",
+    "docs/IMPLEMENTATION-AUDIT-ADDENDUM-2026-07-20.md",
+    "modos/contracts/ecology-registry.schema.json",
+    "modos/ecology/PRECEDENCE.md",
+    "modos/ecology/public-ecology.json",
+    "ops/github-actions-operating-mode.yaml",
+    "ops/github-actions-private-mode.yaml"
+  ],
+  "stackPreservations": [
+    "ontology compiler and promotion evidence",
+    "delegated machine executive authority",
+    "executive policy and grant lifecycle",
+    "workspace, emergency, distributed admission, and learning spine",
+    "constitutional evolution and ecology integration readiness",
+    "100-point and 200-point progression ledgers"
+  ],
+  "mergeStrategy": {
+    "type": "two-parent-content-converged-merge",
+    "firstParent": "current convergence branch head",
+    "secondParent": "ce40d41d3cb712aef20416b1227edb3d19e988f5",
+    "squashBeforeEvidenceReview": false,
+    "rewriteHistory": false,
+    "forceUpdate": false
+  },
+  "remainingConflicts": [],
+  "authority": {"ceiling": "none", "mergeAuthorized": false, "canonicalMutationApplied": false}
+}

@@ -1,0 +1,86 @@
+name: Publish branch convergence evidence
+
+on:
+  push:
+    branches:
+      - governance/convergence-proof-v1
+    paths-ignore:
+      - 'modos/convergence/BRANCH_EVIDENCE.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-branch-convergence-evidence-v2
+  cancel-in-progress: true
+
+jobs:
+  validate-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: governance/convergence-proof-v1
+          show-progress: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned validation dependencies
+        run: >-
+          python -m pip install --disable-pip-version-check --no-input
+          -r requirements-modos.txt
+
+      - name: Run complete suite and bounded evidence producers
+        id: validate
+        shell: bash
+        run: |
+          set +e
+          python ci/run-modos-convergence.py --continue-on-failure
+          suite_status=$?
+          python modos/ontology/ecology_adapter.py \
+            --registry modos/ecology/public-ecology.json \
+            --schema modos/contracts/ecology-registry.schema.json \
+            --out-snapshot artifacts/public-ecology-ontology.json \
+            --out-receipt artifacts/public-ecology-ontology-receipt.json
+          adapter_status=$?
+          python ci/scan-public-history.py \
+            --mode history \
+            --report artifacts/reachable-history-sensitivity-receipt.json
+          history_status=$?
+          set -e
+          echo "suite_status=$suite_status" >> "$GITHUB_OUTPUT"
+          echo "adapter_status=$adapter_status" >> "$GITHUB_OUTPUT"
+          echo "history_status=$history_status" >> "$GITHUB_OUTPUT"
+
+      - name: Write compact public-safe evidence summary
+        run: |
+          python ci/write-branch-convergence-evidence.py \
+            --validated-commit "$GITHUB_SHA" \
+            --suite-exit "${{ steps.validate.outputs.suite_status }}" \
+            --adapter-exit "${{ steps.validate.outputs.adapter_status }}" \
+            --history-exit "${{ steps.validate.outputs.history_status }}"
+
+      - name: Commit evidence summary to latest feature-branch head
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add modos/convergence/BRANCH_EVIDENCE.json
+          if git diff --cached --quiet; then
+            echo "Evidence summary is unchanged."
+            exit 0
+          fi
+          git commit -m "Record convergence evidence for $GITHUB_SHA"
+          git fetch --no-tags origin governance/convergence-proof-v1
+          git rebase origin/governance/convergence-proof-v1
+          git push origin HEAD:governance/convergence-proof-v1
+
+      - name: Fail after publishing when repository validation failed
+        if: steps.validate.outputs.suite_status != '0' || steps.validate.outputs.adapter_status != '0'
+        run: exit 1

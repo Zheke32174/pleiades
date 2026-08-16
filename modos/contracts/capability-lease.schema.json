@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-capability-lease-v1.json",
+  "title": "MODOS Capability Lease",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "capability", "policy", "state", "provenance"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "CapabilityLease"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["leaseId", "domainId", "issuerIdentity", "subjectIdentity", "issuedAt", "expiresAt", "sequence", "traceId"],
+      "properties": {
+        "leaseId": {"type": "string", "minLength": 1},
+        "domainId": {"type": "string", "minLength": 1},
+        "issuerIdentity": {"type": "string", "minLength": 1},
+        "subjectIdentity": {"type": "string", "minLength": 1},
+        "issuedAt": {"type": "string", "format": "date-time"},
+        "notBefore": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"},
+        "sequence": {"type": "integer", "minimum": 1},
+        "traceId": {"type": "string", "minLength": 1},
+        "parentLeaseRef": {"type": "string", "minLength": 1}
+      }
+    },
+    "capability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "resourceRef", "operations", "authorityCeiling", "offlinePolicy"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+        "resourceRef": {"type": "string", "minLength": 1},
+        "operations": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"}},
+        "authorityCeiling": {"enum": ["none", "proposal", "local-enforcement", "domain-control"]},
+        "offlinePolicy": {"enum": ["deny", "finish-current", "bounded-cache"]},
+        "maxUses": {"type": "integer", "minimum": 1},
+        "constraints": {"type": "object"}
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decisionRef", "policyDigest", "revocable", "renewalRequiresDecision"],
+      "properties": {
+        "decisionRef": {"type": "string", "minLength": 1},
+        "policyDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "revocable": {"const": true},
+        "renewalRequiresDecision": {"const": true},
+        "approvalRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "conditions": {"type": "object"}
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "observedAt", "uses"],
+      "properties": {
+        "status": {"enum": ["proposed", "active", "revoked", "expired", "consumed"]},
+        "observedAt": {"type": "string", "format": "date-time"},
+        "uses": {"type": "integer", "minimum": 0},
+        "revocationRef": {"type": "string", "minLength": 1},
+        "terminalReason": {"type": "string", "minLength": 1}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "revoked"}}}, "then": {"required": ["revocationRef", "terminalReason"]}},
+        {"if": {"properties": {"status": {"enum": ["expired", "consumed"]}}}, "then": {"required": ["terminalReason"]}}
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceRef", "sourceDigest", "trust", "visibility"],
+      "properties": {
+        "sourceRef": {"type": "string", "minLength": 1},
+        "sourceDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "trust": {"enum": ["verified", "canonical"]},
+        "visibility": {"enum": ["internal", "private", "secret", "steward-only"]},
+        "lineage": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      }
+    }
+  }
+}

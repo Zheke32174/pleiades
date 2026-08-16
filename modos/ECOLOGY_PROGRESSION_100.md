@@ -1,0 +1,154 @@
+# Pleiades Ecology — Next 100 Progression Points
+
+This ledger orders the next one hundred ecology advances after delegated machine executive authority. It is a dependency sequence, not a claim that every point should become one commit or one pull request.
+
+Status vocabulary:
+
+- `implemented` — contract and deterministic implementation are present in the current stacked branch;
+- `specified` — the requirement is formally defined but runtime implementation remains;
+- `queued` — ordered after its dependencies;
+- `blocked` — requires an explicit prerequisite or external/live-system action.
+
+No item in this ledger silently grants canonical authority, issues a live grant, mutates a live substrate, or bypasses the promoted constitution.
+
+## Phase A — Executive policy kernel
+
+1. `implemented` Define a machine-readable executive policy envelope.
+2. `implemented` Define deterministic change classification by domain, action, reversibility, persistence, and impact.
+3. `implemented` Define the five-tier risk ladder from observe-only through constitutional.
+4. `implemented` Map each risk tier to an authorization mode.
+5. `implemented` Permit zero-human delegated-machine authorization for bounded reversible classes.
+6. `implemented` Require mixed quorum for high-impact classes.
+7. `implemented` Reserve constitutional and self-authority changes from unilateral machine approval.
+8. `implemented` Bind policy decisions to exact policy digests and versions.
+9. `implemented` Refuse wildcard domains, actions, principals, and executor capabilities.
+10. `implemented` Emit deterministic policy-decision receipts.
+
+## Phase B — Authority registry and lifecycle
+
+11. `implemented` Define an authority registry containing grants and lifecycle events.
+12. `implemented` Require every active grant to resolve to one persistent principal.
+13. `implemented` Define issuance events with external delegation provenance.
+14. `implemented` Define suspension events that immediately disable use.
+15. `implemented` Define revocation events that permanently terminate a grant generation.
+16. `implemented` Define expiry without implicit renewal.
+17. `implemented` Prevent the Mind from issuing or enlarging its own grant.
+18. `implemented` Prevent duplicate active grant identities and generations.
+19. `implemented` Resolve effective grants deterministically at an evaluation timestamp.
+20. `implemented` Emit an authority-registry closure receipt.
+
+## Phase C — Execution, observation, and rollback
+
+21. `implemented` Define an execution attempt bound to one authorization receipt and mandate.
+22. `implemented` Define precondition evidence and exact target-state binding.
+23. `implemented` Define postcondition evidence and outcome classification.
+24. `implemented` Define execution receipts for succeeded, failed, and rolled-back outcomes.
+25. `implemented` Define rollback attempts bound to the predecessor digest.
+26. `implemented` Require automatic rollback when mandated postconditions fail.
+27. `implemented` Prevent executors from modifying the authorized plan.
+28. `implemented` Prevent execution after mandate expiry or grant suspension.
+29. `implemented` Record resource consumption against execution budgets.
+30. `implemented` Emit append-only audit events for decision, execution, and rollback.
+
+## Phase D — Outcome learning and competence
+
+31. `implemented` Define outcome-evidence records with expected and observed effects.
+32. `implemented` Define competence profiles by principal, domain, action, and risk tier.
+33. `implemented` Update competence only from verified outcome evidence.
+34. `implemented` Track successes, failures, rollbacks, policy violations, and uncertainty.
+35. `implemented` Prevent blind self-scoring by the deciding Mind.
+36. `implemented` Define minimum evidence volume before authority growth can be proposed.
+37. `implemented` Define authority-adjustment proposals as proposal-only artefacts.
+38. `implemented` Permit competence-driven narrowing, suspension, or growth proposals.
+39. `implemented` Require external constitutional authorization for actual grant enlargement.
+40. `implemented` Emit deterministic competence-update receipts.
+
+## Phase E — Shared-workspace executive integration
+
+41. `implemented` Define typed executive-workspace contribution messages.
+42. `implemented` Bind every contribution to a `mindId`, role, evidence set, and first-pass trace.
+43. `implemented` Require independent proposal, risk, policy, and dissent contributions.
+44. `implemented` Add historical competence weighting without suppressing minority evidence.
+45. `implemented` Define a recurrent arbitration cycle over the shared workspace.
+46. `implemented` Bind Atlas belief state to executive evidence inputs.
+47. `implemented` Bind Forge executive state to the selected authorization path.
+48. `implemented` Persist unresolved dissent across decision cycles.
+49. `implemented` Define deadlock, defer, and request-more-evidence outcomes.
+50. `implemented` Emit a workspace-deliberation closure receipt.
+
+## Phase F — Emergency and recovery authority
+
+51. `implemented` Define emergency containment classifications separately from ordinary evolution.
+52. `implemented` Define short-lived emergency grants with automatic expiration.
+53. `implemented` Limit emergency powers to containment, isolation, rollback, and evidence preservation.
+54. `implemented` Forbid emergency grants from rewriting constitutional policy.
+55. `implemented` Require post-event review for every emergency action.
+56. `implemented` Define recovery quorum when the primary steward is unavailable.
+57. `implemented` Define continuity rules for partial Mind or node loss.
+58. `implemented` Define grant rehydration without silently restoring revoked authority.
+59. `implemented` Define safe-mode authority ceilings.
+60. `implemented` Emit emergency-action and recovery receipts.
+
+## Phase G — Distributed substrate admission
+
+61. `implemented` Define a node capability registry for admission executors.
+62. `implemented` Bind executor identity to hardware, service, and key provenance.
+63. `implemented` Define per-node authority ceilings and write scopes.
+64. `implemented` Define multi-node rollout plans with canary ordering.
+65. `implemented` Define staged admission with health gates between stages.
+66. `implemented` Define cross-node rollback coordination.
+67. `implemented` Define network-partition behavior and local autonomy ceilings.
+68. `implemented` Define replay protection for mandates and receipts.
+69. `implemented` Define idempotent admission transactions.
+70. `implemented` Emit distributed rollout closure receipts.
+
+## Phase H — Memory, evidence, and learning spine
+
+71. `implemented` Persist every observation, decision, mandate, outcome, correction, and provenance edge.
+72. `implemented` Add episodic executive memory keyed by domain and objective.
+73. `implemented` Add semantic retrieval over prior decisions and outcomes.
+74. `implemented` Separate evidence memory from narrative summaries.
+75. `implemented` Define retention and visibility policy for executive evidence.
+76. `implemented` Define contradiction detection across memory sources.
+77. `implemented` Define correction propagation without historical erasure.
+78. `implemented` Build feedback datasets only from verified outcomes.
+79. `implemented` Prevent blind continual training from unverified self-generated traces.
+80. `implemented` Emit learning-spine integrity receipts.
+
+## Phase I — Constitutional evolution and institutional plurality
+
+81. `implemented` Define constitutional amendment proposals separately from executive decisions.
+82. `implemented` Define mixed human-machine amendment deliberation.
+83. `implemented` Require explicit reserved-power quorum for authority-model changes.
+84. `implemented` Define institutional principals beyond one operator and one Mind.
+85. `implemented` Define succession and continuity for constitutional stewards.
+86. `implemented` Define conflict-of-interest and recusal rules.
+87. `implemented` Define independent audit and appeal principals.
+88. `implemented` Define time-locked constitutional changes and cancellation windows.
+89. `implemented` Define constitutional rollback and supersession lineage.
+90. `implemented` Emit constitutional-amendment receipts.
+
+## Phase J — Full symbiotic operating ecology
+
+91. `implemented` Connect executive authority to the complete ecology registry through typed readiness relations.
+92. `blocked` Compile the actual public and private ontology rather than seed or synthetic fixtures; requires the live private exhaustive registry.
+93. `implemented` Bind service-level learning joints into the executive workspace.
+94. `implemented` Connect predictive simulation and hyperbolic-chamber evaluation before execution.
+95. `implemented` Compare simulated and observed outcomes to calibrate confidence.
+96. `implemented` Add ordinary-person-noticeable improvement evaluation where applicable.
+97. `implemented` Add machine-measurable and steward-verifiable promotion criteria.
+98. `implemented` Define bounded cross-Mind and external-agent treaty interfaces.
+99. `blocked` Complete live substrate admission, observation, rollback, and continual improvement loops.
+100. `blocked` Demonstrate sustained bounded autonomous operation with constitutional integrity, recoverability, and evidence-backed authority growth.
+
+## Current state
+
+The stacked governance branches implement 97 of the 100 progression points as deterministic contracts, validators, receipts, and adversarial test surfaces.
+
+The remaining three points are deliberately blocked rather than falsely completed:
+
+- point 92 requires the real private exhaustive registry and a full live ontology closure receipt;
+- point 99 requires actual substrate execution and observed rollback/learning loops;
+- point 100 requires sustained operational evidence over time.
+
+Repository fixtures cannot truthfully satisfy those live-system requirements.

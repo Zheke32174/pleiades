@@ -1,0 +1,50 @@
+name: Validate extended autonomy contracts
+
+on:
+  push:
+    paths:
+      - 'modos/contracts/*work-order*.json'
+      - 'modos/contracts/stage-approval.schema.json'
+      - 'modos/contracts/evidence-record.schema.json'
+      - 'modos/contracts/checkpoint-record.schema.json'
+      - 'modos/contracts/action-receipt.schema.json'
+      - 'modos/contracts/capability-definition.schema.json'
+      - 'modos/contracts/extended-autonomy-*.fixtures.json'
+      - 'ci/validate-extended-autonomy.py'
+      - '.github/workflows/extended-autonomy-contracts.yml'
+  pull_request:
+    paths:
+      - 'modos/contracts/*work-order*.json'
+      - 'modos/contracts/stage-approval.schema.json'
+      - 'modos/contracts/evidence-record.schema.json'
+      - 'modos/contracts/checkpoint-record.schema.json'
+      - 'modos/contracts/action-receipt.schema.json'
+      - 'modos/contracts/capability-definition.schema.json'
+      - 'modos/contracts/extended-autonomy-*.fixtures.json'
+      - 'ci/validate-extended-autonomy.py'
+      - '.github/workflows/extended-autonomy-contracts.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: extended-autonomy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned validator
+        run: python -m pip install --disable-pip-version-check --no-input jsonschema==4.26.0
+      - name: Compile validator
+        run: python -m py_compile ci/validate-extended-autonomy.py
+      - name: Validate schemas and adversarial semantics
+        run: python ci/validate-extended-autonomy.py

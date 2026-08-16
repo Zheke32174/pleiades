@@ -1,0 +1,66 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "authority": {
+    "canonicalMutationApplied": false,
+    "ceiling": "none",
+    "liveExecutionApplied": false
+  },
+  "currentTreeSensitivity": {
+    "findingCount": 0,
+    "findings": [],
+    "receiptDigest": "sha256:0b5b48e2331283ee960263209e081f0f337b0bd44bd826105b5d6e3653b89c3c",
+    "status": "clear"
+  },
+  "evidenceDigest": "sha256:9d7e67583a2fb1f843af114c7d0881bf79e31456968c5889e70902088b0edd3d",
+  "interventionFrontier": {
+    "autonomousActionCount": 0,
+    "operatorActionCount": 11,
+    "receiptDigest": "sha256:0bf5e453e5cb1f70016a6cbf82ed935e678bb6c26e72203654da2afda3905601",
+    "status": "operator-intervention-required"
+  },
+  "kind": "BranchConvergenceEvidence",
+  "publicEcologyAdapter": {
+    "blockers": [
+      "live-private-exhaustive-registry-not-supplied"
+    ],
+    "exitCode": 0,
+    "objectCount": 18,
+    "receiptDigest": "sha256:b50226e4bd1efbbf9f5210d2ecc1a56d7effa0e47253c6e0e047ae2ed69fc327",
+    "relationCount": 17,
+    "resultSnapshotDigest": "sha256:b28b366af159ccfeb376a1ad8d131d1159a45be3988b5d48013eb75c17a108d1"
+  },
+  "reachableHistorySensitivity": {
+    "contentDisclosed": false,
+    "exitCode": 2,
+    "findingCount": 85,
+    "receiptDigest": "sha256:7ba0098368132a346fbb166439f046c783416b73dfafab9da2d0944b0c4a012a",
+    "status": "blocked"
+  },
+  "suite": {
+    "commandCount": 35,
+    "executedCount": 35,
+    "exitCode": 0,
+    "failureDetails": {},
+    "failures": [],
+    "notRun": [],
+    "receiptDigest": "sha256:795c535990bd6d94a366bf8eda7f9b140f4a4d74f34499ed7ec3605b50e864d8",
+    "status": "pass"
+  },
+  "syntheticRehearsal": {
+    "receiptDigest": "sha256:37f0fe5e17087ecf595faf3dc520144a698deb78fb3728d62373c058a3a3e40d",
+    "remainingBlockers": [
+      "live-private-exhaustive-registry-not-supplied",
+      "live-substrate-loop-not-authorized-or-executed",
+      "sustained-autonomy-evidence-not-observed"
+    ],
+    "status": "pass"
+  },
+  "validatedCommit": "f16c209fc00b09e672e9f8ffa025d4f9778a4606",
+  "validationPackage": {
+    "manifestDigest": "sha256:4bf8267f0cf5e026e85c4d340a831ac69a00397abb64aec404026f70f408ec4a",
+    "packageDigest": "sha256:9a81ae12a86db145b2a21722e612f222677892d4419907f40b2b31877f7f96fd",
+    "privateMaterialIncluded": false,
+    "receiptDigest": "sha256:b3e58cf57fb510989b8a2524be6ebf27c57cdeb1830ade056593dea21c606def",
+    "sbomDigest": "sha256:eb24ce92486b825080cfe190a81ac077dca4f0ed0370bb5c839a74643f148e1a"
+  }
+}

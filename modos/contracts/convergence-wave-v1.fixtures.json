@@ -1,0 +1,257 @@
+{
+  "schema": "modos.pleiades/contract-fixture-bundle/v1",
+  "cases": [
+    {
+      "name": "agent-convergence-contract.valid.json",
+      "schema": "agent-convergence-contract.schema.json",
+      "valid": true,
+      "instance": {
+        "apiVersion": "modos.pleiades/v1alpha1",
+        "kind": "AgentConvergenceContract",
+        "metadata": {
+          "contractId": "agent-contract/verifier-01/v1",
+          "mindId": "mind/pleiades-primary",
+          "agentId": "agent/verifier-01",
+          "role": "independent-verifier",
+          "cognitiveFunction": "verify",
+          "persistence": "resident",
+          "version": 1,
+          "createdAt": "2026-07-18T13:20:00Z"
+        },
+        "participation": {
+          "workspaceReadTypes": ["observation", "proposal", "dissent"],
+          "workspacePublishTypes": ["verification", "critique", "dissent"],
+          "atlasScope": "query",
+          "forgeScope": "propose",
+          "completionSignal": "verifier-accepted",
+          "attentionPriority": 80,
+          "resourceBudgetRef": "resource-budget/verifier-small"
+        },
+        "independence": {
+          "requiredFirstPass": true,
+          "contaminationBarrier": true,
+          "firstPassVisibility": "self-and-verifier-only",
+          "crossInfluenceAfterStage": "first-pass-recorded",
+          "independentContextRef": "context-envelope/verifier-01"
+        },
+        "epistemics": {
+          "evidenceRequired": true,
+          "uncertaintyRequired": true,
+          "dissentPolicy": "preserve-until-explicitly-resolved-or-superseded",
+          "criticRoles": ["security-critic", "failure-critic"],
+          "competenceScope": ["archive-integrity", "recovery-boundaries"],
+          "confidenceCalibrationRef": "calibration/verifier-01"
+        },
+        "authority": {
+          "authorityCeiling": "proposal",
+          "capabilityBudget": {
+            "maxActions": 0,
+            "maxRuntimeSeconds": 900,
+            "allowedCapabilities": [],
+            "leaseRequired": true
+          },
+          "modelPolicy": {
+            "providerIndependence": true,
+            "replacementAllowed": true,
+            "privateReasoningRequired": true,
+            "allowedModelClasses": ["local-verifier", "frontier-verifier"]
+          },
+          "offlinePolicy": "deny"
+        },
+        "verification": {
+          "verifierRef": "verifier/deterministic-recovery-suite",
+          "failurePath": "retain-dissent-and-return-to-forge",
+          "completionRequiresVerification": true,
+          "negativeEvidenceRetention": true,
+          "rollbackRef": "rollback/no-action-required"
+        },
+        "audit": {
+          "traceRequired": true,
+          "contributionReceiptsRequired": true,
+          "decisionLineageRequired": true,
+          "contextEnvelopeRequired": true,
+          "auditSinkRef": "audit/pleiades-primary"
+        }
+      }
+    },
+    {
+      "name": "agent-convergence-contract.invalid.json",
+      "schema": "agent-convergence-contract.schema.json",
+      "valid": false,
+      "instance": {
+        "apiVersion": "modos.pleiades/v1alpha1",
+        "kind": "AgentConvergenceContract",
+        "metadata": {
+          "contractId": "agent-contract/unsafe/v1",
+          "mindId": "mind/pleiades-primary",
+          "agentId": "agent/unsafe",
+          "role": "unbounded-executor",
+          "cognitiveFunction": "implement-proposal",
+          "persistence": "resident",
+          "version": 1,
+          "createdAt": "2026-07-18T13:21:00Z"
+        },
+        "participation": {
+          "workspaceReadTypes": ["proposal"],
+          "workspacePublishTypes": ["proposal"],
+          "atlasScope": "propose-update",
+          "forgeScope": "delegated-bounded",
+          "completionSignal": "explicit-output"
+        },
+        "independence": {
+          "requiredFirstPass": true,
+          "contaminationBarrier": false,
+          "firstPassVisibility": "self-and-verifier-only",
+          "crossInfluenceAfterStage": "first-pass-recorded"
+        },
+        "epistemics": {
+          "evidenceRequired": true,
+          "uncertaintyRequired": true,
+          "dissentPolicy": "preserve-until-explicitly-resolved-or-superseded",
+          "criticRoles": ["self"],
+          "competenceScope": ["everything"]
+        },
+        "authority": {
+          "authorityCeiling": "proposal",
+          "capabilityBudget": {
+            "maxActions": 5,
+            "maxRuntimeSeconds": 3600,
+            "allowedCapabilities": ["host.mutate"],
+            "leaseRequired": true
+          },
+          "modelPolicy": {
+            "providerIndependence": true,
+            "replacementAllowed": true,
+            "privateReasoningRequired": true
+          },
+          "offlinePolicy": "bounded-cache"
+        },
+        "verification": {
+          "verifierRef": "agent/unsafe",
+          "failurePath": "ignore-and-continue",
+          "completionRequiresVerification": true,
+          "negativeEvidenceRetention": true
+        },
+        "audit": {
+          "traceRequired": true,
+          "contributionReceiptsRequired": true,
+          "decisionLineageRequired": true,
+          "contextEnvelopeRequired": true
+        }
+      }
+    },
+    {
+      "name": "workspace-action-with-verifier.valid.json",
+      "schema": "workspace-contribution.schema.json",
+      "valid": true,
+      "instance": {
+        "apiVersion": "modos.pleiades/v1alpha1",
+        "kind": "WorkspaceContribution",
+        "metadata": {
+          "contributionId": "contrib-action-001",
+          "mindId": "mind/pleiades-primary",
+          "cycleId": "cycle/action-001",
+          "organId": "organ/planner-01",
+          "createdAt": "2026-07-18T13:22:00Z",
+          "stage": "deliberation",
+          "sequence": 2,
+          "traceId": "trace/action-001",
+          "observedContributionRefs": ["contrib-observation-001"]
+        },
+        "contribution": {
+          "type": "proposal",
+          "summary": "Validate the candidate archive in a disposable recovery world.",
+          "contentDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "reasoningDisclosure": "summary-and-evidence-only",
+          "proposedAction": {
+            "capabilityName": "recovery.validate.fixture",
+            "resourceRef": "ghost-world/recovery-001",
+            "requestedOperations": ["create", "verify", "destroy"],
+            "verifierRef": "verifier/recovery-suite-v1",
+            "failurePath": "destroy-world-retain-receipt-return-to-forge",
+            "justificationDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        },
+        "evidence": [
+          {
+            "claim": "The deterministic fixture suite is green.",
+            "sourceRef": "github-actions/undercity/run-13",
+            "sourceDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "support": "supports",
+            "observedAt": "2026-07-18T13:21:59Z"
+          }
+        ],
+        "epistemics": {
+          "confidence": 0.85,
+          "uncertainties": ["The production archive remains untested."],
+          "dissentStatus": "minority",
+          "dissentRefs": ["contrib-dissent-001"],
+          "resolutionStatus": "unresolved"
+        },
+        "security": {
+          "authorityCeiling": "proposal",
+          "visibility": "private",
+          "taints": ["fixture-only"],
+          "allowedUses": ["display", "reason", "compare", "propose"]
+        },
+        "provenance": {
+          "sourceType": "agent",
+          "sourceRef": "agent/planner-01",
+          "sourceDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "lineage": ["context-envelope/action-001"],
+          "contextEnvelopeRef": "context-envelope/action-001"
+        }
+      }
+    },
+    {
+      "name": "workspace-action-without-failure-path.invalid.json",
+      "schema": "workspace-contribution.schema.json",
+      "valid": false,
+      "instance": {
+        "apiVersion": "modos.pleiades/v1alpha1",
+        "kind": "WorkspaceContribution",
+        "metadata": {
+          "contributionId": "contrib-action-unsafe",
+          "mindId": "mind/pleiades-primary",
+          "cycleId": "cycle/action-unsafe",
+          "organId": "organ/planner-unsafe",
+          "createdAt": "2026-07-18T13:23:00Z",
+          "stage": "deliberation",
+          "sequence": 2,
+          "observedContributionRefs": []
+        },
+        "contribution": {
+          "type": "proposal",
+          "summary": "Start a workload and assume success.",
+          "contentDigest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "reasoningDisclosure": "summary-and-evidence-only",
+          "proposedAction": {
+            "capabilityName": "workload.start.local",
+            "resourceRef": "node/lenovo",
+            "requestedOperations": ["start"],
+            "verifierRef": "verifier/health-check"
+          }
+        },
+        "evidence": [],
+        "epistemics": {
+          "confidence": 1.0,
+          "uncertainties": [],
+          "dissentStatus": "none",
+          "resolutionStatus": "provisionally-converged"
+        },
+        "security": {
+          "authorityCeiling": "proposal",
+          "visibility": "private",
+          "taints": [],
+          "allowedUses": ["propose"]
+        },
+        "provenance": {
+          "sourceType": "agent",
+          "sourceRef": "agent/planner-unsafe",
+          "sourceDigest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "lineage": []
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-agent-convergence-contract-v1.json",
+  "title": "MODOS Agent Convergence Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "participation", "independence", "epistemics", "authority", "verification", "audit"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "AgentConvergenceContract"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractId", "mindId", "agentId", "role", "cognitiveFunction", "persistence", "version", "createdAt"],
+      "properties": {
+        "contractId": {"type": "string", "minLength": 1},
+        "mindId": {"type": "string", "minLength": 1},
+        "agentId": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "minLength": 1},
+        "cognitiveFunction": {"enum": ["observe", "hypothesize", "plan", "implement-proposal", "critique", "verify", "arbitrate-proposal", "retrieve", "summarize", "handoff"]},
+        "persistence": {"enum": ["ephemeral", "session", "resident", "scheduled"]},
+        "version": {"type": "integer", "minimum": 1},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "supersedesRef": {"type": "string", "minLength": 1}
+      }
+    },
+    "participation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workspaceReadTypes", "workspacePublishTypes", "atlasScope", "forgeScope", "completionSignal"],
+      "properties": {
+        "workspaceReadTypes": {"type": "array", "uniqueItems": true, "items": {"enum": ["observation", "hypothesis", "proposal", "critique", "verification", "dissent", "question", "handoff"]}},
+        "workspacePublishTypes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["observation", "hypothesis", "proposal", "critique", "verification", "dissent", "question", "handoff"]}},
+        "atlasScope": {"enum": ["none", "query", "propose-update"]},
+        "forgeScope": {"enum": ["none", "query", "propose", "delegated-bounded"]},
+        "completionSignal": {"enum": ["explicit-output", "verifier-accepted", "steward-approved", "timeout", "cancelled"]},
+        "attentionPriority": {"type": "integer", "minimum": 0, "maximum": 100},
+        "resourceBudgetRef": {"type": "string", "minLength": 1}
+      }
+    },
+    "independence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requiredFirstPass", "contaminationBarrier", "firstPassVisibility", "crossInfluenceAfterStage"],
+      "properties": {
+        "requiredFirstPass": {"const": true},
+        "contaminationBarrier": {"const": true},
+        "firstPassVisibility": {"const": "self-and-verifier-only"},
+        "crossInfluenceAfterStage": {"enum": ["first-pass-recorded", "verifier-admitted"]},
+        "independentContextRef": {"type": "string", "minLength": 1}
+      }
+    },
+    "epistemics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidenceRequired", "uncertaintyRequired", "dissentPolicy", "criticRoles", "competenceScope"],
+      "properties": {
+        "evidenceRequired": {"const": true},
+        "uncertaintyRequired": {"const": true},
+        "dissentPolicy": {"const": "preserve-until-explicitly-resolved-or-superseded"},
+        "criticRoles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "competenceScope": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "confidenceCalibrationRef": {"type": "string", "minLength": 1}
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorityCeiling", "capabilityBudget", "modelPolicy", "offlinePolicy"],
+      "properties": {
+        "authorityCeiling": {"enum": ["none", "proposal", "local-enforcement"]},
+        "capabilityBudget": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maxActions", "maxRuntimeSeconds", "allowedCapabilities"],
+          "properties": {
+            "maxActions": {"type": "integer", "minimum": 0, "maximum": 1000},
+            "maxRuntimeSeconds": {"type": "integer", "minimum": 1, "maximum": 86400},
+            "allowedCapabilities": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"}},
+            "leaseRequired": {"const": true}
+          }
+        },
+        "modelPolicy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["providerIndependence", "replacementAllowed", "privateReasoningRequired"],
+          "properties": {
+            "providerIndependence": {"const": true},
+            "replacementAllowed": {"const": true},
+            "privateReasoningRequired": {"const": true},
+            "allowedModelClasses": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+          }
+        },
+        "offlinePolicy": {"enum": ["deny", "finish-current", "bounded-cache"]}
+      },
+      "allOf": [
+        {"if": {"properties": {"authorityCeiling": {"enum": ["none", "proposal"]}}}, "then": {"properties": {"capabilityBudget": {"properties": {"maxActions": {"const": 0}, "allowedCapabilities": {"maxItems": 0}}}}}}
+      ]
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verifierRef", "failurePath", "completionRequiresVerification", "negativeEvidenceRetention"],
+      "properties": {
+        "verifierRef": {"type": "string", "minLength": 1},
+        "failurePath": {"type": "string", "minLength": 1},
+        "completionRequiresVerification": {"const": true},
+        "negativeEvidenceRetention": {"const": true},
+        "rollbackRef": {"type": "string", "minLength": 1}
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["traceRequired", "contributionReceiptsRequired", "decisionLineageRequired", "contextEnvelopeRequired"],
+      "properties": {
+        "traceRequired": {"const": true},
+        "contributionReceiptsRequired": {"const": true},
+        "decisionLineageRequired": {"const": true},
+        "contextEnvelopeRequired": {"const": true},
+        "auditSinkRef": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

@@ -1,231 +1,59 @@
 {
-  "$id": "https://pleiades.local/schemas/modos-component-v1.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-component-v1.json",
+  "title": "MODOS Component Manifest",
+  "type": "object",
   "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "spec"],
   "properties": {
-    "apiVersion": {
-      "const": "modos.pleiades/v1alpha1"
-    },
-    "kind": {
-      "const": "Component"
-    },
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "Component"},
     "metadata": {
+      "type": "object",
       "additionalProperties": false,
+      "required": ["name", "repository", "visibility", "lifecycle"],
       "properties": {
-        "defaultBranch": {
-          "type": "string"
-        },
-        "labels": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "type": "object"
-        },
-        "lifecycle": {
-          "enum": [
-            "canonical",
-            "operational",
-            "experimental",
-            "reference",
-            "backup",
-            "quarantined",
-            "parked",
-            "human-only"
-          ]
-        },
-        "name": {
-          "pattern": "^[a-z0-9][a-z0-9._-]*$",
-          "type": "string"
-        },
-        "repository": {
-          "pattern": "^[^/]+/[^/]+$",
-          "type": "string"
-        },
-        "sourceRef": {
-          "type": "string"
-        },
-        "visibility": {
-          "enum": [
-            "public",
-            "private"
-          ]
-        }
-      },
-      "required": [
-        "name",
-        "repository",
-        "visibility",
-        "lifecycle"
-      ],
-      "type": "object"
+        "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$"},
+        "repository": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
+        "visibility": {"enum": ["public", "private"]},
+        "lifecycle": {"enum": ["canonical", "operational", "experimental", "reference", "backup", "quarantined", "parked", "human-only"]},
+        "defaultBranch": {"type": "string"},
+        "sourceRef": {"type": "string"},
+        "labels": {"type": "object", "additionalProperties": {"type": "string"}}
+      }
     },
     "spec": {
+      "type": "object",
       "additionalProperties": false,
+      "required": ["roles", "authority", "inputs", "outputs", "failurePolicy", "promotionPolicy"],
       "properties": {
-        "authority": {
-          "enum": [
-            "none",
-            "proposal",
-            "local-enforcement",
-            "domain-control",
-            "steward-only"
-          ]
-        },
-        "capabilitiesProvided": {
-          "items": {
-            "pattern": "^[a-z0-9][a-z0-9._-]*@v[0-9a-z.-]+$",
-            "type": "string"
-          },
-          "type": "array",
-          "uniqueItems": true
-        },
-        "capabilitiesRequired": {
-          "items": {
-            "pattern": "^[a-z0-9][a-z0-9._-]*@v[0-9a-z.-]+$",
-            "type": "string"
-          },
-          "type": "array",
-          "uniqueItems": true
-        },
-        "dataClasses": {
-          "items": {
-            "enum": [
-              "public",
-              "internal",
-              "private",
-              "secret",
-              "evidence",
-              "untrusted"
-            ]
-          },
-          "type": "array",
-          "uniqueItems": true
-        },
-        "failurePolicy": {
-          "enum": [
-            "fail-closed",
-            "degrade-local",
-            "read-only",
-            "retry",
-            "quarantine",
-            "non-operational"
-          ]
-        },
-        "inputs": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "notes": {
-          "type": "string"
-        },
-        "outputs": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "promotionPolicy": {
-          "enum": [
-            "signed-pr",
-            "steward-approval",
-            "evidence-gated",
-            "never-promote",
-            "archive-only"
-          ]
-        },
+        "roles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "authority": {"enum": ["none", "proposal", "local-enforcement", "domain-control", "steward-only"]},
+        "inputs": {"type": "array", "items": {"type": "string"}},
+        "outputs": {"type": "array", "items": {"type": "string"}},
+        "capabilitiesProvided": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*@v[0-9a-z.-]+$"}},
+        "capabilitiesRequired": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*@v[0-9a-z.-]+$"}},
+        "dataClasses": {"type": "array", "uniqueItems": true, "items": {"enum": ["public", "internal", "private", "secret", "evidence", "untrusted"]}},
+        "failurePolicy": {"enum": ["fail-closed", "degrade-local", "read-only", "retry", "quarantine", "non-operational"]},
+        "promotionPolicy": {"enum": ["signed-pr", "steward-approval", "evidence-gated", "never-promote", "archive-only"]},
+        "surrogates": {"type": "array", "items": {"type": "string"}},
         "relations": {
-          "items": {
-            "additionalProperties": false,
-            "properties": {
-              "evidenceRef": {
-                "type": "string"
-              },
-              "required": {
-                "default": false,
-                "type": "boolean"
-              },
-              "scope": {
-                "enum": [
-                  "governance",
-                  "runtime",
-                  "build",
-                  "observation",
-                  "memory",
-                  "lineage",
-                  "distribution",
-                  "human-interface"
-                ]
-              },
-              "targetRef": {
-                "pattern": "^(repo|component|capability|scope):.+$",
-                "type": "string"
-              },
-              "type": {
-                "enum": [
-                  "depends-on",
-                  "implements",
-                  "governed-by",
-                  "subsystem-of",
-                  "derived-from",
-                  "supersedes",
-                  "mirror-of",
-                  "archive-of",
-                  "canonical-for",
-                  "replaced-by",
-                  "provides-capability",
-                  "consumes-capability",
-                  "produces",
-                  "observes",
-                  "stores-evidence-for",
-                  "supports",
-                  "human-interface-for"
-                ]
-              }
-            },
-            "required": [
-              "type",
-              "targetRef",
-              "scope",
-              "required"
-            ],
-            "type": "object"
-          },
-          "type": "array"
-        },
-        "roles": {
-          "items": {
-            "type": "string"
-          },
-          "minItems": 1,
           "type": "array",
-          "uniqueItems": true
-        },
-        "surrogates": {
           "items": {
-            "type": "string"
-          },
-          "type": "array"
-        }
-      },
-      "required": [
-        "roles",
-        "authority",
-        "inputs",
-        "outputs",
-        "failurePolicy",
-        "promotionPolicy"
-      ],
-      "type": "object"
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "targetRef", "scope", "required"],
+            "properties": {
+              "type": {"enum": ["depends-on", "implements", "governed-by", "subsystem-of", "derived-from", "supersedes", "mirror-of", "archive-of", "canonical-for", "replaced-by", "provides-capability", "consumes-capability", "produces", "observes", "stores-evidence-for", "supports", "human-interface-for"]},
+              "targetRef": {"type": "string", "pattern": "^(repo|component|capability|scope):.+$"},
+              "scope": {"enum": ["governance", "runtime", "build", "observation", "memory", "lineage", "distribution", "human-interface"]},
+              "required": {"type": "boolean"},
+              "evidenceRef": {"type": "string"}
+            }
+          }
+        },
+        "notes": {"type": "string"}
+      }
     }
-  },
-  "required": [
-    "apiVersion",
-    "kind",
-    "metadata",
-    "spec"
-  ],
-  "title": "MODOS Component Manifest",
-  "type": "object"
+  }
 }

@@ -1,0 +1,29 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "kind": "PublicHistorySensitivityPolicy",
+  "policyId": "pleiades-public-history-v1",
+  "issueRef": "github:Zheke32174/pleiades#42",
+  "knownLineHashPrefixes": [
+    "089dc8aaccd8",
+    "b7f8234389a0",
+    "a9bcee949982",
+    "28ecdbe29e79",
+    "9fe5c31e6920"
+  ],
+  "rules": [
+    {"id": "literal-linux-home", "pattern": "/home/[A-Za-z0-9._-]+/"},
+    {"id": "literal-windows-profile", "pattern": "(?:[A-Za-z]:\\\\|/mnt/[A-Za-z]/)Users[/\\\\][A-Za-z0-9._ -]+[/\\\\]"}
+  ],
+  "allowlist": [
+    {"rule": "literal-linux-home", "path": "**", "literal": "/home/ubuntu/", "reason": "generic synthetic fixture identity"},
+    {"rule": "literal-linux-home", "path": "oobe/scripts/hermes_60_day_evolution.sh", "literal": "/home/linuxbrew/", "reason": "standard non-personal Linuxbrew installation prefix"},
+    {"rule": "literal-linux-home", "path": "ci/public-history-sensitivity.json", "literal": "/home/", "reason": "the policy file must describe the Linux home-path rule and its allowed generic prefixes"},
+    {"rule": "literal-windows-profile", "path": "ci/public-history-sensitivity.json", "literal": "Users", "reason": "the policy file must describe the Windows profile-path rule"}
+  ],
+  "outputPolicy": {
+    "includeLineContent": false,
+    "includeOnlyHashPrefix": true,
+    "hashPrefixLength": 12
+  },
+  "authority": {"ceiling": "none", "historyRewriteAuthorized": false}
+}

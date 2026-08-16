@@ -1,0 +1,33 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "kind": "OperatorInterventionBundle",
+  "repositoryReadiness": {
+    "convergenceSuitePassed": true,
+    "currentTreeSensitivityClear": true,
+    "syntheticRehearsalPassed": true,
+    "packageReceiptPresent": true,
+    "runbooksComplete": true,
+    "evidenceRefs": [
+      "artifact:convergence-suite-receipt",
+      "artifact:current-tree-sensitivity-receipt",
+      "artifact:synthetic-rehearsal-receipt",
+      "artifact:validation-package-receipt",
+      "modos/convergence/OPERATOR_RUNBOOKS.md"
+    ]
+  },
+  "privateEcology": {"supplied": false, "artifactDigest": null, "receiptDigest": null},
+  "observedInventory": {"supplied": false, "artifactDigest": null, "receiptDigest": null},
+  "historyRewrite": {"decision": "pending", "authorizationRef": null, "planDigest": null},
+  "signingAuthority": {"delegated": false, "issuerRef": null, "publicKeyDigest": null, "privateKeyMaterialIncluded": false},
+  "liveSubstrate": {
+    "nodes": [],
+    "canaryNodeId": null,
+    "delegatedGrantIssued": false,
+    "grantDigest": null,
+    "liveLoopAuthorized": false,
+    "liveLoopCompleted": false,
+    "liveLoopEvidenceDigest": null
+  },
+  "sustainedObservation": {"authorized": false, "requiredSeconds": 604800, "completed": false, "evidenceDigest": null},
+  "authority": {"ceiling": "none", "maySatisfyOperatorInputs": false, "mayExecuteLiveActions": false}
+}

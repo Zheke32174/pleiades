@@ -18,10 +18,20 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned validators
+        run: >-
+          python -m pip install --disable-pip-version-check --no-input
+          -r requirements-modos.txt
 
       - name: Resolve and verify version tag
         id: version
@@ -38,8 +48,24 @@ jobs:
           esac
           git rev-parse --verify "refs/tags/$VERSION" >/dev/null
           TARGET="$(git rev-list -n 1 "$VERSION")"
+          test "$TARGET" = "$GITHUB_SHA" || {
+            echo "Workflow commit does not match tag target: $GITHUB_SHA != $TARGET" >&2
+            exit 1
+          }
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+
+      - name: Run complete MODOS convergence suite
+        run: python ci/run-modos-convergence.py --continue-on-failure
+
+      - name: Require a clear public current tree and reachable history
+        run: |
+          python ci/scan-public-history.py \
+            --mode all \
+            --report artifacts/release-public-history-sensitivity.json
+
+      - name: Build reproducible validation package
+        run: python ci/build-modos-validation-package.py --source-commit "${{ steps.version.outputs.target }}"
 
       - name: Write release notes
         shell: bash
@@ -50,7 +76,12 @@ jobs:
 
           Verified tagged release for $NAME.
 
-          GitHub provides source ZIP and source tarball assets automatically on this Release.
+          - Source commit: ${{ steps.version.outputs.target }}
+          - MODOS convergence suite: passed
+          - Public current tree and reachable history: sensitivity-clear
+          - Reproducible validation package: generated and digest-bound
+
+          GitHub provides source ZIP and source tarball assets automatically.
           EOF
 
       - name: Create or update GitHub Release
@@ -61,7 +92,14 @@ jobs:
         shell: bash
         run: |
           if gh release view "$VERSION" >/dev/null 2>&1; then
+            gh release upload "$VERSION" artifacts/pleiades-modos-validation.tar.gz artifacts/validation-package-receipt.json --clobber
             gh release edit "$VERSION" --target "$TARGET" --title "${GITHUB_REPOSITORY#*/} $VERSION" --notes-file RELEASE_NOTES.md
           else
-            gh release create "$VERSION" --verify-tag --target "$TARGET" --title "${GITHUB_REPOSITORY#*/} $VERSION" --notes-file RELEASE_NOTES.md
+            gh release create "$VERSION" \
+              artifacts/pleiades-modos-validation.tar.gz \
+              artifacts/validation-package-receipt.json \
+              --verify-tag \
+              --target "$TARGET" \
+              --title "${GITHUB_REPOSITORY#*/} $VERSION" \
+              --notes-file RELEASE_NOTES.md
           fi

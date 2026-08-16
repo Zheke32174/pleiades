@@ -1,0 +1,57 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "authority": {
+    "canonicalMutation": "forbidden",
+    "ceiling": "none",
+    "promotionTransactionRequired": true,
+    "selfPromotionAllowed": false
+  },
+  "evidenceRefs": [
+    "evidence:local-fixture"
+  ],
+  "expectedSemanticEffects": [
+    "A replaceable Model organ is added without becoming the Mind."
+  ],
+  "kind": "ChangeProposal",
+  "mindId": "mind:pleiades",
+  "objectFamily": "Model",
+  "operations": [
+    {
+      "objectId": "model:advisory",
+      "op": "create",
+      "payload": {
+        "apiVersion": "modos.pleiades/v1alpha1",
+        "kind": "Model",
+        "metadata": {
+          "createdAt": "2026-07-20T00:00:00Z",
+          "generation": 1,
+          "id": "model:advisory",
+          "name": "Advisory model organ"
+        },
+        "partitionPolicy": {
+          "conflictVisibility": "steward",
+          "globalAuthorityRequired": true,
+          "merge": "steward-review",
+          "read": "allow-cached",
+          "write": "provisional"
+        },
+        "provenance": {
+          "digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+          "lineage": [],
+          "source": "fixture:proposal",
+          "trust": "observed",
+          "visibility": "public"
+        },
+        "spec": {
+          "isWholeMind": true,
+          "mindRole": "whole-mind"
+        }
+      }
+    }
+  ],
+  "proposalId": "proposal:create-whole-mind-model-0001",
+  "rationale": "Add one replaceable model as a bounded cognitive organ of the persistent mind.",
+  "rollbackPlan": "Delete only model:advisory and restore the source snapshot digest.",
+  "sourceSnapshotDigest": "sha256:6cdb735ccdd132b7c86a7f60df6f953138f3555bfc362708947f7a8f5832ea51",
+  "targetSchemaVersion": "v1alpha1"
+}

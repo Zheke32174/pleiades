@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/delegated-authority-grant-v1.json",
+  "title": "Pleiades Delegated Authority Grant",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "grantId",
+    "subject",
+    "issuerRef",
+    "authoritySourceRef",
+    "domains",
+    "permissions",
+    "riskCeiling",
+    "autonomyMode",
+    "constraints",
+    "validity",
+    "delegation",
+    "status",
+    "provenance"
+  ],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "DelegatedAuthorityGrant"},
+    "grantId": {"type": "string", "minLength": 1, "maxLength": 256},
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["principalRef", "principalType"],
+      "properties": {
+        "principalRef": {"type": "string", "minLength": 1, "maxLength": 256},
+        "principalType": {"enum": ["mind", "human", "service", "assembly"]}
+      }
+    },
+    "issuerRef": {"type": "string", "minLength": 1, "maxLength": 256},
+    "authoritySourceRef": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "domains": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$"}
+    },
+    "permissions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "observe",
+          "propose",
+          "approve-candidate",
+          "reject-candidate",
+          "defer-candidate",
+          "authorize-admission",
+          "authorize-rollback",
+          "suspend-executor",
+          "revoke-mandate"
+        ]
+      }
+    },
+    "riskCeiling": {
+      "enum": ["observe-only", "reversible-local", "bounded-persistent", "high-impact"]
+    },
+    "autonomyMode": {
+      "enum": ["observe-only", "execute-within-grant", "mixed-quorum-only"]
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxActionsPerDecision",
+        "maxObjectsChanged",
+        "maxExecutionSeconds",
+        "reversibilityRequired",
+        "rollbackRequired",
+        "externalSideEffectsAllowed",
+        "constitutionalMutationAllowed",
+        "authorityExpansionAllowed"
+      ],
+      "properties": {
+        "maxActionsPerDecision": {"type": "integer", "minimum": 1, "maximum": 10000},
+        "maxObjectsChanged": {"type": "integer", "minimum": 1, "maximum": 1000000},
+        "maxExecutionSeconds": {"type": "integer", "minimum": 1, "maximum": 604800},
+        "reversibilityRequired": {"type": "boolean"},
+        "rollbackRequired": {"type": "boolean"},
+        "externalSideEffectsAllowed": {"type": "boolean"},
+        "constitutionalMutationAllowed": {"const": false},
+        "authorityExpansionAllowed": {"const": false}
+      }
+    },
+    "validity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["notBefore", "notAfter"],
+      "properties": {
+        "notBefore": {"type": "string", "format": "date-time"},
+        "notAfter": {"type": "string", "format": "date-time"}
+      }
+    },
+    "delegation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mayDelegate", "maySelfExpand", "revocable"],
+      "properties": {
+        "mayDelegate": {"type": "boolean"},
+        "maySelfExpand": {"const": false},
+        "revocable": {"const": true}
+      }
+    },
+    "status": {"enum": ["active", "suspended", "revoked", "expired"]},
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["digest", "issuedAt", "evidenceRefs"],
+      "properties": {
+        "digest": {"$ref": "#/$defs/sha256"},
+        "issuedAt": {"type": "string", "format": "date-time"},
+        "evidenceRefs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:(?!0{64}$)[0-9a-f]{64}$"
+    }
+  }
+}

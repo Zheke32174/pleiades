@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/modos-observation-ingress-receipt-v1.json",
+  "title": "MODOS Observation Ingress Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "delivery", "authentication", "status", "signature"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "ObservationIngressReceipt"},
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["receiptId", "batchId", "traceId", "producerPrincipalId", "receiverPrincipalId", "deliveryStreamId", "commitId", "acceptedAt"],
+      "properties": {
+        "receiptId": {"type": "string", "minLength": 1},
+        "batchId": {"type": "string", "minLength": 1},
+        "traceId": {"type": "string", "minLength": 1},
+        "producerPrincipalId": {"type": "string", "minLength": 1},
+        "receiverPrincipalId": {"type": "string", "minLength": 1},
+        "deliveryStreamId": {"type": "string", "minLength": 1},
+        "commitId": {"type": "string", "minLength": 1},
+        "acceptedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["firstSequence", "lastSequence", "eventCount", "batchDigest"],
+      "properties": {
+        "firstSequence": {"type": "integer", "minimum": 1},
+        "lastSequence": {"type": "integer", "minimum": 1},
+        "eventCount": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "batchDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+      }
+    },
+    "authentication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authenticatedPrincipalId", "credentialFingerprint", "proofMode"],
+      "properties": {
+        "authenticatedPrincipalId": {"type": "string", "minLength": 1},
+        "credentialFingerprint": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "credentialEpoch": {"type": "string", "minLength": 1},
+        "proofMode": {"enum": ["transport-bound", "detached-signature"]}
+      }
+    },
+    "status": {"const": "accepted"},
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keyId", "algorithm", "value"],
+      "properties": {
+        "keyId": {"type": "string", "minLength": 1},
+        "algorithm": {"const": "Ed25519"},
+        "value": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

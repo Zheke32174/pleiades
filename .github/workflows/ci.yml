@@ -36,8 +36,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check for prohibited public wording in docs and READMEs
         run: |
-          # These terms must not appear in public-facing docs.
-          # They may appear in experimental/ scripts with appropriate framing.
           bad=$(grep -rniE \
             'selfdestruct|dead[[:space:]]drop|black-level|self-obfuscate|credential harvester|wipe traces|mutual persistence|BIOS-level hook|survive deletion|anti-lobotomy|anti-cryostasis|mirror dimension|RESURRECT signal|rehydrat' \
             README.md DISCLAIMER.md SECURITY.md CONTRIBUTING.md docs/ 2>/dev/null || true)
@@ -110,10 +108,39 @@ jobs:
         with:
           go-version: '1.22'
           cache: false
+      - name: Install Rust parser
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt
+          rustup default stable
       - name: Check polyglot heredoc syntax (Go/Rust/JS)
         run: |
           chmod +x ci/check-polyglot.sh
           bash ci/check-polyglot.sh root.x86_64/scripts
+
+  # ── PDK Rust workspace (hard fail) ──────────────────────────────────────
+  pdk-rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: modos/pdk-node-agent
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install stable Rust with lint and format components
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+      - name: Install Protobuf compiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq protobuf-compiler
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+      - name: Run Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - name: Run tests
+        run: cargo test --workspace --all-features
+      - name: Build release workspace
+        run: cargo build --release --workspace --all-features
 
   # ── DevContainer (advisory) ──────────────────────────────────────────────
   devcontainer:

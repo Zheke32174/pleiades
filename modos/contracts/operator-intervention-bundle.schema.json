@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/operator-intervention-bundle-v1.json",
+  "title": "Pleiades Operator Intervention Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "repositoryReadiness", "privateEcology", "observedInventory", "historyRewrite", "signingAuthority", "liveSubstrate", "sustainedObservation", "authority"],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "OperatorInterventionBundle"},
+    "repositoryReadiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["convergenceSuitePassed", "currentTreeSensitivityClear", "syntheticRehearsalPassed", "packageReceiptPresent", "runbooksComplete"],
+      "properties": {
+        "convergenceSuitePassed": {"type": "boolean"},
+        "currentTreeSensitivityClear": {"type": "boolean"},
+        "syntheticRehearsalPassed": {"type": "boolean"},
+        "packageReceiptPresent": {"type": "boolean"},
+        "runbooksComplete": {"type": "boolean"},
+        "evidenceRefs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}
+      }
+    },
+    "privateEcology": {"$ref": "#/$defs/suppliedEvidence"},
+    "observedInventory": {"$ref": "#/$defs/suppliedEvidence"},
+    "historyRewrite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision", "authorizationRef"],
+      "properties": {
+        "decision": {"enum": ["pending", "approved", "declined"]},
+        "authorizationRef": {"type": ["string", "null"]},
+        "planDigest": {"$ref": "#/$defs/optionalDigest"}
+      }
+    },
+    "signingAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["delegated", "issuerRef", "publicKeyDigest", "privateKeyMaterialIncluded"],
+      "properties": {
+        "delegated": {"type": "boolean"},
+        "issuerRef": {"type": ["string", "null"]},
+        "publicKeyDigest": {"$ref": "#/$defs/optionalDigest"},
+        "privateKeyMaterialIncluded": {"const": false}
+      }
+    },
+    "liveSubstrate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodes", "canaryNodeId", "delegatedGrantIssued", "liveLoopAuthorized", "liveLoopCompleted"],
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["nodeId", "capabilityDigest", "publicKeyDigest", "rollbackPredecessorDigest"],
+            "properties": {
+              "nodeId": {"type": "string", "minLength": 1},
+              "capabilityDigest": {"$ref": "#/$defs/digest"},
+              "publicKeyDigest": {"$ref": "#/$defs/digest"},
+              "rollbackPredecessorDigest": {"$ref": "#/$defs/digest"}
+            }
+          }
+        },
+        "canaryNodeId": {"type": ["string", "null"]},
+        "delegatedGrantIssued": {"type": "boolean"},
+        "grantDigest": {"$ref": "#/$defs/optionalDigest"},
+        "liveLoopAuthorized": {"type": "boolean"},
+        "liveLoopCompleted": {"type": "boolean"},
+        "liveLoopEvidenceDigest": {"$ref": "#/$defs/optionalDigest"}
+      }
+    },
+    "sustainedObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authorized", "requiredSeconds", "completed", "evidenceDigest"],
+      "properties": {
+        "authorized": {"type": "boolean"},
+        "requiredSeconds": {"type": "integer", "minimum": 1},
+        "completed": {"type": "boolean"},
+        "evidenceDigest": {"$ref": "#/$defs/optionalDigest"}
+      }
+    },
+    "authority": {
+      "const": {"ceiling": "none", "maySatisfyOperatorInputs": false, "mayExecuteLiveActions": false}
+    }
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:(?!0{64}$)[0-9a-f]{64}$"},
+    "optionalDigest": {"type": ["string", "null"], "pattern": "^sha256:(?!0{64}$)[0-9a-f]{64}$"},
+    "suppliedEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supplied", "artifactDigest", "receiptDigest"],
+      "properties": {
+        "supplied": {"type": "boolean"},
+        "artifactDigest": {"$ref": "#/$defs/optionalDigest"},
+        "receiptDigest": {"$ref": "#/$defs/optionalDigest"}
+      }
+    }
+  }
+}

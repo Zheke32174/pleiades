@@ -6,7 +6,7 @@ It is not for unauthorized deployment, stealth installation, credential theft, l
 
 ## Ontological ecology
 
-This repository is also the canonical public contract surface for the Pleiades/MODOS Git ecology. The repository-local `MODOS_COMPONENT.yaml`, the schemas under `modos/contracts/`, and the deterministic ecology validator define how repositories declare lifecycle, authority, capabilities, provenance, and typed relations.
+This repository is the canonical public contract surface for the Pleiades/MODOS Git ecology. The repository-local `MODOS_COMPONENT.yaml`, schemas under `modos/contracts/`, deterministic ecology validator, ontology compiler, delegated executive-governance contracts, and convergence suite define how repositories and runtime organs declare lifecycle, authority, capabilities, provenance, typed relations, admission, rollback, and learning boundaries.
 
 The exhaustive private inventory remains in Undergrowth. Public absence does not imply private nonexistence, and catalog membership never grants runtime authority. See [`modos/ecology/PRECEDENCE.md`](modos/ecology/PRECEDENCE.md) for the authority ladder and closure rules.
 
@@ -31,7 +31,7 @@ Host (minimal footprint)
 
 Gentoo systemd-nspawn container
   ├─ Alcyone   — host capability inventory
-  ├─ Atlas     — recovery coordinator
+  ├─ Atlas     — recovery coordinator and belief/world-state integration
   ├─ Electra   — decoy environment / honeypot router
   ├─ Maia      — container restore coordinator
   ├─ Merope    — credential exposure detector
@@ -41,9 +41,11 @@ Gentoo systemd-nspawn container
   └─ Sterope   — watchdog and integrity verifier
 ```
 
+The persistent Pleiades Mind is the recurrent organization binding identity, shared workspace, Atlas state, Forge executive state, memory, dissent, policy, and continuity. Individual models and agents are replaceable cognitive organs; none independently inherits executive sovereignty.
+
 ## Behavior
 
-Requests to decoy services are policy-gated before any action is taken. Destructive operations require explicit confirmation flags (`--cleanup-local`, `--confirm-owned-system`). Setup and recovery scripts that have `--dry-run` support should be run with it first — review each script before running it on a live system. No credentials are committed to this repository; the evidence archive is private.
+Requests to decoy services are policy-gated before any action is taken. Destructive operations require explicit confirmation flags (`--cleanup-local`, `--confirm-owned-system`). Setup and recovery scripts that have `--dry-run` support should be run with it first. No credentials are committed to this repository; the evidence archive is private.
 
 ## Quick Start
 
@@ -59,6 +61,9 @@ bash -n root.x86_64/scripts/*.sh
 
 # 4. Dry-run the regression suite before starting anything
 bash root.x86_64/scripts/pleiades-regression.sh --dry-run
+
+# 5. Validate the complete MODOS contract and governance stack
+python ci/run-modos-convergence.py --continue-on-failure
 ```
 
 For container setup on a new machine, see [`pleiades-container`](https://github.com/Zheke32174/pleiades-container).
@@ -69,7 +74,7 @@ Recovery helpers live under `experimental/owner-authorized-recovery/`. They are 
 
 ## AI Assistance
 
-Documentation and script scaffolding were partly drafted with Claude (Anthropic) and ChatGPT (OpenAI). Third-party attribution and security review remain the maintainer's responsibility — every tool used must still be credited to its original author.
+Documentation and script scaffolding were partly drafted with Gemini (Google), DeepSeek, Claude (Anthropic), and ChatGPT/OpenAI. The PDK originated through Gemini, and the original Pleiades prototype was developed through Gemini and DeepSeek. Third-party attribution and security review remain the maintainer's responsibility.
 
 ---
 

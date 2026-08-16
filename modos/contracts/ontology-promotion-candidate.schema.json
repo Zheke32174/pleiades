@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/ontology-promotion-candidate-v1.json",
+  "title": "Pleiades Ontology Promotion Candidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "candidateId",
+    "repository",
+    "branch",
+    "commitSha",
+    "mindId",
+    "schemaVersion",
+    "sourceSnapshotDigest",
+    "candidateSnapshotDigest",
+    "closureReceiptDigest",
+    "sourceManifestDigest",
+    "semanticDiffDigest",
+    "evidenceRefs",
+    "governanceEvidence",
+    "blockingIssues",
+    "authorizationPolicy",
+    "authority"
+  ],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "OntologyPromotionCandidate"},
+    "candidateId": {"type": "string", "minLength": 1, "maxLength": 256},
+    "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+    "branch": {"type": "string", "minLength": 1, "maxLength": 256},
+    "commitSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "mindId": {"type": "string", "minLength": 1, "maxLength": 128},
+    "schemaVersion": {"type": "string", "pattern": "^v[0-9]+(?:alpha[0-9]+|beta[0-9]+)?$"},
+    "sourceSnapshotDigest": {"$ref": "#/$defs/sha256"},
+    "candidateSnapshotDigest": {"$ref": "#/$defs/sha256"},
+    "closureReceiptDigest": {"$ref": "#/$defs/sha256"},
+    "sourceManifestDigest": {"$ref": "#/$defs/sha256"},
+    "semanticDiffDigest": {"$ref": "#/$defs/sha256"},
+    "evidenceRefs": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+    },
+    "governanceEvidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "locator", "digest"],
+        "properties": {
+          "type": {"enum": ["codeowners", "ruleset", "artifact-attestation"]},
+          "locator": {"type": "string", "minLength": 1, "maxLength": 1024},
+          "digest": {"$ref": "#/$defs/sha256"},
+          "verified": {"type": "boolean"}
+        }
+      }
+    },
+    "blockingIssues": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+    },
+    "authorizationPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorizationMode",
+        "requiredHumanApprovals",
+        "machineExecutiveDecisionRequired",
+        "delegatedAuthorityGrantRequired",
+        "codeownersRequired",
+        "rulesetReviewRequired",
+        "artifactAttestationRequired",
+        "signedPromotionTransactionRequired"
+      ],
+      "properties": {
+        "authorizationMode": {
+          "enum": ["delegated-machine-executive", "mixed-quorum", "human-steward"]
+        },
+        "requiredHumanApprovals": {"type": "integer", "minimum": 0},
+        "machineExecutiveDecisionRequired": {"type": "boolean"},
+        "delegatedAuthorityGrantRequired": {"type": "boolean"},
+        "codeownersRequired": {"const": true},
+        "rulesetReviewRequired": {"const": true},
+        "artifactAttestationRequired": {"type": "boolean"},
+        "signedPromotionTransactionRequired": {"const": true}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"authorizationMode": {"const": "delegated-machine-executive"}}},
+          "then": {
+            "properties": {
+              "requiredHumanApprovals": {"const": 0},
+              "machineExecutiveDecisionRequired": {"const": true},
+              "delegatedAuthorityGrantRequired": {"const": true}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"authorizationMode": {"const": "mixed-quorum"}}},
+          "then": {
+            "properties": {
+              "requiredHumanApprovals": {"minimum": 1},
+              "machineExecutiveDecisionRequired": {"const": true},
+              "delegatedAuthorityGrantRequired": {"const": true}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"authorizationMode": {"const": "human-steward"}}},
+          "then": {
+            "properties": {
+              "requiredHumanApprovals": {"minimum": 1}
+            }
+          }
+        }
+      ]
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ceiling",
+        "canonicalMutation",
+        "authorizationSource",
+        "admissionExecutor",
+        "proposalSelfAdmissionAllowed"
+      ],
+      "properties": {
+        "ceiling": {"const": "none"},
+        "canonicalMutation": {"const": "forbidden"},
+        "authorizationSource": {"const": "policy-and-delegated-authority"},
+        "admissionExecutor": {"const": "capability-bound-service"},
+        "proposalSelfAdmissionAllowed": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:(?!0{64}$)[0-9a-f]{64}$"
+    }
+  }
+}

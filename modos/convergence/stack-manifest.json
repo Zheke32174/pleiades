@@ -1,0 +1,96 @@
+{
+  "apiVersion": "modos.pleiades/v1alpha1",
+  "kind": "StackManifest",
+  "stackId": "pleiades-ontology-executive-governance-v1",
+  "repository": "Zheke32174/pleiades",
+  "mainBaseline": {
+    "mainHead": "ce40d41d3cb712aef20416b1227edb3d19e988f5",
+    "mergeBase": "8d8a8816750026ea2a1cc7e4b60f37b1ffe91e30",
+    "terminalHead": "8e7e76f27bc03ce296e73bf46aef4ee39b2b8e71",
+    "terminalAheadBy": 247,
+    "terminalBehindBy": 9,
+    "measuredAt": "2026-07-20T21:55:00Z"
+  },
+  "pullRequests": [
+    {
+      "number": 52,
+      "title": "Add proposal-only ontology compiler, closure receipts, and read projection",
+      "baseBranch": "autonomy/extended-work-orders-v1",
+      "headBranch": "ontology/proposal-compiler-boundary-v1",
+      "headSha": "18503ad22e01c1ab2461b4397fa9c5052ed121c3"
+    },
+    {
+      "number": 53,
+      "title": "Add exact promotion evidence gates for ontology candidates",
+      "baseBranch": "ontology/proposal-compiler-boundary-v1",
+      "baseSha": "18503ad22e01c1ab2461b4397fa9c5052ed121c3",
+      "headBranch": "ontology/promotion-evidence-gates-v1",
+      "headSha": "c74843f05ede6f2f0c63d870e79b0684d747ce90"
+    },
+    {
+      "number": 55,
+      "title": "Establish delegated machine executive authority and bounded admission",
+      "baseBranch": "ontology/promotion-evidence-gates-v1",
+      "baseSha": "c74843f05ede6f2f0c63d870e79b0684d747ce90",
+      "headBranch": "ontology/signed-promotion-admission-plan-v1",
+      "headSha": "2f7f02ad2a0bb305c6e49ae213aed6b8bd0aeb11"
+    },
+    {
+      "number": 56,
+      "title": "Add executive policy, grant lifecycle, execution evidence, and competence control plane",
+      "baseBranch": "ontology/signed-promotion-admission-plan-v1",
+      "baseSha": "2f7f02ad2a0bb305c6e49ae213aed6b8bd0aeb11",
+      "headBranch": "governance/executive-control-plane-v1",
+      "headSha": "09b60d2202c76252ba486888dfc6c67dd2ad0c6f"
+    },
+    {
+      "number": 57,
+      "title": "Add recurrent executive workspace and emergency recovery authority",
+      "baseBranch": "governance/executive-control-plane-v1",
+      "baseSha": "09b60d2202c76252ba486888dfc6c67dd2ad0c6f",
+      "headBranch": "governance/workspace-emergency-recovery-v1",
+      "headSha": "409deb7b12ac57fc154d5f241a145f2423d367fc"
+    },
+    {
+      "number": 58,
+      "title": "Add replay-safe distributed admission and coordinated rollback planning",
+      "baseBranch": "governance/workspace-emergency-recovery-v1",
+      "baseSha": "409deb7b12ac57fc154d5f241a145f2423d367fc",
+      "headBranch": "governance/distributed-admission-v1",
+      "headSha": "e3d877194c756eaa6710c8ae0786750f0f8c58cf"
+    },
+    {
+      "number": 59,
+      "title": "Add append-only executive memory and verified-outcome learning spine",
+      "baseBranch": "governance/distributed-admission-v1",
+      "baseSha": "e3d877194c756eaa6710c8ae0786750f0f8c58cf",
+      "headBranch": "governance/learning-spine-v1",
+      "headSha": "665c24915f8dd8ddd8e09b9acd4e39613e493256"
+    },
+    {
+      "number": 60,
+      "title": "Add constitutional evolution, mixed quorum, succession, and appeal gates",
+      "baseBranch": "governance/learning-spine-v1",
+      "baseSha": "665c24915f8dd8ddd8e09b9acd4e39613e493256",
+      "headBranch": "governance/constitutional-evolution-v1",
+      "headSha": "3f41404e9923db35621e9e94cbd42d192230b584"
+    },
+    {
+      "number": 61,
+      "title": "Add full-ecology integration readiness, simulation calibration, and treaty gates",
+      "baseBranch": "governance/constitutional-evolution-v1",
+      "baseSha": "3f41404e9923db35621e9e94cbd42d192230b584",
+      "headBranch": "governance/ecology-integration-readiness-v1",
+      "headSha": "8e7e76f27bc03ce296e73bf46aef4ee39b2b8e71"
+    }
+  ],
+  "terminalBranch": "governance/ecology-integration-readiness-v1",
+  "terminalHeadSha": "8e7e76f27bc03ce296e73bf46aef4ee39b2b8e71",
+  "blockers": [
+    "github:Zheke32174/pleiades#42",
+    "live-private-exhaustive-registry-not-supplied",
+    "live-substrate-loop-not-executed",
+    "sustained-autonomy-evidence-not-observed"
+  ],
+  "authority": {"ceiling": "none", "canonicalMutationApplied": false}
+}

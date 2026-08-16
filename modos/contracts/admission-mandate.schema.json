@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/admission-mandate-v1.json",
+  "title": "Pleiades Admission Mandate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion",
+    "kind",
+    "mandateId",
+    "decisionRef",
+    "decisionDigest",
+    "candidateRef",
+    "candidateDigest",
+    "executor",
+    "stateTransition",
+    "constraints",
+    "postconditions",
+    "expiresAt",
+    "authority"
+  ],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "AdmissionMandate"},
+    "mandateId": {"type": "string", "minLength": 1, "maxLength": 256},
+    "decisionRef": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "decisionDigest": {"$ref": "#/$defs/sha256"},
+    "candidateRef": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "candidateDigest": {"$ref": "#/$defs/sha256"},
+    "executor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["principalRef", "capabilityRef", "decisionAuthority"],
+      "properties": {
+        "principalRef": {"type": "string", "minLength": 1, "maxLength": 256},
+        "capabilityRef": {"type": "string", "minLength": 1, "maxLength": 256},
+        "decisionAuthority": {"const": "none"}
+      }
+    },
+    "stateTransition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["predecessorDigest", "targetDigest", "rollbackDigest"],
+      "properties": {
+        "predecessorDigest": {"$ref": "#/$defs/sha256"},
+        "targetDigest": {"$ref": "#/$defs/sha256"},
+        "rollbackDigest": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxAttempts",
+        "timeoutSeconds",
+        "reversible",
+        "writeScope",
+        "networkScope",
+        "automaticRollbackOnFailure"
+      ],
+      "properties": {
+        "maxAttempts": {"type": "integer", "minimum": 1, "maximum": 10},
+        "timeoutSeconds": {"type": "integer", "minimum": 1, "maximum": 604800},
+        "reversible": {"const": true},
+        "writeScope": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+        },
+        "networkScope": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+        },
+        "automaticRollbackOnFailure": {"const": true}
+      }
+    },
+    "postconditions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+    },
+    "expiresAt": {"type": "string", "format": "date-time"},
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["executionOnly", "mayAlterPlan", "mayExpandAuthority", "mayChangeTarget"],
+      "properties": {
+        "executionOnly": {"const": true},
+        "mayAlterPlan": {"const": false},
+        "mayExpandAuthority": {"const": false},
+        "mayChangeTarget": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:(?!0{64}$)[0-9a-f]{64}$"
+    }
+  }
+}

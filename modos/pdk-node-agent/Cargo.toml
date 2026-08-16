@@ -1,0 +1,43 @@
+[workspace]
+members = [
+  "crates/pdk-protocol",
+  "crates/pdk-crypto",
+  "crates/pdk-keygen",
+  "crates/pdk-transport",
+  "crates/pdk-controller",
+  "crates/pdk-node-agent",
+  "crates/pdk-admin",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.2.0"
+edition = "2024"
+license = "Apache-2.0"
+authors = ["Pleiades"]
+rust-version = "1.95"
+
+[workspace.dependencies]
+anyhow = "1"
+async-trait = "0.1"
+base64 = "0.22"
+clap = { version = "4.5", features = ["derive"] }
+ed25519-dalek = { version = "2.2", features = ["rand_core"] }
+prost = "0.14"
+rand_core = { version = "0.6", features = ["getrandom"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite"] }
+sysinfo = { version = "0.39.6", default-features = true }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "sync", "time", "net", "fs", "process"] }
+tokio-stream = { version = "0.1", features = ["net"] }
+toml = "0.9"
+tonic = { version = "0.14.6", features = ["transport", "tls-ring", "tls-connect-info"] }
+tonic-prost = "0.14.6"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+uuid = { version = "1", features = ["v4"] }
+x509-parser = "0.18"
+zbus = { version = "5.16", default-features = false, features = ["tokio"] }
+zvariant = "5.13"

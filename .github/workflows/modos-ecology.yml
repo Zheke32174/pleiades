@@ -54,10 +54,7 @@ jobs:
           schema = json.loads(Path('modos/contracts/component-manifest.schema.json').read_text())
           manifest = yaml.safe_load(Path('MODOS_COMPONENT.yaml').read_text())
           Draft202012Validator.check_schema(schema)
-          errors = sorted(
-              Draft202012Validator(schema).iter_errors(manifest),
-              key=lambda error: list(error.path),
-          )
+          errors = sorted(Draft202012Validator(schema).iter_errors(manifest), key=lambda error: list(error.path))
           if errors:
               for error in errors:
                   print('/'.join(map(str, error.absolute_path)), error.message)

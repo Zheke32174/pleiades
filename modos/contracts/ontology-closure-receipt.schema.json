@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pleiades.local/schemas/ontology-closure-receipt-v1.json",
+  "title": "Pleiades Ontology Closure Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "apiVersion", "kind", "compiler", "proposalId", "proposalDigest", "mindId",
+    "schemaVersion", "sourceSnapshotDigest", "resultSnapshotDigest", "closureStatus",
+    "counts", "semanticDiff", "checks", "authority"
+  ],
+  "properties": {
+    "apiVersion": {"const": "modos.pleiades/v1alpha1"},
+    "kind": {"const": "OntologyClosureReceipt"},
+    "compiler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "canonicalization"],
+      "properties": {
+        "name": {"const": "pleiades-ontology-compiler"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "canonicalization": {"const": "pleiades-canonical-json-v1"}
+      }
+    },
+    "proposalId": {"type": "string", "pattern": "^proposal:[a-z0-9][a-z0-9._:-]{7,127}$"},
+    "proposalDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "mindId": {"type": "string", "minLength": 1, "maxLength": 128},
+    "schemaVersion": {"type": "string", "pattern": "^v[0-9]+(?:alpha[0-9]+|beta[0-9]+)?$"},
+    "sourceSnapshotDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "resultSnapshotDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "closureStatus": {"const": "closed"},
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceObjects", "resultObjects", "sourceRelations", "resultRelations"],
+      "properties": {
+        "sourceObjects": {"type": "integer", "minimum": 0},
+        "resultObjects": {"type": "integer", "minimum": 0},
+        "sourceRelations": {"type": "integer", "minimum": 0},
+        "resultRelations": {"type": "integer", "minimum": 0}
+      }
+    },
+    "semanticDiff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objectsAdded", "objectsUpdated", "objectsDeleted", "relationsAdded", "relationsRemoved"],
+      "properties": {
+        "objectsAdded": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "objectsUpdated": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "objectsDeleted": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "relationsAdded": {"type": "array", "items": {"type": "object"}},
+        "relationsRemoved": {"type": "array", "items": {"type": "object"}}
+      }
+    },
+    "checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "status"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "status": {"const": "pass"}
+        }
+      }
+    },
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ceiling", "canonicalMutationApplied", "promotionTransactionRequired", "promotionState"],
+      "properties": {
+        "ceiling": {"const": "none"},
+        "canonicalMutationApplied": {"const": false},
+        "promotionTransactionRequired": {"const": true},
+        "promotionState": {"const": "eligible-for-review"}
+      }
+    }
+  }
+}

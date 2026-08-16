@@ -1,0 +1,40 @@
+name: Validate MODOS contracts
+
+on:
+  push:
+    paths:
+      - 'modos/contracts/**'
+      - 'ci/validate-modos-contracts.py'
+      - 'ci/modos_*.py'
+      - '.github/workflows/modos-contracts.yml'
+  pull_request:
+    paths:
+      - 'modos/contracts/**'
+      - 'ci/validate-modos-contracts.py'
+      - 'ci/modos_*.py'
+      - '.github/workflows/modos-contracts.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: modos-contracts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract-conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          show-progress: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned validator
+        run: python -m pip install --disable-pip-version-check --no-input jsonschema==4.26.0
+      - name: Compile validators
+        run: python -m py_compile ci/validate-modos-contracts.py ci/modos_validation_common.py ci/modos_semantics_legacy.py
+      - name: Validate schemas and adversarial fixtures
+        run: python ci/validate-modos-contracts.py --contracts modos/contracts

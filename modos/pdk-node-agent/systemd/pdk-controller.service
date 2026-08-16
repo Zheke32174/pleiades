@@ -1,0 +1,24 @@
+[Unit]
+Description=Pleiades PDK Authoritative Controller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+ExecStart=/usr/local/libexec/pleiades/pdk-controller --config /etc/pleiades/pdk-controller.toml
+Restart=on-failure
+RestartSec=3s
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+ReadWritePaths=/var/lib/pleiades
+
+[Install]
+WantedBy=multi-user.target
